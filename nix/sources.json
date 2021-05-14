@@ -1,0 +1,65 @@
+{
+    "advisory-db": {
+        "branch": "master",
+        "builtin": false,
+        "description": "Security advisory database for Rust crates published through crates.io",
+        "homepage": "https://rustsec.org",
+        "owner": "RustSec",
+        "repo": "advisory-db",
+        "rev": "bd8a0f67004bbe3c65153820076d56d3ca5fb7f0",
+        "sha256": "1cny831c18gpa9kbf82rz689ww0yih4lais5g45p56jx75fcfqmk",
+        "type": "tarball",
+        "url": "https://github.com/RustSec/advisory-db/archive/bd8a0f67004bbe3c65153820076d56d3ca5fb7f0.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "bats-support": {
+        "branch": "v0.3.0",
+        "builtin": false,
+        "description": "Supporting library for Bats test helpers",
+        "homepage": null,
+        "owner": "ztombol",
+        "repo": "bats-support",
+        "rev": "24a72e14349690bcbf7c151b9d2d1cdd32d36eb1",
+        "sha256": "1sm1y752jrz41qm4bxivk1363ac5zpkyshkk156aqf2p5qjxgpp0",
+        "type": "tarball",
+        "url": "https://github.com/ztombol/bats-support/archive/24a72e14349690bcbf7c151b9d2d1cdd32d36eb1.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "common": {
+        "branch": "master",
+        "repo": "ssh://git@github.com/dfinity-lab/common",
+        "rev": "ed5e16c4aa775ab21383b36c1b6d634ef15f087a",
+        "type": "git"
+    },
+    "dfinity": {
+        "branch": "master",
+        "repo": "ssh://git@github.com/dfinity-lab/dfinity",
+        "rev": "6c7e2dd6f85b655809947b618c7d343429c34438",
+        "type": "git"
+    },
+    "ic-ref": {
+        "branch": "release-0.17",
+        "repo": "ssh://git@github.com/dfinity-lab/ic-ref",
+        "rev": "0da8f01f0a4d6fce0a4f2c14ff767789311dbfa2",
+        "type": "git"
+    },
+    "motoko": {
+        "repo": "ssh://git@github.com/dfinity/motoko",
+        "rev": "9b07f5c1a41fe2cb2205255ed0819ca54278ba2a",
+        "tag": "0.6.1",
+        "type": "git"
+    },
+    "napalm": {
+        "branch": "master",
+        "builtin": false,
+        "description": "Support for building npm packages in Nix and lightweight npm registry",
+        "homepage": "",
+        "owner": "nmattia",
+        "repo": "napalm",
+        "rev": "4db4f253c78cfa8d8e8defb45dfe25e04409142a",
+        "sha256": "1rzj7a3r6wcsfjlzs5fj1min3rk8d8k9g9v00kmygdl1696mnkrb",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/napalm/archive/4db4f253c78cfa8d8e8defb45dfe25e04409142a.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
