@@ -1,9 +1,7 @@
-use crate::config::dfinity::Config;
-use crate::config::dfx_version;
+use crate::config::Config;
 use crate::lib::error::DfxResult;
-use crate::lib::identity::identity_manager::IdentityManager;
-use crate::lib::network::network_descriptor::NetworkDescriptor;
-
+use crate::lib::identity::Identity as NanoIdentity;
+use crate::lib::network::NetworkDescriptor;
 use anyhow::anyhow;
 use ic_agent::{Agent, Identity};
 use ic_types::Principal;
@@ -17,6 +15,8 @@ pub trait Environment {
     fn get_config(&self) -> Option<Arc<Config>>;
     fn get_config_or_anyhow(&self) -> anyhow::Result<Arc<Config>>;
 
+    fn get_pem_file(&self) -> &PathBuf;
+
     fn is_in_project(&self) -> bool;
     /// Return a temporary directory for configuration if none exists
     /// for the current project or if not in a project. Following
@@ -26,10 +26,6 @@ pub trait Environment {
     /// Return the directory where state for replica(s) is kept.
     fn get_state_dir(&self) -> PathBuf;
     fn get_version(&self) -> &Version;
-
-    /// This is value of the name passed to dfx `--identity <name>`
-    /// Notably, it is _not_ the name of the default identity or selected identity
-    fn get_identity_override(&self) -> &Option<String>;
 
     // Explicit lifetimes are actually needed for mockall to work properly.
     #[allow(clippy::needless_lifetimes)]
@@ -46,14 +42,12 @@ pub trait Environment {
 pub struct EnvironmentImpl {
     config: Option<Arc<Config>>,
     temp_dir: PathBuf,
-
     version: Version,
-
-    identity_override: Option<String>,
+    pem_file: PathBuf,
 }
 
 impl EnvironmentImpl {
-    pub fn new() -> DfxResult<Self> {
+    pub fn new(pem_file: PathBuf) -> DfxResult<Self> {
         let config = match Config::from_current_dir() {
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::NotFound {
@@ -72,46 +66,20 @@ impl EnvironmentImpl {
         };
         create_dir_all(&temp_dir)?;
 
-        // Figure out which version of DFX we should be running. This will use the following
-        // fallback sequence:
-        //   1. DFX_VERSION environment variable
-        //   2. dfx.json "dfx" field
-        //   3. this binary's version
-        // If any of those are empty string, we stop the fallback and use the current version.
-        // If any of those are a valid version, we try to use that directly as is.
-        // If any of those are an invalid version, we will show an error to the user.
-        let version = match std::env::var("DFX_VERSION") {
-            Err(_) => match &config {
-                None => dfx_version().clone(),
-                Some(c) => match &c.get_config().get_dfx() {
-                    None => dfx_version().clone(),
-                    Some(v) => Version::parse(&v)?,
-                },
-            },
-            Ok(v) => {
-                if v.is_empty() {
-                    dfx_version().clone()
-                } else {
-                    Version::parse(&v)?
-                }
-            }
-        };
-
         Ok(EnvironmentImpl {
             config: config.map(Arc::new),
             temp_dir,
-            version: version.clone(),
-            identity_override: None,
+            version: Version::parse("0.1.0").unwrap(),
+            pem_file,
         })
-    }
-
-    pub fn with_identity_override(mut self, identity: Option<String>) -> Self {
-        self.identity_override = identity;
-        self
     }
 }
 
 impl Environment for EnvironmentImpl {
+    fn get_pem_file(&self) -> &PathBuf {
+        &self.pem_file
+    }
+
     fn get_config(&self) -> Option<Arc<Config>> {
         self.config.as_ref().map(|x| Arc::clone(x))
     }
@@ -136,10 +104,6 @@ impl Environment for EnvironmentImpl {
 
     fn get_version(&self) -> &Version {
         &self.version
-    }
-
-    fn get_identity_override(&self) -> &Option<String> {
-        &self.identity_override
     }
 
     fn get_agent(&self) -> Option<&Agent> {
@@ -167,29 +131,31 @@ pub struct AgentEnvironment<'a> {
     backend: &'a dyn Environment,
     agent: Agent,
     network_descriptor: NetworkDescriptor,
-    identity_manager: IdentityManager,
+    pem_file: PathBuf,
 }
 
 impl<'a> AgentEnvironment<'a> {
     pub fn new(
         backend: &'a dyn Environment,
         network_descriptor: NetworkDescriptor,
+        pem_file: &PathBuf,
         timeout: Duration,
     ) -> DfxResult<Self> {
-        let mut identity_manager = IdentityManager::new(backend)?;
-        let identity = identity_manager.instantiate_selected_identity()?;
-
+        let identity = Box::new(NanoIdentity::load(pem_file));
         let agent_url = network_descriptor.providers.first().unwrap();
         Ok(AgentEnvironment {
             backend,
             agent: create_agent(agent_url, identity, timeout).expect("Failed to construct agent."),
             network_descriptor,
-            identity_manager,
+            pem_file: pem_file.clone(),
         })
     }
 }
 
 impl<'a> Environment for AgentEnvironment<'a> {
+    fn get_pem_file(&self) -> &PathBuf {
+        &self.pem_file
+    }
     fn get_config(&self) -> Option<Arc<Config>> {
         self.backend.get_config()
     }
@@ -216,10 +182,6 @@ impl<'a> Environment for AgentEnvironment<'a> {
         self.backend.get_version()
     }
 
-    fn get_identity_override(&self) -> &Option<String> {
-        self.backend.get_identity_override()
-    }
-
     fn get_agent(&self) -> Option<&Agent> {
         Some(&self.agent)
     }
@@ -229,11 +191,11 @@ impl<'a> Environment for AgentEnvironment<'a> {
     }
 
     fn get_selected_identity(&self) -> Option<&String> {
-        Some(self.identity_manager.get_selected_identity_name())
+        unimplemented!()
     }
 
     fn get_selected_identity_principal(&self) -> Option<Principal> {
-        self.identity_manager.get_selected_identity_principal()
+        NanoIdentity::load(&self.pem_file).as_ref().sender().ok()
     }
 }
 

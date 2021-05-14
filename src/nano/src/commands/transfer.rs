@@ -1,13 +1,10 @@
-use crate::commands::ledger::get_icpts_from_args;
 use crate::commands::sign;
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
 use crate::lib::nns_types::icpts::{ICPTs, TRANSACTION_FEE};
 use crate::lib::nns_types::{Memo, SendArgs, LEDGER_CANISTER_ID};
-use crate::lib::operations::canister::get_local_candid_path;
-use crate::lib::root_key::fetch_root_key_if_needed;
-use crate::util::clap::validators::{e8s_validator, icpts_amount_validator, memo_validator};
+use crate::util::get_local_candid_path;
 use crate::util::{get_candid_type, get_idl_string};
 use anyhow::anyhow;
 use candid::Encode;
@@ -62,8 +59,6 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
 
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
 
-    fetch_root_key_if_needed(env).await?;
-
     let canister_id = Principal::from_text(LEDGER_CANISTER_ID)?;
 
     let args = Encode!(&SendArgs {
@@ -90,4 +85,52 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
         file: opts.file,
     };
     sign::exec(env, opts).await
+}
+
+fn get_icpts_from_args(
+    amount: Option<String>,
+    icp: Option<String>,
+    e8s: Option<String>,
+) -> DfxResult<ICPTs> {
+    if amount.is_none() {
+        let icp = match icp {
+            Some(s) => {
+                // validated by e8s_validator
+                let icps = s.parse::<u64>().unwrap();
+                ICPTs::from_icpts(icps).map_err(|err| anyhow!(err))?
+            }
+            None => ICPTs::from_e8s(0),
+        };
+        let icp_from_e8s = match e8s {
+            Some(s) => {
+                // validated by e8s_validator
+                let e8s = s.parse::<u64>().unwrap();
+                ICPTs::from_e8s(e8s)
+            }
+            None => ICPTs::from_e8s(0),
+        };
+        let amount = icp + icp_from_e8s;
+        Ok(amount.map_err(|err| anyhow!(err))?)
+    } else {
+        Ok(ICPTs::from_str(&amount.unwrap())
+            .map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?)
+    }
+}
+
+fn e8s_validator(e8s: &str) -> Result<(), String> {
+    if e8s.parse::<u64>().is_ok() {
+        return Ok(());
+    }
+    Err("Must specify a non negative whole number.".to_string())
+}
+
+fn icpts_amount_validator(icpts: &str) -> Result<(), String> {
+    ICPTs::from_str(icpts).map(|_| ())
+}
+
+fn memo_validator(memo: &str) -> Result<(), String> {
+    if memo.parse::<u64>().is_ok() {
+        return Ok(());
+    }
+    Err("Must specify a non negative whole number.".to_string())
 }

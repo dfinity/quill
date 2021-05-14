@@ -1,8 +1,8 @@
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
-use crate::lib::operations::canister::get_local_candid_path;
 use crate::lib::sign::signed_message::SignedMessageV1;
 use crate::util::get_candid_type;
+use crate::util::get_local_candid_path;
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;

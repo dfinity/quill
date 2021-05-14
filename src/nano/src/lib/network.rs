@@ -1,4 +1,4 @@
-use crate::config::dfinity::NetworkType;
+use crate::config::NetworkType;
 
 #[derive(Clone, Debug)]
 pub struct NetworkDescriptor {

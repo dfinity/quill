@@ -1,8 +1,8 @@
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
-use crate::lib::operations::canister::get_local_candid_path;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::signed_message::SignedMessageV1;
+use crate::util::get_local_candid_path;
 use crate::util::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use candid::{CandidType, Decode, Deserialize};
@@ -15,7 +15,6 @@ use ic_types::principal::Principal;
 use ic_utils::interfaces::management_canister::builders::{CanisterInstall, CanisterSettings};
 use ic_utils::interfaces::management_canister::MgmtMethod;
 use std::option::Option;
-use std::path::Path;
 use std::str::FromStr;
 use std::time::SystemTime;
 
@@ -131,12 +130,6 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     );
 
     let file_name = opts.file;
-    if Path::new(&file_name).exists() {
-        bail!(
-            "[{}] already exists, please specify a different output file name.",
-            file_name
-        );
-    }
 
     let mut sign_agent = agent.clone();
     sign_agent.set_transport(SignReplicaV2Transport::new(file_name, message_template));

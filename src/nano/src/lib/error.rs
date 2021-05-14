@@ -1,12 +1,5 @@
-pub mod identity;
-
-pub use identity::IdentityError;
-
 /// The type to represent DFX results.
 pub type DfxResult<T = ()> = anyhow::Result<T>;
-
-/// The type to represent DFX errors.
-pub type DfxError = anyhow::Error;
 
 #[macro_export]
 macro_rules! error_invalid_argument {

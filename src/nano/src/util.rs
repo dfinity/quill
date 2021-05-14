@@ -6,11 +6,19 @@ use candid::types::{Function, Type};
 use candid::{parser::value::IDLValue, IDLArgs, IDLProg};
 use std::time::Duration;
 
-pub mod clap;
-
 pub fn expiry_duration() -> Duration {
     // 5 minutes is max ingress timeout
     Duration::from_secs(60 * 5)
+}
+
+use ic_types::principal::Principal as CanisterId;
+use std::path::PathBuf;
+
+pub fn get_local_candid_path(canister_id: CanisterId) -> Option<PathBuf> {
+    match canister_id.to_string().as_ref() {
+        crate::lib::nns_types::LEDGER_CANISTER_ID => Some(PathBuf::from("ledger.did")),
+        _ => None,
+    }
 }
 
 pub fn get_idl_string(

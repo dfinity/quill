@@ -1,4 +1,4 @@
-use crate::config::dfx_version_str;
+#![warn(unused_extern_crates)]
 use crate::lib::environment::EnvironmentImpl;
 
 use clap::{AppSettings, Clap};
@@ -8,31 +8,29 @@ mod config;
 mod lib;
 mod util;
 
-/// The DFINITY Executor.
+/// Ledger & Governance ToolKit.
 #[derive(Clap)]
-#[clap(name("dfx"), version = dfx_version_str(), global_setting = AppSettings::ColoredHelp)]
+#[clap(name("nano"), global_setting = AppSettings::ColoredHelp)]
 pub struct CliOpts {
     #[clap(long)]
-    identity: Option<String>,
+    pem_file: Option<String>,
 
     #[clap(subcommand)]
     command: commands::Command,
 }
 
 fn main() {
-    let cli_opts = CliOpts::parse();
-    let identity = cli_opts.identity;
-    let command = cli_opts.command;
-    let result = match EnvironmentImpl::new() {
-        Ok(_) => match EnvironmentImpl::new().map(|env| env.with_identity_override(identity)) {
-            Ok(env) => commands::exec(&env, command),
-            Err(e) => Err(e),
-        },
-        Err(e) => Err(e),
+    let opts = CliOpts::parse();
+    let command = opts.command;
+    let env = EnvironmentImpl::new(std::path::PathBuf::from(
+        opts.pem_file.unwrap_or("/dev/null".to_string()),
+    ))
+    .expect("Couldn't instantiate the environment");
+    match commands::exec(&env, command) {
+        Err(err) => {
+            eprintln!("{}", err);
+            std::process::exit(255);
+        }
+        _ => {}
     };
-    if let Err(err) = result {
-        eprintln!("{}", err);
-
-        std::process::exit(255);
-    }
 }

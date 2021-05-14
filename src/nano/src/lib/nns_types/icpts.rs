@@ -37,15 +37,7 @@ pub const ICP_SUBDIVIDABLE_BY: u64 = 100_000_000;
 
 pub const TRANSACTION_FEE: ICPTs = ICPTs { e8s: 10000 };
 
-#[allow(dead_code)]
-pub const MIN_BURN_AMOUNT: ICPTs = TRANSACTION_FEE;
-
-#[allow(dead_code)]
 impl ICPTs {
-    /// The maximum value of this construct is 2^64-1 e8s or Roughly 184
-    /// Billion ICPTs
-    pub const MAX: Self = ICPTs { e8s: u64::MAX };
-
     /// Construct a new instance of ICPTs.
     /// This function will not allow you use more than 1 ICPTs worth of e8s.
     pub fn new(icpt: u64, e8s: u64) -> Result<Self, String> {
@@ -66,8 +58,6 @@ impl ICPTs {
             .ok_or_else(|| CONSTRUCTION_FAILED.to_string())?;
         Ok(Self { e8s })
     }
-
-    pub const ZERO: Self = ICPTs { e8s: 0 };
 
     /// ```
     /// # use ledger_canister::ICPTs;
@@ -98,16 +88,6 @@ impl ICPTs {
         self.e8s / ICP_SUBDIVIDABLE_BY
     }
 
-    /// Gets the total number of e8s
-    /// ```
-    /// # use ledger_canister::ICPTs;
-    /// let icpt = ICPTs::new(12, 200).unwrap();
-    /// assert_eq!(icpt.get_e8s(), 1200000200)
-    /// ```
-    pub fn get_e8s(self) -> u64 {
-        self.e8s
-    }
-
     /// Gets the total number of e8s not part of a whole ICPT
     /// The returned amount is always in the half-open interval [0, 1 ICP).
     /// ```
@@ -117,16 +97,6 @@ impl ICPTs {
     /// ```
     pub fn get_remainder_e8s(self) -> u64 {
         self.e8s % ICP_SUBDIVIDABLE_BY
-    }
-
-    /// This returns the number of ICPTs and e8s
-    /// ```
-    /// # use ledger_canister::ICPTs;
-    /// let icpt = ICPTs::new(12, 200).unwrap();
-    /// assert_eq!(icpt.unpack(), (12, 200))
-    /// ```
-    pub fn unpack(self) -> (u64, u64) {
-        (self.get_icpts(), self.get_remainder_e8s())
     }
 }
 

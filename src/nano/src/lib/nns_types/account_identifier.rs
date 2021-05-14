@@ -157,12 +157,7 @@ impl CandidType for AccountIdentifier {
 #[serde(transparent)]
 pub struct Subaccount(pub [u8; 32]);
 
-impl Subaccount {
-    #[allow(dead_code)]
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-}
+impl Subaccount {}
 
 impl From<&Principal> for Subaccount {
     fn from(principal_id: &Principal) -> Self {
