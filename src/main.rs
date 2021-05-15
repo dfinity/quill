@@ -12,6 +12,7 @@ mod util;
 #[derive(Clap)]
 #[clap(name("nano"), global_setting = AppSettings::ColoredHelp)]
 pub struct CliOpts {
+    /// Path to your PEM file
     #[clap(long)]
     pem_file: Option<String>,
 
@@ -22,10 +23,10 @@ pub struct CliOpts {
 fn main() {
     let opts = CliOpts::parse();
     let command = opts.command;
-    let env = EnvironmentImpl::new(std::path::PathBuf::from(
-        opts.pem_file.unwrap_or("/dev/null".to_string()),
-    ))
-    .expect("Couldn't instantiate the environment");
+    let pem = opts
+        .pem_file
+        .map(|path| std::fs::read_to_string(path).expect("Couldn't read PEM file"));
+    let env = EnvironmentImpl::new(pem).expect("Couldn't instantiate the environment");
     match commands::exec(&env, command) {
         Err(err) => {
             eprintln!("{}", err);

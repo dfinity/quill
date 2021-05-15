@@ -37,5 +37,5 @@ pub fn create_agent_environment<'a>(
 ) -> DfxResult<AgentEnvironment<'a>> {
     let network_descriptor = get_network_descriptor(env, network)?;
     let timeout = expiry_duration();
-    AgentEnvironment::new(env, network_descriptor, env.get_pem_file(), timeout)
+    AgentEnvironment::new(env, network_descriptor, env.get_pem(), timeout)
 }

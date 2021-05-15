@@ -7,7 +7,6 @@ use ic_agent::Signature;
 use ic_types::Principal;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct WalletNetworkMap {
@@ -26,19 +25,19 @@ pub struct Identity {
 }
 
 impl Identity {
-    fn load_basic_identity(pem_path: &PathBuf) -> Option<Self> {
-        let inner = Box::new(BasicIdentity::from_pem_file(&pem_path).ok()?);
+    fn load_basic_identity(pem: String) -> Option<Self> {
+        let inner = Box::new(BasicIdentity::from_pem(pem.as_bytes()).ok()?);
         Some(Self { inner })
     }
 
-    fn load_secp256k1_identity(pem_path: &PathBuf) -> Option<Self> {
-        let inner = Box::new(Secp256k1Identity::from_pem_file(&pem_path).ok()?);
+    fn load_secp256k1_identity(pem: String) -> Option<Self> {
+        let inner = Box::new(Secp256k1Identity::from_pem(pem.as_bytes()).ok()?);
         Some(Self { inner })
     }
 
-    pub fn load(pem_path: &PathBuf) -> Self {
-        Identity::load_secp256k1_identity(pem_path)
-            .or_else(|| Identity::load_basic_identity(pem_path))
+    pub fn load(pem: String) -> Self {
+        Identity::load_secp256k1_identity(pem.clone())
+            .or_else(|| Identity::load_basic_identity(pem))
             .expect("Couldn't load identity from file")
     }
 }

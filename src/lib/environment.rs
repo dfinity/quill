@@ -15,7 +15,7 @@ pub trait Environment {
     fn get_config(&self) -> Option<Arc<Config>>;
     fn get_config_or_anyhow(&self) -> anyhow::Result<Arc<Config>>;
 
-    fn get_pem_file(&self) -> &PathBuf;
+    fn get_pem(&self) -> Option<String>;
 
     fn is_in_project(&self) -> bool;
     /// Return a temporary directory for configuration if none exists
@@ -43,11 +43,11 @@ pub struct EnvironmentImpl {
     config: Option<Arc<Config>>,
     temp_dir: PathBuf,
     version: Version,
-    pem_file: PathBuf,
+    pem: Option<String>,
 }
 
 impl EnvironmentImpl {
-    pub fn new(pem_file: PathBuf) -> DfxResult<Self> {
+    pub fn new(pem: Option<String>) -> DfxResult<Self> {
         let config = match Config::from_current_dir() {
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::NotFound {
@@ -70,14 +70,14 @@ impl EnvironmentImpl {
             config: config.map(Arc::new),
             temp_dir,
             version: Version::parse("0.1.0").unwrap(),
-            pem_file,
+            pem,
         })
     }
 }
 
 impl Environment for EnvironmentImpl {
-    fn get_pem_file(&self) -> &PathBuf {
-        &self.pem_file
+    fn get_pem(&self) -> Option<String> {
+        self.pem.clone()
     }
 
     fn get_config(&self) -> Option<Arc<Config>> {
@@ -131,30 +131,30 @@ pub struct AgentEnvironment<'a> {
     backend: &'a dyn Environment,
     agent: Agent,
     network_descriptor: NetworkDescriptor,
-    pem_file: PathBuf,
+    pem: Option<String>,
 }
 
 impl<'a> AgentEnvironment<'a> {
     pub fn new(
         backend: &'a dyn Environment,
         network_descriptor: NetworkDescriptor,
-        pem_file: &PathBuf,
+        pem: Option<String>,
         timeout: Duration,
     ) -> DfxResult<Self> {
-        let identity = Box::new(NanoIdentity::load(pem_file));
+        let identity = Box::new(NanoIdentity::load(pem.clone().expect("No PEM provided")));
         let agent_url = network_descriptor.providers.first().unwrap();
         Ok(AgentEnvironment {
             backend,
             agent: create_agent(agent_url, identity, timeout).expect("Failed to construct agent."),
             network_descriptor,
-            pem_file: pem_file.clone(),
+            pem,
         })
     }
 }
 
 impl<'a> Environment for AgentEnvironment<'a> {
-    fn get_pem_file(&self) -> &PathBuf {
-        &self.pem_file
+    fn get_pem(&self) -> Option<String> {
+        self.pem.clone()
     }
     fn get_config(&self) -> Option<Arc<Config>> {
         self.backend.get_config()
@@ -195,7 +195,9 @@ impl<'a> Environment for AgentEnvironment<'a> {
     }
 
     fn get_selected_identity_principal(&self) -> Option<Principal> {
-        NanoIdentity::load(&self.pem_file).as_ref().sender().ok()
+        self.pem
+            .clone()
+            .and_then(move |pem| NanoIdentity::load(pem.clone()).as_ref().sender().ok())
     }
 }
 

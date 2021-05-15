@@ -10,7 +10,7 @@ use ic_agent::identity::Identity;
 pub struct GetPrincipalOpts {}
 
 pub fn exec(env: &dyn Environment, _opts: GetPrincipalOpts) -> DfxResult {
-    let identity = NanoIdentity::load(env.get_pem_file());
+    let identity = NanoIdentity::load(env.get_pem().ok_or_else(|| anyhow!("No PEM provided"))?);
     let principal_id = identity
         .as_ref()
         .sender()
