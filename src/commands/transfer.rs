@@ -41,10 +41,6 @@ pub struct TransferOpts {
     /// Transaction fee, default is 10000 e8s.
     #[clap(long, validator(icpts_amount_validator))]
     fee: Option<String>,
-
-    /// Sign the transaction and save to the file.
-    #[clap(long)]
-    file: String,
 }
 
 pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
@@ -82,7 +78,6 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
         random: None,
         r#type: Some("raw".to_string()),
         expire_after: "5m".to_string(),
-        file: opts.file,
     };
     sign::exec(env, opts).await
 }

@@ -9,9 +9,9 @@ AUTHORS OF THIS SOFTWARE SHALL NOT BE LIABLE FOR DAMAGES OF ANY TYPE, WHETHER DI
 
 ## Usage
 
-This will save a transfer transaction into the specified file:
+This will sign a transfer transaction and print to STDOUT
 
-    nano --pem-file <path> transfer <account-id> --amount <amount> --memo <memo> --file <path>
+    nano --pem-file <path> transfer <account-id> --amount <amount> --memo <memo>
 
 `nano` (or `dfx`) could be used on an online computer to send the file:
 

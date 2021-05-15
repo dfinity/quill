@@ -3,31 +3,20 @@ use super::signed_message::SignedMessageV1;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
-
-use std::fs::File;
 use std::future::Future;
-use std::io::Write;
-use std::path::Path;
 use std::pin::Pin;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-enum SerializeStatus {
-    #[error("{0}")]
-    Success(String),
-}
+enum SerializeStatus {}
 
 pub(crate) struct SignReplicaV2Transport {
-    file_name: String,
     message_template: SignedMessageV1,
 }
 
 impl SignReplicaV2Transport {
-    pub fn new<U: Into<String>>(file_name: U, message_template: SignedMessageV1) -> Self {
-        Self {
-            file_name: file_name.into(),
-            message_template,
-        }
+    pub fn new(message_template: SignedMessageV1) -> Self {
+        Self { message_template }
     }
 }
 
@@ -65,15 +54,8 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
                 .with_content(hex::encode(&envelope));
             let json = serde_json::to_string(&message)
                 .map_err(|x| AgentError::MessageError(x.to_string()))?;
-            let path = Path::new(&s.file_name);
-            let mut file =
-                File::create(&path).map_err(|x| AgentError::MessageError(x.to_string()))?;
-            file.write_all(json.as_bytes())
-                .map_err(|x| AgentError::MessageError(x.to_string()))?;
-            Err(AgentError::TransportError(
-                SerializeStatus::Success(format!("Update message generated at [{}]", &s.file_name))
-                    .into(),
-            ))
+            println!("{}", json);
+            Ok(())
         }
 
         Box::pin(run(self, envelope, request_id))
@@ -92,15 +74,8 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
                 .with_content(hex::encode(&envelope));
             let json = serde_json::to_string(&message)
                 .map_err(|x| AgentError::MessageError(x.to_string()))?;
-            let path = Path::new(&s.file_name);
-            let mut file =
-                File::create(&path).map_err(|x| AgentError::MessageError(x.to_string()))?;
-            file.write_all(json.as_bytes())
-                .map_err(|x| AgentError::MessageError(x.to_string()))?;
-            Err(AgentError::TransportError(
-                SerializeStatus::Success(format!("Query message generated at [{}]", &s.file_name))
-                    .into(),
-            ))
+            println!("{}", json);
+            Ok(Vec::new())
         }
 
         Box::pin(run(self, envelope))

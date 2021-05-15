@@ -9,7 +9,6 @@ use candid::{CandidType, Decode, Deserialize};
 use chrono::Utc;
 use clap::Clap;
 use humanize_rs::duration;
-use ic_agent::AgentError;
 use ic_types::principal::Principal as CanisterId;
 use ic_types::principal::Principal;
 use ic_utils::interfaces::management_canister::builders::{CanisterInstall, CanisterSettings};
@@ -49,10 +48,6 @@ pub struct SignOpts {
     /// Specifies how long will the message be valid in seconds, default to be 300s (5 minutes)
     #[clap(long, default_value("5m"))]
     pub expire_after: String,
-
-    /// Specifies the output file name.
-    #[clap(long, default_value("message.json"))]
-    pub file: String,
 }
 
 pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
@@ -129,10 +124,8 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
         arg_value.clone(),
     );
 
-    let file_name = opts.file;
-
     let mut sign_agent = agent.clone();
-    sign_agent.set_transport(SignReplicaV2Transport::new(file_name, message_template));
+    sign_agent.set_transport(SignReplicaV2Transport::new(message_template));
 
     let is_management_canister = canister_id == Principal::management_canister();
     let effective_canister_id = get_effective_canister_id(
@@ -143,37 +136,25 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     )?;
 
     if is_query {
-        let res = sign_agent
+        sign_agent
             .query(&canister_id, method_name)
             .with_effective_canister_id(effective_canister_id)
             .with_arg(&arg_value)
             .expire_at(expiration_system_time)
             .call()
-            .await;
-        match res {
-            Err(AgentError::TransportError(b)) => {
-                println!("{}", b);
-                Ok(())
-            }
-            Err(e) => bail!(e),
-            Ok(_) => unreachable!(),
-        }
+            .await
+            .map(|_| ())
+            .map_err(|e| anyhow!(e))
     } else {
-        let res = sign_agent
+        sign_agent
             .update(&canister_id, method_name)
             .with_effective_canister_id(effective_canister_id)
             .with_arg(&arg_value)
             .expire_at(expiration_system_time)
             .call()
-            .await;
-        match res {
-            Err(AgentError::TransportError(b)) => {
-                println!("{}", b);
-                Ok(())
-            }
-            Err(e) => bail!(e),
-            Ok(_) => unreachable!(),
-        }
+            .await
+            .map(|_| ())
+            .map_err(|e| anyhow!(e))
     }
 }
 
