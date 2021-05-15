@@ -31,7 +31,7 @@ For the account id:
 1. Human readable pretty print of the signed transcation. (Help needed!)
 2. Support for governance (neuron staking, dissolving, etc.)
 3. Reduce the code and dependnecies to the bare minimum for easy auditing.
-4. Get rid of nix.
+4. ~~Get rid of nix.~~
 
 ## Building
 
