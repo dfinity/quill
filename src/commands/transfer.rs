@@ -36,7 +36,7 @@ pub struct TransferOpts {
 
     /// Specify a numeric memo for this transaction.
     #[clap(long, validator(memo_validator))]
-    memo: String,
+    memo: Option<String>,
 
     /// Transaction fee, default is 10000 e8s.
     #[clap(long, validator(icpts_amount_validator))]
@@ -51,7 +51,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
     })?;
 
     // validated by memo_validator
-    let memo = Memo(opts.memo.parse::<u64>().unwrap());
+    let memo = Memo(opts.memo.unwrap_or("0".to_string()).parse::<u64>().unwrap());
 
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
 
