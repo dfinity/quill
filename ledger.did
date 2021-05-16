@@ -1,0 +1,81 @@
+type ICPTs = record {
+     e8s : nat64;
+};
+
+type Duration = record {
+    secs: nat64;
+    nanos: nat32;
+};
+
+type TimeStamp = record {
+    timestamp_nanos: nat64;
+};
+
+type ArchiveOptions = record {
+    node_max_memory_size_bytes: opt nat32;
+    max_message_size_bytes: opt nat32;
+    controller_id: principal;
+};
+
+type BlockHeight = nat64;
+type Memo = nat64;
+type AccountIdentifier = text;
+type SubAccount = vec nat8;
+
+type Transfer = variant {
+    Burn: record {
+        from: AccountIdentifier;
+        amount: ICPTs;
+    };
+    Mint: record {
+        to: AccountIdentifier;
+        amount: ICPTs;
+    };
+    Send: record {
+        from: AccountIdentifier;
+        to: AccountIdentifier;
+        amount: ICPTs;
+    };
+};
+
+type Transaction = record {
+    transfer: Transfer;
+    memo: Memo;
+    created_at: BlockHeight;
+};
+
+type SendArgs = record {
+    memo: Memo;
+    amount: ICPTs;
+    fee: ICPTs;
+    from_subaccount: opt SubAccount;
+    to: AccountIdentifier;
+    created_at_time: opt TimeStamp;
+};
+
+type NotifyCanisterArgs = record {
+    block_height: BlockHeight;
+    max_fee: ICPTs;
+    from_subaccount: opt SubAccount;
+    to_canister: principal;
+    to_subaccount: opt SubAccount;
+};
+
+type AccountBalanceArgs = record {
+    account: AccountIdentifier;
+};
+
+type LedgerCanisterInitPayload = record {
+    minting_account: AccountIdentifier;
+    initial_values: vec record {AccountIdentifier; ICPTs};
+    max_message_size_bytes: opt nat32;
+    transaction_window: opt Duration;
+    archive_options: opt ArchiveOptions;
+    send_whitelist: vec record {principal};
+}
+
+service: (LedgerCanisterInitPayload) -> {
+  send_dfx : (SendArgs) -> (BlockHeight);
+  notify_dfx: (NotifyCanisterArgs) -> ();
+  account_balance_dfx : (AccountBalanceArgs) -> (ICPTs) query;
+}

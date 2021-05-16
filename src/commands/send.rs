@@ -41,8 +41,8 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     eprintln!("  Canister id: {}", message.canister_id);
     eprintln!("  Method name: {}", message.method_name);
     eprintln!(
-        "  Arg:         {:?}",
-        get_idl_string(&message.arg, "idl", &method_type)?
+        "  Arguments:   {}",
+        get_idl_string(&message.arg, "pp", &method_type)?
     );
 
     // Not using dialoguer because it doesn't support non terminal env like bats e2e

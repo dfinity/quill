@@ -28,7 +28,7 @@ pub fn get_idl_string(
         "idl" | "pp" => {
             let result = match method_type {
                 None => candid::IDLArgs::from_bytes(blob),
-                Some((env, func)) => candid::IDLArgs::from_bytes_with_types(blob, &env, &func.rets),
+                Some((env, func)) => candid::IDLArgs::from_bytes_with_types(blob, &env, &func.args),
             };
             return Ok(if output_type == "idl" {
                 format!("{:?}", result?)
