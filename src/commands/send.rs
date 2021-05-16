@@ -13,8 +13,12 @@ use std::{io::Read, str::FromStr};
 /// Send a signed message
 #[derive(Clap)]
 pub struct SendOpts {
-    /// Specifies the file name of the message
+    /// Path to the signed message
     file_name: String,
+
+    /// Will display the signed message, but not send it.
+    #[clap(long)]
+    dry_run: bool,
 }
 
 pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
@@ -44,6 +48,10 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
         "  Arguments:   {}",
         get_idl_string(&message.arg, "pp", &method_type)?
     );
+
+    if opts.dry_run {
+        return Ok(());
+    }
 
     // Not using dialoguer because it doesn't support non terminal env like bats e2e
     eprintln!("\nOkay? [y/N]");

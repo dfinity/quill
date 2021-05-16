@@ -13,13 +13,17 @@ This will sign a transfer transaction and print to STDOUT:
 
     nano --pem-file <path> transfer <account-id> --amount <amount>
 
+To display the signed message in human-readable form:
+
+    nano send --dry-run <path-to-file>
+
 `nano` (or `dfx`) could be used on an online computer to send the file:
 
     nano send <path-to-file>
 
 To get the principal id:
 
-    nano --pem-file <path> get-principal
+    nano --pem-file <path> principal-id
 
 For the account id:
 
