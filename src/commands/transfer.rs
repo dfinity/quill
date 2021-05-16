@@ -4,7 +4,7 @@ use crate::lib::error::DfxResult;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
 use crate::lib::nns_types::icpts::{ICPTs, TRANSACTION_FEE};
 use crate::lib::nns_types::{Memo, SendArgs, LEDGER_CANISTER_ID};
-use crate::util::get_local_candid_path;
+use crate::util::get_local_candid;
 use crate::util::{get_candid_type, get_idl_string};
 use anyhow::anyhow;
 use candid::Encode;
@@ -66,8 +66,8 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
         created_at_time: None,
     })?;
 
-    let path = get_local_candid_path(canister_id.clone());
-    let method_type = path.and_then(|path| get_candid_type(&path, &SEND_METHOD));
+    let spec = get_local_candid(canister_id.clone());
+    let method_type = spec.and_then(|spec| get_candid_type(spec, &SEND_METHOD));
     let argument = Some(get_idl_string(&args, "raw", &method_type)?);
     let opts = sign::SignOpts {
         canister_name: canister_id.to_string(),

@@ -1,7 +1,7 @@
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::sign::signed_message::SignedMessageV1;
-use crate::util::{get_candid_type, get_idl_string, get_local_candid_path};
+use crate::util::{get_candid_type, get_idl_string, get_local_candid};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
@@ -33,8 +33,8 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     message.validate()?;
 
     let canister_id = Principal::from_text(&message.canister_id)?;
-    let path = get_local_candid_path(canister_id.clone());
-    let method_type = path.and_then(|path| get_candid_type(&path, &message.method_name));
+    let spec = get_local_candid(canister_id.clone());
+    let method_type = spec.and_then(|spec| get_candid_type(spec, &message.method_name));
 
     eprintln!("Will send message:");
     eprintln!("  Creation:    {}", message.creation);

@@ -2,7 +2,7 @@ use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::signed_message::SignedMessageV1;
-use crate::util::get_local_candid_path;
+use crate::util::get_local_candid;
 use crate::util::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use chrono::Utc;
@@ -47,9 +47,9 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
 
     let canister_id =
         Principal::from_text(callee_canister).expect("Coouldn't convert canister id to principal");
-    let candid_path = get_local_candid_path(canister_id.clone());
+    let spec = get_local_candid(canister_id.clone());
 
-    let method_type = candid_path.and_then(|path| get_candid_type(&path, method_name));
+    let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
     let is_query_method = match &method_type {
         Some((_, f)) => Some(f.is_query()),
         None => None,
