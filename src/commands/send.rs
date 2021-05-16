@@ -1,8 +1,7 @@
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::sign::signed_message::SignedMessageV1;
-use crate::util::get_candid_type;
-use crate::util::get_local_candid_path;
+use crate::util::{get_candid_type, get_idl_string, get_local_candid_path};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
@@ -43,11 +42,7 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     eprintln!("  Method name: {}", message.method_name);
     eprintln!(
         "  Arg:         {:?}",
-        match &method_type {
-            None => candid::IDLArgs::from_bytes(&message.arg),
-            Some((env, func)) =>
-                candid::IDLArgs::from_bytes_with_types(&message.arg, &env, &func.rets),
-        }
+        get_idl_string(&message.arg, "idl", &method_type)?
     );
 
     // Not using dialoguer because it doesn't support non terminal env like bats e2e

@@ -17,10 +17,9 @@ pub fn get_local_candid_path(canister_id: CanisterId) -> Option<PathBuf> {
 
 pub fn get_idl_string(
     blob: &[u8],
-    output_type: Option<&str>,
+    output_type: &str,
     method_type: &Option<(TypeEnv, Function)>,
 ) -> DfxResult<String> {
-    let output_type = output_type.unwrap_or("pp");
     match output_type {
         "raw" => {
             let hex_string = hex::encode(blob);

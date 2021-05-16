@@ -5,16 +5,11 @@ use crate::lib::sign::signed_message::SignedMessageV1;
 use crate::util::get_local_candid_path;
 use crate::util::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
-use candid::{CandidType, Decode, Deserialize};
 use chrono::Utc;
 use clap::Clap;
 use humanize_rs::duration;
-use ic_types::principal::Principal as CanisterId;
 use ic_types::principal::Principal;
-use ic_utils::interfaces::management_canister::builders::{CanisterInstall, CanisterSettings};
-use ic_utils::interfaces::management_canister::MgmtMethod;
 use std::option::Option;
-use std::str::FromStr;
 use std::time::SystemTime;
 
 /// Sign a canister call and generate message file in json
@@ -126,18 +121,12 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     let mut sign_agent = agent.clone();
     sign_agent.set_transport(SignReplicaV2Transport::new(message_template));
 
-    let is_management_canister = canister_id == Principal::management_canister();
-    let effective_canister_id = get_effective_canister_id(
-        is_management_canister,
-        method_name,
-        &arg_value,
-        canister_id.clone(),
-    )?;
+    let canister_id = Principal::from_text(opts.canister_name)?;
 
     if is_query {
         sign_agent
             .query(&canister_id, method_name)
-            .with_effective_canister_id(effective_canister_id)
+            .with_effective_canister_id(canister_id)
             .with_arg(&arg_value)
             .expire_at(expiration_system_time)
             .call()
@@ -147,66 +136,12 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     } else {
         sign_agent
             .update(&canister_id, method_name)
-            .with_effective_canister_id(effective_canister_id)
+            .with_effective_canister_id(canister_id)
             .with_arg(&arg_value)
             .expire_at(expiration_system_time)
             .call()
             .await
             .map(|_| ())
             .map_err(|e| anyhow!(e))
-    }
-}
-
-pub fn get_effective_canister_id(
-    is_management_canister: bool,
-    method_name: &str,
-    arg_value: &[u8],
-    canister_id: CanisterId,
-) -> DfxResult<CanisterId> {
-    if is_management_canister {
-        let method_name = MgmtMethod::from_str(method_name).map_err(|_| {
-            anyhow!(
-                "Attempted to call an unsupported management canister method: {}",
-                method_name
-            )
-        })?;
-        match method_name {
-            MgmtMethod::CreateCanister | MgmtMethod::RawRand => {
-                bail!(format!("{} can only be called via an inter-canister call. Try calling this without `--no-wallet`.",
-                    method_name.as_ref()))
-            }
-            MgmtMethod::InstallCode => {
-                let install_args = candid::Decode!(arg_value, CanisterInstall)?;
-                Ok(install_args.canister_id)
-            }
-            MgmtMethod::UpdateSettings => {
-                #[derive(CandidType, Deserialize)]
-                struct In {
-                    canister_id: CanisterId,
-                    settings: CanisterSettings,
-                }
-                let in_args = candid::Decode!(arg_value, In)?;
-                Ok(in_args.canister_id)
-            }
-            MgmtMethod::StartCanister
-            | MgmtMethod::StopCanister
-            | MgmtMethod::CanisterStatus
-            | MgmtMethod::DeleteCanister
-            | MgmtMethod::DepositCycles
-            | MgmtMethod::UninstallCode
-            | MgmtMethod::ProvisionalTopUpCanister => {
-                #[derive(CandidType, Deserialize)]
-                struct In {
-                    canister_id: CanisterId,
-                }
-                let in_args = candid::Decode!(arg_value, In)?;
-                Ok(in_args.canister_id)
-            }
-            MgmtMethod::ProvisionalCreateCanisterWithCycles => {
-                Ok(CanisterId::management_canister())
-            }
-        }
-    } else {
-        Ok(canister_id)
     }
 }

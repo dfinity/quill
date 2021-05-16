@@ -68,7 +68,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
 
     let path = get_local_candid_path(canister_id.clone());
     let method_type = path.and_then(|path| get_candid_type(&path, &SEND_METHOD));
-    let argument = Some(get_idl_string(&args, Some("raw"), &method_type)?);
+    let argument = Some(get_idl_string(&args, "raw", &method_type)?);
     let opts = sign::SignOpts {
         canister_name: canister_id.to_string(),
         method_name: SEND_METHOD.to_string(),
