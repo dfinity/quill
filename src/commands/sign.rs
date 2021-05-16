@@ -32,10 +32,6 @@ pub struct SignOpts {
     /// Specifies the argument to pass to the method.
     pub argument: Option<String>,
 
-    /// Specifies the config for generating random argument.
-    #[clap(long, conflicts_with("argument"))]
-    pub random: Option<String>,
-
     /// Specifies the data type for the argument when making the call using an argument.
     #[clap(long, requires("argument"), possible_values(&["idl", "raw"]))]
     pub r#type: Option<String>,
@@ -79,7 +75,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     let arg_value = {
         let arguments = opts.argument.as_deref();
         let arg_type = opts.r#type.as_deref();
-        blob_from_arguments(arguments, opts.random.as_deref(), arg_type, &method_type)?
+        blob_from_arguments(arguments, arg_type, &method_type)?
     };
     let agent = env
         .get_agent()

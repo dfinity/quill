@@ -75,7 +75,6 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
         query: false,
         update: true,
         argument,
-        random: None,
         r#type: Some("raw".to_string()),
         expire_after: "5m".to_string(),
     };

@@ -1088,7 +1088,6 @@ dependencies = [
  "ic-types",
  "ic-utils",
  "openssl",
- "rand 0.7.3",
  "rust_decimal",
  "serde",
  "serde_cbor",
