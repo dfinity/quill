@@ -1,6 +1,6 @@
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
 use crate::lib::identity::Identity as NanoIdentity;
+use crate::lib::DfxResult;
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::identity::Identity;

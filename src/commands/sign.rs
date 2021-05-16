@@ -1,9 +1,9 @@
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
+use crate::lib::get_local_candid;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::signed_message::SignedMessageV1;
-use crate::util::get_local_candid;
-use crate::util::{blob_from_arguments, get_candid_type};
+use crate::lib::DfxResult;
+use crate::lib::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use chrono::Utc;
 use clap::Clap;

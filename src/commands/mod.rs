@@ -1,5 +1,5 @@
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
+use crate::lib::DfxResult;
 use clap::Clap;
 use tokio::runtime::Runtime;
 

@@ -1,11 +1,11 @@
 use crate::commands::sign;
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
+use crate::lib::get_local_candid;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
 use crate::lib::nns_types::icpts::{ICPTs, TRANSACTION_FEE};
 use crate::lib::nns_types::{Memo, SendArgs, LEDGER_CANISTER_ID};
-use crate::util::get_local_candid;
-use crate::util::{get_candid_type, get_idl_string};
+use crate::lib::DfxResult;
+use crate::lib::{get_candid_type, get_idl_string};
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;

@@ -1,7 +1,7 @@
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
 use crate::lib::sign::signed_message::SignedMessageV1;
-use crate::util::{get_candid_type, get_idl_string, get_local_candid};
+use crate::lib::DfxResult;
+use crate::lib::{get_candid_type, get_idl_string, get_local_candid};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;

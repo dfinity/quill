@@ -5,7 +5,6 @@ use clap::{AppSettings, Clap};
 
 mod commands;
 mod lib;
-mod util;
 
 /// Ledger & Governance ToolKit.
 #[derive(Clap)]

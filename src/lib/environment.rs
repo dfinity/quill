@@ -1,4 +1,4 @@
-use crate::lib::{error::DfxResult, identity::Identity as NanoIdentity, NetworkDescriptor};
+use crate::lib::{identity::Identity as NanoIdentity, DfxResult, NetworkDescriptor};
 use ic_agent::{Agent, Identity};
 use ic_types::Principal;
 use std::time::Duration;

@@ -5,19 +5,6 @@
 use ic_agent::identity::{BasicIdentity, Secp256k1Identity};
 use ic_agent::Signature;
 use ic_types::Principal;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct WalletNetworkMap {
-    #[serde(flatten)]
-    pub networks: BTreeMap<String, Principal>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct WalletGlobalConfig {
-    pub identities: BTreeMap<String, WalletNetworkMap>,
-}
 
 pub struct Identity {
     /// Inner implementation of this identity.

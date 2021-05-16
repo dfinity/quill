@@ -1,6 +1,6 @@
 use crate::lib::environment::Environment;
-use crate::lib::error::DfxResult;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
+use crate::lib::DfxResult;
 use anyhow::anyhow;
 use clap::Clap;
 
