@@ -92,7 +92,6 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
 
     let network = env
         .get_network_descriptor()
-        .expect("Cannot get network descriptor from environment.")
         .providers
         .first()
         .expect("Cannot get network provider (url).")

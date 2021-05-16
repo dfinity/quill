@@ -4,7 +4,6 @@ use crate::lib::environment::EnvironmentImpl;
 use clap::{AppSettings, Clap};
 
 mod commands;
-mod config;
 mod lib;
 mod util;
 

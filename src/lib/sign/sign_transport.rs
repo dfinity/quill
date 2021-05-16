@@ -5,10 +5,6 @@ use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
 use std::future::Future;
 use std::pin::Pin;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-enum SerializeStatus {}
 
 pub(crate) struct SignReplicaV2Transport {
     message_template: SignedMessageV1,

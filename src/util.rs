@@ -4,12 +4,6 @@ use crate::{error_invalid_argument, error_invalid_data, error_unknown};
 use candid::parser::typing::{check_prog, TypeEnv};
 use candid::types::{Function, Type};
 use candid::{parser::value::IDLValue, IDLArgs, IDLProg};
-use std::time::Duration;
-
-pub fn expiry_duration() -> Duration {
-    // 5 minutes is max ingress timeout
-    Duration::from_secs(60 * 5)
-}
 
 use ic_types::principal::Principal as CanisterId;
 use std::path::PathBuf;
