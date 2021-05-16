@@ -1,7 +1,7 @@
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
-
+use anyhow::anyhow;
 use clap::Clap;
 
 /// Prints the selected identity's AccountIdentifier.
@@ -11,7 +11,7 @@ pub struct AccountIdOpts {}
 pub async fn exec(env: &dyn Environment, _opts: AccountIdOpts) -> DfxResult {
     let sender = env
         .get_selected_identity_principal()
-        .expect("Selected identity not instantiated.");
+        .ok_or_else(|| anyhow!("No PEM provided"))?;
     println!("{}", AccountIdentifier::new(sender, None));
     Ok(())
 }

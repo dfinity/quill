@@ -27,18 +27,22 @@ fn main() {
         "-" => {
             let mut buffer = String::new();
             use std::io::Read;
-            std::io::stdin()
-                .read_to_string(&mut buffer)
-                .expect("Couldn't read from STDIN");
+            if let Err(err) = std::io::stdin().read_to_string(&mut buffer) {
+                eprintln!("Couldn't read from STDIN: {:?}", err);
+                std::process::exit(1);
+            }
             buffer
         }
-        path => std::fs::read_to_string(path).expect("Couldn't read PEM file"),
+        path => std::fs::read_to_string(path).unwrap_or_else(|err| {
+            eprintln!("Couldn't read PEM file: {:?}", err);
+            std::process::exit(1);
+        }),
     });
     let env = EnvironmentImpl::new(pem).expect("Couldn't instantiate the environment");
     match commands::exec(&env, command) {
         Err(err) => {
             eprintln!("{}", err);
-            std::process::exit(255);
+            std::process::exit(1);
         }
         _ => {}
     };

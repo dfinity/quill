@@ -38,7 +38,10 @@ impl Identity {
     pub fn load(pem: String) -> Self {
         Identity::load_secp256k1_identity(pem.clone())
             .or_else(|| Identity::load_basic_identity(pem))
-            .expect("Couldn't load identity from file")
+            .unwrap_or_else(|| {
+                eprintln!("Couldn't load identity from PEM file");
+                std::process::exit(1);
+            })
     }
 }
 

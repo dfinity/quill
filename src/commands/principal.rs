@@ -5,11 +5,11 @@ use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::identity::Identity;
 
-/// Shows the textual representation of the Principal associated with the current identity.
+/// Prints the textual representation of the Principal associated with the current identity.
 #[derive(Clap)]
-pub struct GetPrincipalOpts {}
+pub struct PrincipalIdOpts {}
 
-pub fn exec(env: &dyn Environment, _opts: GetPrincipalOpts) -> DfxResult {
+pub fn exec(env: &dyn Environment, _opts: PrincipalIdOpts) -> DfxResult {
     let identity = NanoIdentity::load(env.get_pem().ok_or_else(|| anyhow!("No PEM provided"))?);
     let principal_id = identity
         .as_ref()
