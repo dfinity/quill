@@ -39,8 +39,8 @@ For the account id:
 
 ## Building
 
-0. `nix-shell`
-1. `cargo build --release`
+0. Build by running `cargo build --release`.
+1. Find the binary at `target/release/nano`.
 
 ## Source Code
 
