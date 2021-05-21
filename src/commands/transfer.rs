@@ -15,32 +15,32 @@ use std::str::FromStr;
 const SEND_METHOD: &str = "send_dfx";
 
 /// Transfer ICP from the user to the destination AccountIdentifier
-#[derive(Clap)]
+#[derive(Default, Clap)]
 pub struct TransferOpts {
     /// AccountIdentifier of transfer destination.
-    to: String,
+    pub to: String,
 
     /// ICPs to transfer to the destination AccountIdentifier
     /// Can be specified as a Decimal with the fractional portion up to 8 decimal places
     /// i.e. 100.012
     #[clap(long, validator(icpts_amount_validator))]
-    amount: Option<String>,
+    pub amount: Option<String>,
 
     /// Specify ICP as a whole number, helpful for use in conjunction with `--e8s`
     #[clap(long, validator(e8s_validator), conflicts_with("amount"))]
-    icp: Option<String>,
+    pub icp: Option<String>,
 
     /// Specify e8s as a whole number, helpful for use in conjunction with `--icp`
     #[clap(long, validator(e8s_validator), conflicts_with("amount"))]
-    e8s: Option<String>,
+    pub e8s: Option<String>,
 
     /// Specify a numeric memo for this transaction.
     #[clap(long, validator(memo_validator))]
-    memo: Option<String>,
+    pub memo: Option<String>,
 
     /// Transaction fee, default is 10000 e8s.
     #[clap(long, validator(icpts_amount_validator))]
-    fee: Option<String>,
+    pub fee: Option<String>,
 }
 
 pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
