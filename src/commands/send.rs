@@ -24,12 +24,29 @@ pub struct SendOpts {
 pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let file_name = opts.file_name;
     let path = Path::new(&file_name);
-    let mut file = File::open(&path).map_err(|_| anyhow!("Message file doesn't exist."))?;
+    let mut file = File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
     let mut json = String::new();
     file.read_to_string(&mut json)
         .map_err(|_| anyhow!("Cannot read the message file."))?;
-    let message: SignedMessageV1 =
-        serde_json::from_str(&json).map_err(|_| anyhow!("Invalid json message."))?;
+
+    let mut messages = Vec::new();
+
+    if let Ok(val) = serde_json::from_str::<SignedMessageV1>(&json) {
+        messages.push(val);
+    } else if let Ok(val) = serde_json::from_str::<Vec<SignedMessageV1>>(&json) {
+        messages.extend_from_slice(&val);
+    } else {
+        return Err(anyhow!("Invalid JSON content"));
+    }
+
+    for msg in messages {
+        send(msg, opts.dry_run).await?;
+    }
+
+    Ok(())
+}
+
+async fn send(message: SignedMessageV1, dry_run: bool) -> DfxResult {
     message.validate()?;
 
     let canister_id = Principal::from_text(&message.canister_id)?;
@@ -49,7 +66,7 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
         get_idl_string(&message.arg, "pp", &method_type)?
     );
 
-    if opts.dry_run {
+    if dry_run {
         return Ok(());
     }
 

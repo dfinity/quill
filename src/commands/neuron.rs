@@ -67,7 +67,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
     let mut out = String::new();
     out.push_str("[");
     out.push_str(&transfer_message);
-    out.push_str("],\n[");
+    out.push_str(",");
     out.push_str(&claim_message);
     out.push_str("]");
 
