@@ -48,7 +48,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
 
     let canister_id =
         Principal::from_text(callee_canister).expect("Coouldn't convert canister id to principal");
-    let spec = get_local_candid(canister_id.clone());
+    let spec = get_local_candid(callee_canister);
 
     let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
     let is_query_method = match &method_type {

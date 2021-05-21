@@ -39,7 +39,12 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
                 Ok(())
             })
         }),
-        Command::StakeToNeuron(v) => runtime.block_on(async { neuron::exec(env, v).await }),
+        Command::StakeToNeuron(v) => runtime.block_on(async {
+            neuron::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
         Command::Send(v) => runtime.block_on(async { send::exec(env, v).await }),
     }
 }

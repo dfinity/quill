@@ -45,16 +45,11 @@ pub struct TransferOpts {
 
 pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String> {
     let amount = get_icpts_from_args(opts.amount, opts.icp, opts.e8s)?;
-
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         ICPTs::from_str(&v).map_err(|err| anyhow!(err))
     })?;
-
-    // validated by memo_validator
     let memo = Memo(opts.memo.unwrap_or("0".to_string()).parse::<u64>().unwrap());
-
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
-
     let canister_id = Principal::from_text(LEDGER_CANISTER_ID)?;
 
     let args = Encode!(&SendArgs {
@@ -66,7 +61,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         created_at_time: None,
     })?;
 
-    let spec = get_local_candid(canister_id.clone());
+    let spec = get_local_candid(LEDGER_CANISTER_ID);
     let method_type = spec.and_then(|spec| get_candid_type(spec, &SEND_METHOD));
     let argument = Some(get_idl_string(&args, "raw", &method_type)?);
     let opts = sign::SignOpts {

@@ -1,8 +1,8 @@
+use crate::lib::nns_types::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use crate::{error_invalid_argument, error_invalid_data, error_unknown};
 use candid::parser::typing::{check_prog, TypeEnv};
 use candid::types::{Function, Type};
 use candid::{parser::value::IDLValue, IDLArgs, IDLProg};
-use ic_types::principal::Principal as CanisterId;
 
 /// The type to represent DFX results.
 pub type DfxResult<T = ()> = anyhow::Result<T>;
@@ -19,9 +19,12 @@ pub struct NetworkDescriptor {
     pub is_ic: bool,
 }
 
-pub fn get_local_candid(canister_id: CanisterId) -> Option<String> {
-    match canister_id.to_string().as_ref() {
-        crate::lib::nns_types::LEDGER_CANISTER_ID => {
+pub fn get_local_candid(canister_id: &str) -> Option<String> {
+    match canister_id {
+        GOVERNANCE_CANISTER_ID => {
+            Some(String::from_utf8(include_bytes!("../../candid/governance.did").to_vec()).ok()?)
+        }
+        LEDGER_CANISTER_ID => {
             Some(String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec()).ok()?)
         }
         _ => None,

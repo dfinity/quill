@@ -33,7 +33,7 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     message.validate()?;
 
     let canister_id = Principal::from_text(&message.canister_id)?;
-    let spec = get_local_candid(canister_id.clone());
+    let spec = get_local_candid(&message.canister_id);
     let method_type = spec.and_then(|spec| get_candid_type(spec, &message.method_name));
 
     eprintln!("Will send message:");
