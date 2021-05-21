@@ -27,8 +27,18 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
     match cmd {
         Command::PrincipalId(v) => principal::exec(env, v),
         Command::AccountId(v) => runtime.block_on(async { account_id::exec(env, v).await }),
-        Command::Transfer(v) => runtime.block_on(async { transfer::exec(env, v).await }),
-        Command::Sign(v) => runtime.block_on(async { sign::exec(env, v).await }),
+        Command::Transfer(v) => runtime.block_on(async {
+            transfer::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
+        Command::Sign(v) => runtime.block_on(async {
+            sign::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
         Command::StakeToNeuron(v) => runtime.block_on(async { neuron::exec(env, v).await }),
         Command::Send(v) => runtime.block_on(async { send::exec(env, v).await }),
     }

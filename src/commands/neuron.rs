@@ -36,7 +36,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
     let controller = crate::commands::principal::get_principal(env)?;
     let nonce = convert_name_to_memo(&opts.name);
     let neuron_subaccount = get_neuron_subaccount(&controller, nonce);
-    transfer::exec(
+    let _ = transfer::exec(
         env,
         transfer::TransferOpts {
             to: AccountIdentifier::new(controller, Some(neuron_subaccount)).to_hex(),
@@ -46,7 +46,8 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
             ..Default::default()
         },
     )
-    .await
+    .await?;
+    Ok(())
 }
 
 fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {

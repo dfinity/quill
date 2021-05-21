@@ -1,18 +1,22 @@
 use super::signed_message::SignedMessageV1;
-
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::{Arc, RwLock};
 
 pub(crate) struct SignReplicaV2Transport {
+    buffer: Arc<RwLock<String>>,
     message_template: SignedMessageV1,
 }
 
 impl SignReplicaV2Transport {
-    pub fn new(message_template: SignedMessageV1) -> Self {
-        Self { message_template }
+    pub fn new(buffer: Arc<RwLock<String>>, message_template: SignedMessageV1) -> Self {
+        Self {
+            buffer,
+            message_template,
+        }
     }
 }
 
@@ -31,9 +35,8 @@ fn run(
             .with_request_id(request_id),
         None => message.with_call_type("query".to_string()),
     };
-    let json =
+    *(s.buffer.write().unwrap()) =
         serde_json::to_string(&message).map_err(|err| AgentError::MessageError(err.to_string()))?;
-    println!("{}", json);
     Ok(())
 }
 

@@ -43,7 +43,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String> {
     let amount = get_icpts_from_args(opts.amount, opts.icp, opts.e8s)?;
 
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {

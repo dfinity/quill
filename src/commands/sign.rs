@@ -10,6 +10,7 @@ use clap::Clap;
 use humanize_rs::duration;
 use ic_types::principal::Principal;
 use std::option::Option;
+use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
 /// Sign a canister call and generate message file in json
@@ -41,7 +42,7 @@ pub struct SignOpts {
     pub expire_after: String,
 }
 
-pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
     let callee_canister = opts.canister_name.as_str();
     let method_name = opts.method_name.as_str();
 
@@ -115,7 +116,9 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
     );
 
     let mut sign_agent = agent.clone();
-    sign_agent.set_transport(SignReplicaV2Transport::new(message_template));
+    let buffer = Arc::new(RwLock::new(String::new()));
+    let transport = SignReplicaV2Transport::new(buffer.clone(), message_template);
+    sign_agent.set_transport(transport);
 
     let canister_id = Principal::from_text(opts.canister_name)?;
 
@@ -128,7 +131,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
             .call()
             .await
             .map(|_| ())
-            .map_err(|e| anyhow!(e))
+            .map_err(|e| anyhow!(e))?;
     } else {
         sign_agent
             .update(&canister_id, method_name)
@@ -138,6 +141,8 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult {
             .call()
             .await
             .map(|_| ())
-            .map_err(|e| anyhow!(e))
+            .map_err(|e| anyhow!(e))?;
     }
+    let result = buffer.read().unwrap().clone();
+    Ok(result)
 }
