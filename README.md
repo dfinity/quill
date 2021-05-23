@@ -17,9 +17,13 @@ To display the signed message in human-readable form:
 
     nano send --dry-run <path-to-file>
 
-`nano` (or `dfx`) could be used on an online computer to send the file:
+`nano` could be used on an online computer to send the file:
 
     nano send <path-to-file>
+
+Check the request status:
+
+    nano --pem-file <path> request-status <request-id>
 
 To get the principal id:
 
