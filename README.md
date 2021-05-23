@@ -19,7 +19,7 @@ To display the signed message in human-readable form:
 
 `nano` could be used on an online computer to send the file:
 
-    nano send <path-to-file>
+    nano --pem-file <path> send <path-to-file>
 
 Check the request status:
 

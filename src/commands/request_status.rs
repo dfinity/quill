@@ -13,7 +13,7 @@ pub struct RequestStatusOpts {
     /// Specifies the request identifier.
     /// The request identifier is an hexadecimal string starting with 0x.
     #[clap(validator(is_request_id))]
-    request_id: String,
+    pub request_id: String,
 }
 
 pub async fn exec(env: &dyn Environment, opts: RequestStatusOpts) -> DfxResult {

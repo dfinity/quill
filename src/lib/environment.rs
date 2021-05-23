@@ -30,9 +30,13 @@ impl Environment for EnvironmentImpl {
 
     fn get_agent(&self) -> Option<Agent> {
         let url = self.get_network_descriptor().providers[0].clone();
-        let identity = Box::new(NanoIdentity::load(
-            self.pem.clone().expect("No PEM provided"),
-        ));
+        let identity = Box::new(NanoIdentity::load(match self.pem.clone() {
+            Some(pem) => pem,
+            None => {
+                eprintln!("No PEM provided, quitting.");
+                return None;
+            }
+        }));
         // 5 minutes is max ingress timeout
         let timeout = Duration::from_secs(60 * 5);
         Agent::builder()

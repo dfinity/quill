@@ -1,3 +1,4 @@
+use crate::commands::request_status;
 use crate::lib::environment::Environment;
 use crate::lib::sign::signed_message::SignedMessageV1;
 use crate::lib::DfxResult;
@@ -21,7 +22,7 @@ pub struct SendOpts {
     dry_run: bool,
 }
 
-pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let file_name = opts.file_name;
     let path = Path::new(&file_name);
     let mut file = File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
@@ -40,13 +41,13 @@ pub async fn exec(_env: &dyn Environment, opts: SendOpts) -> DfxResult {
     }
 
     for msg in messages {
-        send(msg, opts.dry_run).await?;
+        send(env, msg, opts.dry_run).await?;
     }
 
     Ok(())
 }
 
-async fn send(message: SignedMessageV1, dry_run: bool) -> DfxResult {
+async fn send(env: &dyn Environment, message: SignedMessageV1, dry_run: bool) -> DfxResult {
     message.validate()?;
 
     let canister_id = Principal::from_text(&message.canister_id)?;
@@ -90,6 +91,7 @@ async fn send(message: SignedMessageV1, dry_run: bool) -> DfxResult {
             );
             eprint!("Response: ");
             println!("{}", hex::encode(response));
+            Ok(())
         }
         "update" => {
             let request_id = RequestId::from_str(
@@ -98,11 +100,14 @@ async fn send(message: SignedMessageV1, dry_run: bool) -> DfxResult {
                     .expect("Cannot get request_id from the update message"),
             )?;
             transport.call(canister_id, content, request_id).await?;
-            eprint!("Request ID: ");
-            println!("0x{}", String::from(request_id));
+            let request_id = format!("0x{}", String::from(request_id));
+            eprintln!(
+                "Received the request ID: {}; checking for status...",
+                request_id
+            );
+            request_status::exec(env, request_status::RequestStatusOpts { request_id }).await
         }
         // message.validate() guarantee that call_type must be query or update
         _ => unreachable!(),
     }
-    Ok(())
 }
