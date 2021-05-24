@@ -7,19 +7,24 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
+#[derive(Default)]
 pub(crate) struct SignReplicaV2Transport {
     buffer: Arc<RwLock<String>>,
     message: SignedMessage,
-    status_request: SignedStatusRequest,
+    request_id: Option<RequestId>,
 }
 
 impl SignReplicaV2Transport {
-    pub fn new(buffer: Arc<RwLock<String>>, status_request: Option<SignedStatusRequest>) -> Self {
+    pub fn new(buffer: Arc<RwLock<String>>) -> Self {
         Self {
             buffer,
-            message: Default::default(),
-            status_request: status_request.unwrap_or_default(),
+            ..Default::default()
         }
+    }
+
+    pub fn with_request_id(mut self, request_id: RequestId) -> Self {
+        self.request_id = Some(request_id);
+        self
     }
 }
 
@@ -51,9 +56,11 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
             canister_id: Principal,
             content: Vec<u8>,
         ) -> Result<Vec<u8>, AgentError> {
-            let mut status_req = s.status_request.clone();
-            status_req.canister_id = canister_id.to_string();
-            status_req.content = hex::encode(content);
+            let status_req = SignedStatusRequest {
+                request_id: s.request_id.clone().unwrap().into(),
+                canister_id: canister_id.to_string(),
+                content: hex::encode(content),
+            };
             *(s.buffer.write().unwrap()) = serde_json::to_string(&status_req)
                 .map_err(|err| AgentError::MessageError(err.to_string()))?;
             Err(AgentError::MissingReplicaTransport())

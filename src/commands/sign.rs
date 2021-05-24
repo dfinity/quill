@@ -79,7 +79,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
         .ok_or_else(|| anyhow!("Time wrapped around."))?;
 
     let buffer = Arc::new(RwLock::new(String::new()));
-    let transport = SignReplicaV2Transport::new(buffer.clone(), None);
+    let transport = SignReplicaV2Transport::new(buffer.clone());
     sign_agent.set_transport(transport);
 
     let canister_id = Principal::from_text(opts.canister_name)?;

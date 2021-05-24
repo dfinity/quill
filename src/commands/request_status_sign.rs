@@ -1,6 +1,6 @@
+use crate::lib::environment::Environment;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::DfxResult;
-use crate::lib::{environment::Environment, sign::signed_message::SignedStatusRequest};
 use anyhow::{anyhow, Context};
 use clap::Clap;
 use ic_agent::{AgentError, RequestId};
@@ -27,12 +27,7 @@ pub async fn exec(env: &dyn Environment, opts: RequestStatusSignOpts) -> DfxResu
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
     let buffer = Arc::new(RwLock::new(String::new()));
-    let req = SignedStatusRequest {
-        canister_id: canister_id.to_string(),
-        request_id: request_id.into(),
-        content: "".to_owned(),
-    };
-    let transport = SignReplicaV2Transport::new(buffer.clone(), Some(req));
+    let transport = SignReplicaV2Transport::new(buffer.clone()).with_request_id(request_id);
     agent.set_transport(transport);
     match agent.request_status_raw(&request_id, canister_id).await {
         Err(AgentError::MissingReplicaTransport()) => {
