@@ -10,20 +10,26 @@ use std::convert::TryFrom;
 use std::time::Duration;
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub(crate) struct SignedStatusRequest {
+pub struct RequestStatus {
     pub canister_id: String,
     pub request_id: String,
     pub content: String,
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub(crate) struct SignedMessage {
+pub struct Ingress {
     pub call_type: String,
     pub request_id: Option<String>,
     pub content: String,
 }
 
-impl SignedMessage {
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct IngressWithRequestId {
+    pub ingress: Ingress,
+    pub request_status: RequestStatus,
+}
+
+impl Ingress {
     pub fn with_call_type(mut self, request_type: String) -> Self {
         self.call_type = request_type;
         self

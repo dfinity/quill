@@ -1,4 +1,4 @@
-use crate::commands::sign;
+use crate::commands::{request_status_sign, sign};
 use crate::lib::environment::Environment;
 use crate::lib::get_local_candid;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
@@ -72,7 +72,27 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         argument,
         r#type: Some("raw".to_string()),
     };
-    sign::exec(env, opts).await
+    let msg_with_req_id = sign::exec(env, opts).await?;
+    let request_id: String = msg_with_req_id
+        .request_id
+        .expect("No request id for transfer call found")
+        .into();
+    let req_status_signed_msg = request_status_sign::exec(
+        env,
+        request_status_sign::RequestStatusSignOpts {
+            request_id: format!("0x{}", request_id),
+        },
+    )
+    .await?;
+
+    let mut out = String::new();
+    out.push_str("{ \"ingress\": ");
+    out.push_str(&msg_with_req_id.buffer);
+    out.push_str(", \"request_status\": ");
+    out.push_str(&req_status_signed_msg);
+    out.push_str("}");
+
+    Ok(out)
 }
 
 fn get_icpts_from_args(

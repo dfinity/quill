@@ -1,5 +1,4 @@
-use super::signed_message::SignedMessage;
-use crate::lib::sign::signed_message::SignedStatusRequest;
+use crate::lib::sign::signed_message::{Ingress, RequestStatus};
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
@@ -7,25 +6,23 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
-#[derive(Default)]
-pub(crate) struct SignReplicaV2Transport {
-    buffer: Arc<RwLock<String>>,
-    message: SignedMessage,
-    request_id: Option<RequestId>,
+#[derive(Clone)]
+pub struct SignedMessageWithRequestId {
+    pub buffer: String,
+    pub request_id: Option<RequestId>,
 }
 
-impl SignReplicaV2Transport {
-    pub fn new(buffer: Arc<RwLock<String>>) -> Self {
-        Self {
-            buffer,
-            ..Default::default()
-        }
+impl SignedMessageWithRequestId {
+    pub fn new() -> Arc<RwLock<Self>> {
+        Arc::new(RwLock::new(Self {
+            buffer: String::new(),
+            request_id: None,
+        }))
     }
+}
 
-    pub fn with_request_id(mut self, request_id: RequestId) -> Self {
-        self.request_id = Some(request_id);
-        self
-    }
+pub struct SignReplicaV2Transport {
+    pub data: Arc<RwLock<SignedMessageWithRequestId>>,
 }
 
 fn run(
@@ -33,14 +30,16 @@ fn run(
     envelope: Vec<u8>,
     request_id: Option<RequestId>,
 ) -> Result<(), AgentError> {
-    let message = s.message.clone().with_content(hex::encode(&envelope));
+    let message = Ingress::default().with_content(hex::encode(&envelope));
     let message = match request_id {
         Some(request_id) => message
             .with_call_type("update".to_string())
             .with_request_id(request_id),
         None => message.with_call_type("query".to_string()),
     };
-    *(s.buffer.write().unwrap()) =
+    let mut data = s.data.write().unwrap();
+    data.request_id = request_id;
+    data.buffer =
         serde_json::to_string(&message).map_err(|err| AgentError::MessageError(err.to_string()))?;
     Ok(())
 }
@@ -56,12 +55,12 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
             canister_id: Principal,
             content: Vec<u8>,
         ) -> Result<Vec<u8>, AgentError> {
-            let status_req = SignedStatusRequest {
-                request_id: s.request_id.clone().unwrap().into(),
+            let status_req = RequestStatus {
+                request_id: s.data.read().unwrap().request_id.clone().unwrap().into(),
                 canister_id: canister_id.to_string(),
                 content: hex::encode(content),
             };
-            *(s.buffer.write().unwrap()) = serde_json::to_string(&status_req)
+            s.data.write().unwrap().buffer = serde_json::to_string(&status_req)
                 .map_err(|err| AgentError::MessageError(err.to_string()))?;
             Err(AgentError::MissingReplicaTransport())
         }

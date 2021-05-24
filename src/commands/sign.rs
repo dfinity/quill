@@ -1,13 +1,13 @@
 use crate::lib::environment::Environment;
 use crate::lib::get_local_candid;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
+use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
 use crate::lib::DfxResult;
 use crate::lib::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use clap::Clap;
 use ic_types::principal::Principal;
 use std::option::Option;
-use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
 /// Sign a canister call and generate message file in json
@@ -35,7 +35,7 @@ pub struct SignOpts {
     pub r#type: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
+pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<SignedMessageWithRequestId> {
     let callee_canister = opts.canister_name.as_str();
     let method_name = opts.method_name.as_str();
 
@@ -78,8 +78,8 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
         .checked_add(timeout)
         .ok_or_else(|| anyhow!("Time wrapped around."))?;
 
-    let buffer = Arc::new(RwLock::new(String::new()));
-    let transport = SignReplicaV2Transport::new(buffer.clone());
+    let data = SignedMessageWithRequestId::new();
+    let transport = SignReplicaV2Transport { data: data.clone() };
     sign_agent.set_transport(transport);
 
     let canister_id = Principal::from_text(opts.canister_name)?;
@@ -105,6 +105,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
             .map(|_| ())
             .map_err(|e| anyhow!(e))?;
     }
-    let result = buffer.read().unwrap().clone();
-    Ok(result)
+
+    let data = data.read().unwrap().clone();
+    Ok(data)
 }

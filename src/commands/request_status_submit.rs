@@ -1,5 +1,5 @@
 use crate::lib::{
-    environment::Environment, get_idl_string, read_json, sign::signed_message::SignedStatusRequest,
+    environment::Environment, get_idl_string, read_json, sign::signed_message::RequestStatus,
     DfxResult,
 };
 use anyhow::{anyhow, Context};
@@ -20,65 +20,68 @@ pub struct RequestStatusSubmitOpts {
 
 pub async fn exec(env: &dyn Environment, opts: RequestStatusSubmitOpts) -> DfxResult {
     let json = read_json(opts.file)?;
-    if let Ok(req) = serde_json::from_str::<SignedStatusRequest>(&json) {
-        let canister_id =
-            Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
-        let request_id =
-            RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
-        let mut agent = env
-            .get_agent()
-            .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
-        agent.set_transport(ProxySignReplicaV2Transport {
-            req,
-            http_transport: Arc::new(
-                ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
-                    env.get_network_descriptor().providers[0].clone(),
-                )
-                .unwrap(),
-            ),
-        });
-        let Replied::CallReplied(blob) = async {
-            loop {
-                match agent
-                    .request_status_raw(&request_id, canister_id.clone())
-                    .await?
-                {
-                    RequestStatusResponse::Replied { reply } => return Ok(reply),
-                    RequestStatusResponse::Rejected {
-                        reject_code,
-                        reject_message,
-                    } => {
-                        return Err(anyhow!(AgentError::ReplicaError {
-                            reject_code,
-                            reject_message,
-                        }))
-                    }
-                    RequestStatusResponse::Unknown
-                    | RequestStatusResponse::Received
-                    | RequestStatusResponse::Processing => {
-                        println!("The request is being processed...");
-                    }
-                    RequestStatusResponse::Done => {
-                        return Err(anyhow!(AgentError::RequestStatusDoneNoReply(String::from(
-                            request_id
-                        ),)))
-                    }
-                };
-
-                std::thread::sleep(std::time::Duration::from_millis(500));
-            }
-        }
-        .await?;
-        get_idl_string(&blob, "pp", &None).context("Invalid IDL blob.")?;
+    if let Ok(req) = serde_json::from_str::<RequestStatus>(&json) {
+        submit(env, req).await
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }
+}
+
+pub async fn submit(env: &dyn Environment, req: RequestStatus) -> DfxResult {
+    let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
+    let request_id =
+        RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
+    let mut agent = env
+        .get_agent()
+        .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
+    agent.set_transport(ProxySignReplicaV2Transport {
+        req,
+        http_transport: Arc::new(
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
+                env.get_network_descriptor().providers[0].clone(),
+            )
+            .unwrap(),
+        ),
+    });
+    let Replied::CallReplied(blob) = async {
+        loop {
+            match agent
+                .request_status_raw(&request_id, canister_id.clone())
+                .await?
+            {
+                RequestStatusResponse::Replied { reply } => return Ok(reply),
+                RequestStatusResponse::Rejected {
+                    reject_code,
+                    reject_message,
+                } => {
+                    return Err(anyhow!(AgentError::ReplicaError {
+                        reject_code,
+                        reject_message,
+                    }))
+                }
+                RequestStatusResponse::Unknown
+                | RequestStatusResponse::Received
+                | RequestStatusResponse::Processing => {
+                    println!("The request is being processed...");
+                }
+                RequestStatusResponse::Done => {
+                    return Err(anyhow!(AgentError::RequestStatusDoneNoReply(String::from(
+                        request_id
+                    ),)))
+                }
+            };
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+    }
+    .await?;
+    get_idl_string(&blob, "pp", &None).context("Invalid IDL blob.")?;
 
     Ok(())
 }
 
 pub(crate) struct ProxySignReplicaV2Transport {
-    req: SignedStatusRequest,
+    req: RequestStatus,
     http_transport: Arc<dyn 'static + ReplicaV2Transport + Send + Sync>,
 }
 

@@ -29,9 +29,12 @@ pub enum Command {
 pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::RequestStatusSign(v) => {
-            runtime.block_on(async { request_status_sign::exec(env, v).await })
-        }
+        Command::RequestStatusSign(v) => runtime.block_on(async {
+            request_status_sign::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
         Command::RequestStatusSubmit(v) => {
             runtime.block_on(async { request_status_submit::exec(env, v).await })
         }
@@ -45,7 +48,7 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
         }),
         Command::Sign(v) => runtime.block_on(async {
             sign::exec(env, v).await.and_then(|out| {
-                println!("{}", out);
+                println!("{}", out.buffer);
                 Ok(())
             })
         }),

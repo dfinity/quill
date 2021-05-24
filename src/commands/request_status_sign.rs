@@ -1,12 +1,12 @@
 use crate::lib::environment::Environment;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
+use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
 use crate::lib::DfxResult;
 use anyhow::{anyhow, Context};
 use clap::Clap;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
 
 /// Requests the status of a specified call from a canister.
 #[derive(Clap)]
@@ -17,7 +17,7 @@ pub struct RequestStatusSignOpts {
     pub request_id: String,
 }
 
-pub async fn exec(env: &dyn Environment, opts: RequestStatusSignOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: RequestStatusSignOpts) -> DfxResult<String> {
     let canister_id = Principal::from_text(crate::lib::nns_types::LEDGER_CANISTER_ID)
         .expect("Couldn't parse canister id");
     let request_id =
@@ -26,13 +26,13 @@ pub async fn exec(env: &dyn Environment, opts: RequestStatusSignOpts) -> DfxResu
     let mut agent = env
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
-    let buffer = Arc::new(RwLock::new(String::new()));
-    let transport = SignReplicaV2Transport::new(buffer.clone()).with_request_id(request_id);
+    let data = SignedMessageWithRequestId::new();
+    data.write().unwrap().request_id = Some(request_id);
+    let transport = SignReplicaV2Transport { data: data.clone() };
     agent.set_transport(transport);
     match agent.request_status_raw(&request_id, canister_id).await {
         Err(AgentError::MissingReplicaTransport()) => {
-            println!("{}", *buffer.read().unwrap());
-            return Ok(());
+            return Ok(data.read().unwrap().buffer.clone());
         }
         val => panic!("Unexpected output from the signing agent: {:?}", val),
     }

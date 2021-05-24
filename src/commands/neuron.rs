@@ -67,7 +67,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
     out.push_str("[");
     out.push_str(&transfer_message);
     out.push_str(",");
-    out.push_str(&claim_message);
+    out.push_str(&claim_message.buffer);
     out.push_str("]");
 
     Ok(out)

@@ -1,5 +1,9 @@
+use crate::commands::request_status_submit;
 use crate::lib::{
-    environment::Environment, read_json, sign::signed_message::SignedMessage, DfxResult,
+    environment::Environment,
+    read_json,
+    sign::signed_message::{Ingress, IngressWithRequestId},
+    DfxResult,
 };
 use anyhow::anyhow;
 use clap::Clap;
@@ -20,32 +24,16 @@ pub struct SendOpts {
 
 pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let json = read_json(opts.file_name)?;
-    let mut messages = Vec::new();
-    if let Ok(val) = serde_json::from_str::<SignedMessage>(&json) {
-        messages.push(val);
-    } else if let Ok(val) = serde_json::from_str::<Vec<SignedMessage>>(&json) {
-        messages.extend_from_slice(&val);
+    if let Ok(val) = serde_json::from_str::<IngressWithRequestId>(&json) {
+        send(env, val.ingress, opts.dry_run).await?;
+        request_status_submit::submit(env, val.request_status).await?;
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }
-
-    let count = messages.len();
-    for (i, msg) in messages.into_iter().enumerate() {
-        send(env, msg, opts.dry_run).await?;
-        if i < count - 1 {
-            println!("\nDo you want to continue? [Y/n]");
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input)?;
-            if input.to_lowercase().trim() == "n" {
-                return Ok(());
-            }
-        }
-    }
-
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: SignedMessage, dry_run: bool) -> DfxResult {
+async fn send(env: &dyn Environment, message: Ingress, dry_run: bool) -> DfxResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
     println!("  Call type:   {}", message.call_type);
