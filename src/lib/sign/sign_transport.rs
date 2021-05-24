@@ -1,4 +1,4 @@
-use super::signed_message::SignedMessageV1;
+use super::signed_message::SignedMessage;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
@@ -8,15 +8,12 @@ use std::sync::{Arc, RwLock};
 
 pub(crate) struct SignReplicaV2Transport {
     buffer: Arc<RwLock<String>>,
-    message_template: SignedMessageV1,
+    message: SignedMessage,
 }
 
 impl SignReplicaV2Transport {
-    pub fn new(buffer: Arc<RwLock<String>>, message_template: SignedMessageV1) -> Self {
-        Self {
-            buffer,
-            message_template,
-        }
+    pub fn new(buffer: Arc<RwLock<String>>, message: SignedMessage) -> Self {
+        Self { buffer, message }
     }
 }
 
@@ -25,10 +22,7 @@ fn run(
     envelope: Vec<u8>,
     request_id: Option<RequestId>,
 ) -> Result<(), AgentError> {
-    let message = s
-        .message_template
-        .clone()
-        .with_content(hex::encode(&envelope));
+    let message = s.message.clone().with_content(hex::encode(&envelope));
     let message = match request_id {
         Some(request_id) => message
             .with_call_type("update".to_string())

@@ -1,13 +1,11 @@
 use crate::commands::request_status;
 use crate::lib::environment::Environment;
-use crate::lib::sign::signed_message::SignedMessageV1;
+use crate::lib::sign::signed_message::SignedMessage;
 use crate::lib::DfxResult;
-use crate::lib::{get_candid_type, get_idl_string, get_local_candid};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
-use ic_types::Principal;
 use std::{fs::File, path::Path};
 use std::{io::Read, str::FromStr};
 
@@ -32,9 +30,9 @@ pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
 
     let mut messages = Vec::new();
 
-    if let Ok(val) = serde_json::from_str::<SignedMessageV1>(&json) {
+    if let Ok(val) = serde_json::from_str::<SignedMessage>(&json) {
         messages.push(val);
-    } else if let Ok(val) = serde_json::from_str::<Vec<SignedMessageV1>>(&json) {
+    } else if let Ok(val) = serde_json::from_str::<Vec<SignedMessage>>(&json) {
         messages.extend_from_slice(&val);
     } else {
         return Err(anyhow!("Invalid JSON content"));
@@ -47,39 +45,33 @@ pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: SignedMessageV1, dry_run: bool) -> DfxResult {
-    message.validate()?;
+async fn send(env: &dyn Environment, message: SignedMessage, dry_run: bool) -> DfxResult {
+    let (sender, canister_id, method_name, args) = message.parse()?;
 
-    let canister_id = Principal::from_text(&message.canister_id)?;
-    let spec = get_local_candid(&message.canister_id);
-    let method_type = spec.and_then(|spec| get_candid_type(spec, &message.method_name));
-
-    eprintln!("Will send message:");
-    eprintln!("  Creation:    {}", message.creation);
-    eprintln!("  Expiration:  {}", message.expiration);
-    eprintln!("  Network:     {}", message.network);
     eprintln!("  Call type:   {}", message.call_type);
-    eprintln!("  Sender:      {}", message.sender);
-    eprintln!("  Canister id: {}", message.canister_id);
-    eprintln!("  Method name: {}", message.method_name);
-    eprintln!(
-        "  Arguments:   {}",
-        get_idl_string(&message.arg, "pp", &method_type)?
-    );
+    eprintln!("  Sender:      {}", sender);
+    eprintln!("  Canister id: {}", canister_id);
+    eprintln!("  Method name: {}", method_name);
+    eprintln!("  Arguments:   {}", args);
 
     if dry_run {
         return Ok(());
     }
 
     // Not using dialoguer because it doesn't support non terminal env like bats e2e
-    eprintln!("\nOkay? [y/N]");
+    eprintln!("\nDo you want to send this message? [y/N]");
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
     if !["y", "yes"].contains(&input.to_lowercase().trim()) {
         return Ok(());
     }
 
-    let network = message.network;
+    let network = env
+        .get_network_descriptor()
+        .providers
+        .first()
+        .expect("Cannot get network provider (url).")
+        .to_string();
     let transport = ReqwestHttpReplicaV2Transport::create(network)?;
     let content = hex::decode(&message.content)?;
 
