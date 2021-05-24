@@ -1,4 +1,5 @@
 use super::signed_message::SignedMessage;
+use crate::lib::sign::signed_message::SignedStatusRequest;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
@@ -9,11 +10,16 @@ use std::sync::{Arc, RwLock};
 pub(crate) struct SignReplicaV2Transport {
     buffer: Arc<RwLock<String>>,
     message: SignedMessage,
+    status_request: SignedStatusRequest,
 }
 
 impl SignReplicaV2Transport {
-    pub fn new(buffer: Arc<RwLock<String>>, message: SignedMessage) -> Self {
-        Self { buffer, message }
+    pub fn new(buffer: Arc<RwLock<String>>, status_request: Option<SignedStatusRequest>) -> Self {
+        Self {
+            buffer,
+            message: Default::default(),
+            status_request: status_request.unwrap_or_default(),
+        }
     }
 }
 
@@ -37,10 +43,22 @@ fn run(
 impl ReplicaV2Transport for SignReplicaV2Transport {
     fn read_state<'a>(
         &'a self,
-        _effective_canister_id: Principal,
-        _envelope: Vec<u8>,
+        canister_id: Principal,
+        content: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
-        unimplemented!()
+        async fn filler(
+            s: &SignReplicaV2Transport,
+            canister_id: Principal,
+            content: Vec<u8>,
+        ) -> Result<Vec<u8>, AgentError> {
+            let mut status_req = s.status_request.clone();
+            status_req.canister_id = canister_id.to_string();
+            status_req.content = hex::encode(content);
+            *(s.buffer.write().unwrap()) = serde_json::to_string(&status_req)
+                .map_err(|err| AgentError::MessageError(err.to_string()))?;
+            Err(AgentError::MissingReplicaTransport())
+        }
+        Box::pin(filler(self, canister_id, content))
     }
 
     fn call<'a>(

@@ -41,9 +41,3 @@ impl ic_agent::Identity for Identity {
         self.inner.sign(blob)
     }
 }
-
-impl AsRef<Identity> for Identity {
-    fn as_ref(&self) -> &Identity {
-        self
-    }
-}

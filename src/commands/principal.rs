@@ -18,5 +18,5 @@ pub fn exec(env: &dyn Environment, _opts: PrincipalIdOpts) -> DfxResult {
 
 pub fn get_principal(env: &dyn Environment) -> DfxResult<Principal> {
     let identity = NanoIdentity::load(env.get_pem().ok_or_else(|| anyhow!("No PEM provided"))?);
-    identity.as_ref().sender().map_err(|err| anyhow!("{}", err))
+    identity.sender().map_err(|err| anyhow!("{}", err))
 }

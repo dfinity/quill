@@ -1081,6 +1081,7 @@ dependencies = [
  "openssl",
  "rust_decimal",
  "serde",
+ "serde_bytes",
  "serde_cbor",
  "serde_json",
  "tokio",

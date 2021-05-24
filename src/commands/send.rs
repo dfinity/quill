@@ -1,12 +1,11 @@
-use crate::lib::environment::Environment;
-use crate::lib::sign::signed_message::SignedMessage;
-use crate::lib::DfxResult;
+use crate::lib::{
+    environment::Environment, read_json, sign::signed_message::SignedMessage, DfxResult,
+};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
-use std::{fs::File, path::Path};
-use std::{io::Read, str::FromStr};
+use std::str::FromStr;
 
 /// Send a signed message
 #[derive(Clap)]
@@ -20,15 +19,8 @@ pub struct SendOpts {
 }
 
 pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
-    let file_name = opts.file_name;
-    let path = Path::new(&file_name);
-    let mut file = File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
-    let mut json = String::new();
-    file.read_to_string(&mut json)
-        .map_err(|_| anyhow!("Cannot read the message file."))?;
-
+    let json = read_json(opts.file_name)?;
     let mut messages = Vec::new();
-
     if let Ok(val) = serde_json::from_str::<SignedMessage>(&json) {
         messages.push(val);
     } else if let Ok(val) = serde_json::from_str::<Vec<SignedMessage>>(&json) {

@@ -6,7 +6,8 @@ use tokio::runtime::Runtime;
 mod account_id;
 mod neuron;
 mod principal;
-mod request_status;
+mod request_status_sign;
+mod request_status_submit;
 mod send;
 mod sign;
 mod transfer;
@@ -21,13 +22,19 @@ pub enum Command {
     AccountId(account_id::AccountIdOpts),
     Transfer(transfer::TransferOpts),
     StakeToNeuron(neuron::TransferOpts),
-    RequestStatus(request_status::RequestStatusOpts),
+    RequestStatusSign(request_status_sign::RequestStatusSignOpts),
+    RequestStatusSubmit(request_status_submit::RequestStatusSubmitOpts),
 }
 
 pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::RequestStatus(v) => runtime.block_on(async { request_status::exec(env, v).await }),
+        Command::RequestStatusSign(v) => {
+            runtime.block_on(async { request_status_sign::exec(env, v).await })
+        }
+        Command::RequestStatusSubmit(v) => {
+            runtime.block_on(async { request_status_submit::exec(env, v).await })
+        }
         Command::PrincipalId(v) => principal::exec(env, v),
         Command::AccountId(v) => runtime.block_on(async { account_id::exec(env, v).await }),
         Command::Transfer(v) => runtime.block_on(async {

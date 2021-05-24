@@ -10,6 +10,13 @@ use std::convert::TryFrom;
 use std::time::Duration;
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub(crate) struct SignedStatusRequest {
+    pub canister_id: String,
+    pub request_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub(crate) struct SignedMessage {
     pub call_type: String,
     pub request_id: Option<String>,

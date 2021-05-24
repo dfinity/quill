@@ -19,11 +19,15 @@ To display the signed message in human-readable form:
 
 `nano` could be used on an online computer to send the file:
 
-    nano --pem-file <path> send <path-to-file>
+    nano send <path-to-file>
 
-Check the request status:
+Sign a request status check:
 
-    nano --pem-file <path> request-status <request-id>
+    nano --pem-file <path> request-status-sign <request-id>
+
+Submit the signed status check:
+
+    nano request-status-submit --file <path>
 
 To get the principal id:
 

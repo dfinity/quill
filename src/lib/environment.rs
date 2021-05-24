@@ -30,24 +30,20 @@ impl Environment for EnvironmentImpl {
 
     fn get_agent(&self) -> Option<Agent> {
         let url = self.get_network_descriptor().providers[0].clone();
-        let identity = Box::new(NanoIdentity::load(match self.pem.clone() {
-            Some(pem) => pem,
-            None => {
-                eprintln!("No PEM provided, quitting.");
-                return None;
-            }
-        }));
-        // 5 minutes is max ingress timeout
         let timeout = Duration::from_secs(60 * 5);
-        Agent::builder()
+        let builder = Agent::builder()
             .with_transport(
                 ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(url)
                     .unwrap(),
             )
-            .with_boxed_identity(identity)
-            .with_ingress_expiry(Some(timeout))
-            .build()
-            .ok()
+            .with_ingress_expiry(Some(timeout));
+
+        let builder = match self.pem.clone() {
+            Some(pem) => builder.with_boxed_identity(Box::new(NanoIdentity::load(pem))),
+            None => builder,
+        };
+
+        builder.build().ok()
     }
 
     fn get_network_descriptor(&self) -> NetworkDescriptor {
@@ -61,6 +57,6 @@ impl Environment for EnvironmentImpl {
     fn get_selected_identity_principal(&self) -> Option<Principal> {
         self.pem
             .clone()
-            .and_then(move |pem| NanoIdentity::load(pem.clone()).as_ref().sender().ok())
+            .and_then(move |pem| NanoIdentity::load(pem.clone()).sender().ok())
     }
 }

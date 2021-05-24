@@ -69,7 +69,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
         let arg_type = opts.r#type.as_deref();
         blob_from_arguments(arguments, arg_type, &method_type)?
     };
-    let agent = env
+    let mut sign_agent = env
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
 
@@ -78,11 +78,8 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
         .checked_add(timeout)
         .ok_or_else(|| anyhow!("Time wrapped around."))?;
 
-    let message = Default::default();
-
-    let mut sign_agent = agent.clone();
     let buffer = Arc::new(RwLock::new(String::new()));
-    let transport = SignReplicaV2Transport::new(buffer.clone(), message);
+    let transport = SignReplicaV2Transport::new(buffer.clone(), None);
     sign_agent.set_transport(transport);
 
     let canister_id = Principal::from_text(opts.canister_name)?;
