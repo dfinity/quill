@@ -59,7 +59,6 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         update: true,
         argument,
         r#type: Some("raw".to_string()),
-        expire_after: "5m".to_string(),
     };
     let claim_message = sign::exec(env, opts).await?;
 

@@ -5,7 +5,6 @@ use crate::lib::DfxResult;
 use crate::lib::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use clap::Clap;
-use humanize_rs::duration;
 use ic_types::principal::Principal;
 use std::option::Option;
 use std::sync::{Arc, RwLock};
@@ -34,10 +33,6 @@ pub struct SignOpts {
     /// Specifies the data type for the argument when making the call using an argument.
     #[clap(long, requires("argument"), possible_values(&["idl", "raw"]))]
     pub r#type: Option<String>,
-
-    /// Specifies how long will the message be valid in seconds, default to be 300s (5 minutes)
-    #[clap(long, default_value("5m"))]
-    pub expire_after: String,
 }
 
 pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
@@ -78,9 +73,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<String> {
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
 
-    let timeout = duration::parse(&opts.expire_after)
-        .map_err(|_| anyhow!("Cannot parse expire_after as a duration (e.g. `1h`, `1h 30m`)"))?;
-    //let timeout = Duration::from_secs(opts.expire_after);
+    let timeout = std::time::Duration::from_secs(5 * 60);
     let expiration_system_time = SystemTime::now()
         .checked_add(timeout)
         .ok_or_else(|| anyhow!("Time wrapped around."))?;

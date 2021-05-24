@@ -15,7 +15,6 @@ chrono = "0.4.9"
 clap = "3.0.0-beta.2"
 crc32fast = "1.2.0"
 hex = {version = "0.4.2", features = ["serde"] }
-humanize-rs = "0.1.5"
 openssl = "0.10.32"
 rust_decimal = "1.10.3"
 serde = "1.0"
