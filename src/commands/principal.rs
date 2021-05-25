@@ -6,7 +6,7 @@ use clap::Clap;
 use ic_agent::identity::Identity;
 use ic_types::Principal;
 
-/// Prints the textual representation of the Principal associated with the current identity.
+/// Prints the principal id.
 #[derive(Clap)]
 pub struct PrincipalIdOpts {}
 

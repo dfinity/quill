@@ -11,7 +11,7 @@ use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use std::str::FromStr;
 
-/// Send a signed message
+/// Send a signed message of a set of messages.
 #[derive(Clap)]
 pub struct SendOpts {
     /// Path to the signed message
