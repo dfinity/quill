@@ -6,6 +6,7 @@ use crate::lib::DfxResult;
 use crate::lib::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use clap::Clap;
+use ic_agent::AgentError;
 use ic_types::principal::Principal;
 use std::option::Option;
 use std::time::SystemTime;
@@ -85,15 +86,17 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<SignedMess
     let canister_id = Principal::from_text(opts.canister_name)?;
 
     if is_query {
-        sign_agent
+        match sign_agent
             .query(&canister_id, method_name)
             .with_effective_canister_id(canister_id)
             .with_arg(&arg_value)
             .expire_at(expiration_system_time)
             .call()
             .await
-            .map(|_| ())
-            .map_err(|e| anyhow!(e))?;
+        {
+            Err(AgentError::MissingReplicaTransport()) => {}
+            val => panic!("Unexpected return value from query execution: {:?}", val),
+        };
     } else {
         sign_agent
             .update(&canister_id, method_name)

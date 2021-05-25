@@ -87,7 +87,7 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
         run(self, envelope, None).expect("Couldn't execute call");
         async fn filler() -> Result<Vec<u8>, AgentError> {
-            Ok(Vec::new())
+            Err(AgentError::MissingReplicaTransport())
         }
         Box::pin(filler())
     }

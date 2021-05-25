@@ -24,7 +24,9 @@ pub struct SendOpts {
 
 pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let json = read_json(opts.file_name)?;
-    if let Ok(val) = serde_json::from_str::<IngressWithRequestId>(&json) {
+    if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
+        send(env, val, opts.dry_run).await?;
+    } else if let Ok(val) = serde_json::from_str::<IngressWithRequestId>(&json) {
         send(env, val.ingress, opts.dry_run).await?;
         request_status_submit::submit(env, val.request_status).await?;
     } else {
@@ -46,12 +48,13 @@ async fn send(env: &dyn Environment, message: Ingress, dry_run: bool) -> DfxResu
         return Ok(());
     }
 
-    // Not using dialoguer because it doesn't support non terminal env like bats e2e
-    println!("\nDo you want to send this message? [y/N]");
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    if !["y", "yes"].contains(&input.to_lowercase().trim()) {
-        return Ok(());
+    if message.call_type == "update" {
+        println!("\nDo you want to send this message? [y/N]");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if !["y", "yes"].contains(&input.to_lowercase().trim()) {
+            return Ok(());
+        }
     }
 
     let network = env
