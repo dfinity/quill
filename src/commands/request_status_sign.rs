@@ -15,14 +15,16 @@ pub struct RequestStatusSignOpts {
     /// The request identifier is an hexadecimal string starting with 0x.
     #[clap(validator(is_request_id))]
     pub request_id: String,
+
+    /// Canister id
+    #[clap(validator(is_request_id))]
+    pub canister_id: String,
 }
 
 pub async fn exec(env: &dyn Environment, opts: RequestStatusSignOpts) -> DfxResult<String> {
-    let canister_id = Principal::from_text(crate::lib::nns_types::LEDGER_CANISTER_ID)
-        .expect("Couldn't parse canister id");
+    let canister_id = Principal::from_text(&opts.canister_id)?;
     let request_id =
         RequestId::from_str(&opts.request_id[2..]).context("Invalid argument: request_id")?;
-
     let mut agent = env
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;

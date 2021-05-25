@@ -2,7 +2,7 @@ use crate::{
     commands::{request_status_sign, sign, transfer},
     lib::{
         environment::Environment,
-        get_candid_type, get_idl_string, get_local_candid,
+        get_idl_string,
         nns_types::account_identifier::{AccountIdentifier, Subaccount},
         nns_types::{ClaimOrRefreshNeuronFromAccount, Memo, GOVERNANCE_CANISTER_ID},
         DfxResult,
@@ -49,11 +49,16 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
     })?;
 
     let method_name = "claim_or_refresh_neuron_from_account".to_string();
-    let spec = get_local_candid(GOVERNANCE_CANISTER_ID);
-    let method_type = spec.and_then(|spec| get_candid_type(spec, &method_name));
-    let argument = Some(get_idl_string(&args, "raw", &method_type)?);
+    let argument = Some(get_idl_string(
+        &args,
+        GOVERNANCE_CANISTER_ID,
+        &method_name,
+        "args",
+        "raw",
+    )?);
+    let canister_id = GOVERNANCE_CANISTER_ID.to_string();
     let opts = sign::SignOpts {
-        canister_name: GOVERNANCE_CANISTER_ID.to_string(),
+        canister_id: canister_id.clone(),
         method_name,
         query: false,
         update: true,
@@ -69,6 +74,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         env,
         request_status_sign::RequestStatusSignOpts {
             request_id: format!("0x{}", request_id),
+            canister_id,
         },
     )
     .await?;

@@ -1,5 +1,5 @@
+use crate::lib::get_idl_string;
 use crate::lib::DfxResult;
-use crate::lib::{get_candid_type, get_idl_string, get_local_candid};
 use anyhow::{anyhow, bail};
 use chrono::{TimeZone, Utc};
 use ic_agent::RequestId;
@@ -90,18 +90,21 @@ impl Ingress {
                             .get(&Value::Text("method_name".to_string()))
                             .ok_or_else(|| anyhow!("Invalid cbor content"))?;
                         if let Value::Text(method_name) = method_name {
-                            let spec = get_local_candid(&canister_id.to_string());
-                            let method_type =
-                                spec.and_then(|spec| get_candid_type(spec, method_name));
                             let arg = m
                                 .get(&Value::Text("arg".to_string()))
                                 .ok_or_else(|| anyhow!("Invalid cbor content"))?;
                             if let Value::Bytes(arg) = arg {
                                 return Ok((
                                     sender,
-                                    canister_id,
+                                    canister_id.clone(),
                                     method_name.to_string().to_string(),
-                                    get_idl_string(arg, "pp", &method_type)?,
+                                    get_idl_string(
+                                        arg,
+                                        &canister_id.to_string(),
+                                        &method_name,
+                                        "args",
+                                        "pp",
+                                    )?,
                                 ));
                             }
                         }

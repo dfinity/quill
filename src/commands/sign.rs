@@ -14,8 +14,8 @@ use std::time::SystemTime;
 /// Sign a canister call and generate message file in json
 #[derive(Clap)]
 pub struct SignOpts {
-    /// Specifies the name of the canister to call.
-    pub canister_name: String,
+    /// Canister id.
+    pub canister_id: String,
 
     /// Specifies the method name to call on the canister.
     pub method_name: String,
@@ -37,7 +37,7 @@ pub struct SignOpts {
 }
 
 pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<SignedMessageWithRequestId> {
-    let callee_canister = opts.canister_name.as_str();
+    let callee_canister = opts.canister_id.as_str();
     let method_name = opts.method_name.as_str();
 
     let spec = get_local_candid(callee_canister);
@@ -83,7 +83,7 @@ pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<SignedMess
     let transport = SignReplicaV2Transport { data: data.clone() };
     sign_agent.set_transport(transport);
 
-    let canister_id = Principal::from_text(opts.canister_name)?;
+    let canister_id = Principal::from_text(opts.canister_id)?;
 
     if is_query {
         match sign_agent

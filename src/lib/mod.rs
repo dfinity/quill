@@ -33,9 +33,13 @@ pub fn get_local_candid(canister_id: &str) -> Option<String> {
 
 pub fn get_idl_string(
     blob: &[u8],
+    canister_id: &str,
+    method_name: &str,
+    part: &str,
     output_type: &str,
-    method_type: &Option<(TypeEnv, Function)>,
 ) -> DfxResult<String> {
+    let spec = get_local_candid(canister_id);
+    let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
     match output_type {
         "raw" => {
             let hex_string = hex::encode(blob);
@@ -44,7 +48,15 @@ pub fn get_idl_string(
         "idl" | "pp" => {
             let result = match method_type {
                 None => candid::IDLArgs::from_bytes(blob),
-                Some((env, func)) => candid::IDLArgs::from_bytes_with_types(blob, &env, &func.args),
+                Some((env, func)) => candid::IDLArgs::from_bytes_with_types(
+                    blob,
+                    &env,
+                    if part == "args" {
+                        &func.args
+                    } else {
+                        &func.rets
+                    },
+                ),
             };
             return Ok(if output_type == "idl" {
                 format!("{:?}", result?)

@@ -48,7 +48,7 @@ async fn submit_ingress_and_check_status(
     if dry_run {
         return Ok(());
     }
-    match request_status_submit::submit(env, &message.request_status).await {
+    match request_status_submit::submit(env, &message.request_status, None).await {
         Ok(result) => println!("{}\n", result),
         Err(err) => print!("{}\n", err),
     };

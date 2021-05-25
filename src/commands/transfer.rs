@@ -1,11 +1,10 @@
 use crate::commands::{request_status_sign, sign};
 use crate::lib::environment::Environment;
-use crate::lib::get_local_candid;
+use crate::lib::get_idl_string;
 use crate::lib::nns_types::account_identifier::AccountIdentifier;
 use crate::lib::nns_types::icpts::{ICPTs, TRANSACTION_FEE};
 use crate::lib::nns_types::{Memo, SendArgs, LEDGER_CANISTER_ID};
 use crate::lib::DfxResult;
-use crate::lib::{get_candid_type, get_idl_string};
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;
@@ -61,11 +60,15 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         created_at_time: None,
     })?;
 
-    let spec = get_local_candid(LEDGER_CANISTER_ID);
-    let method_type = spec.and_then(|spec| get_candid_type(spec, &SEND_METHOD));
-    let argument = Some(get_idl_string(&args, "raw", &method_type)?);
+    let argument = Some(get_idl_string(
+        &args,
+        &canister_id.clone().to_string(),
+        SEND_METHOD,
+        "args",
+        "raw",
+    )?);
     let opts = sign::SignOpts {
-        canister_name: canister_id.to_string(),
+        canister_id: canister_id.clone().to_string(),
         method_name: SEND_METHOD.to_string(),
         query: false,
         update: true,
@@ -81,6 +84,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         env,
         request_status_sign::RequestStatusSignOpts {
             request_id: format!("0x{}", request_id),
+            canister_id: canister_id.to_string(),
         },
     )
     .await?;
