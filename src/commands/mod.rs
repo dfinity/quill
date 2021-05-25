@@ -35,9 +35,12 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
                 Ok(())
             })
         }),
-        Command::RequestStatusSubmit(v) => {
-            runtime.block_on(async { request_status_submit::exec(env, v).await })
-        }
+        Command::RequestStatusSubmit(v) => runtime.block_on(async {
+            request_status_submit::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
         Command::PrincipalId(v) => principal::exec(env, v),
         Command::AccountId(v) => runtime.block_on(async { account_id::exec(env, v).await }),
         Command::Transfer(v) => runtime.block_on(async {

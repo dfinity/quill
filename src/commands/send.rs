@@ -1,4 +1,5 @@
 use crate::commands::request_status_submit;
+use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
     environment::Environment,
     read_json,
@@ -25,19 +26,39 @@ pub struct SendOpts {
 pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let json = read_json(opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
-        send(env, val, opts.dry_run).await?;
-    } else if let Ok(val) = serde_json::from_str::<IngressWithRequestId>(&json) {
-        send(env, val.ingress, opts.dry_run).await?;
-        request_status_submit::submit(env, val.request_status).await?;
+        send(env, &val, opts.dry_run).await?;
+    } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
+        submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+    } else if let Ok(val) = serde_json::from_str::<NeuronStakeMessage>(&json) {
+        for tx in &[val.transfer, val.claim] {
+            submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+        }
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: Ingress, dry_run: bool) -> DfxResult {
+async fn submit_ingress_and_check_status(
+    env: &dyn Environment,
+    message: &IngressWithRequestId,
+    dry_run: bool,
+) -> DfxResult {
+    send(env, &message.ingress, dry_run).await?;
+    if dry_run {
+        return Ok(());
+    }
+    match request_status_submit::submit(env, &message.request_status).await {
+        Ok(result) => println!("{}\n", result),
+        Err(err) => print!("{}\n", err),
+    };
+    Ok(())
+}
+
+async fn send(env: &dyn Environment, message: &Ingress, dry_run: bool) -> DfxResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
+    println!("Sending message with\n");
     println!("  Call type:   {}", message.call_type);
     println!("  Sender:      {}", sender);
     println!("  Canister id: {}", canister_id);
@@ -75,6 +96,7 @@ async fn send(env: &dyn Environment, message: Ingress, dry_run: bool) -> DfxResu
         "update" => {
             let request_id = RequestId::from_str(
                 &message
+                    .clone()
                     .request_id
                     .expect("Cannot get request_id from the update message"),
             )?;

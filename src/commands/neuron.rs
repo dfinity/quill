@@ -1,5 +1,5 @@
 use crate::{
-    commands::{sign, transfer},
+    commands::{request_status_sign, sign, transfer},
     lib::{
         environment::Environment,
         get_candid_type, get_idl_string, get_local_candid,
@@ -60,15 +60,30 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String
         argument,
         r#type: Some("raw".to_string()),
     };
-    let claim_message = sign::exec(env, opts).await?;
+    let msg_with_req_id = sign::exec(env, opts).await?;
+    let request_id: String = msg_with_req_id
+        .request_id
+        .expect("No request id for transfer call found")
+        .into();
+    let req_status_signed_msg = request_status_sign::exec(
+        env,
+        request_status_sign::RequestStatusSignOpts {
+            request_id: format!("0x{}", request_id),
+        },
+    )
+    .await?;
 
     // Generate a JSON list of signed messages.
     let mut out = String::new();
-    out.push_str("[");
+    out.push_str("{ \"transfer\": ");
     out.push_str(&transfer_message);
-    out.push_str(",");
-    out.push_str(&claim_message.buffer);
-    out.push_str("]");
+    out.push_str(", \"claim\": ");
+    out.push_str("{ \"ingress\": ");
+    out.push_str(&msg_with_req_id.buffer);
+    out.push_str(", \"request_status\": ");
+    out.push_str(&req_status_signed_msg);
+    out.push_str("}");
+    out.push_str("}");
 
     Ok(out)
 }

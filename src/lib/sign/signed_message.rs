@@ -29,6 +29,12 @@ pub struct IngressWithRequestId {
     pub request_status: RequestStatus,
 }
 
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct NeuronStakeMessage {
+    pub transfer: IngressWithRequestId,
+    pub claim: IngressWithRequestId,
+}
+
 impl Ingress {
     pub fn with_call_type(mut self, request_type: String) -> Self {
         self.call_type = request_type;

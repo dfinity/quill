@@ -18,16 +18,16 @@ pub struct RequestStatusSubmitOpts {
     file: String,
 }
 
-pub async fn exec(env: &dyn Environment, opts: RequestStatusSubmitOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: RequestStatusSubmitOpts) -> DfxResult<String> {
     let json = read_json(opts.file)?;
     if let Ok(req) = serde_json::from_str::<RequestStatus>(&json) {
-        submit(env, req).await
+        submit(env, &req).await
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }
 }
 
-pub async fn submit(env: &dyn Environment, req: RequestStatus) -> DfxResult {
+pub async fn submit(env: &dyn Environment, req: &RequestStatus) -> DfxResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
@@ -35,7 +35,7 @@ pub async fn submit(env: &dyn Environment, req: RequestStatus) -> DfxResult {
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
     agent.set_transport(ProxySignReplicaV2Transport {
-        req,
+        req: req.clone(),
         http_transport: Arc::new(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
                 env.get_network_descriptor().providers[0].clone(),
@@ -75,9 +75,7 @@ pub async fn submit(env: &dyn Environment, req: RequestStatus) -> DfxResult {
         }
     }
     .await?;
-    get_idl_string(&blob, "pp", &None).context("Invalid IDL blob.")?;
-
-    Ok(())
+    get_idl_string(&blob, "pp", &None).context("Invalid IDL blob.")
 }
 
 pub(crate) struct ProxySignReplicaV2Transport {
