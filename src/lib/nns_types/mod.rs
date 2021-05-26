@@ -25,11 +25,6 @@ impl Default for Memo {
 }
 
 #[derive(CandidType)]
-pub struct AccountBalanceArgs {
-    pub account: String,
-}
-
-#[derive(CandidType)]
 pub struct TimeStamp {
     pub timestamp_nanos: u64,
 }

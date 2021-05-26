@@ -48,7 +48,10 @@ async fn submit_ingress_and_check_status(
     if dry_run {
         return Ok(());
     }
-    match request_status_submit::submit(env, &message.request_status, None).await {
+    let (_, _, method_name, _) = &message.ingress.parse()?;
+    match request_status_submit::submit(env, &message.request_status, Some(method_name.to_string()))
+        .await
+    {
         Ok(result) => println!("{}\n", result),
         Err(err) => print!("{}\n", err),
     };
