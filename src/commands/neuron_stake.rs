@@ -29,7 +29,7 @@ pub struct TransferOpts {
 }
 
 pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String> {
-    let controller = crate::commands::principal::get_principal(env)?;
+    let (controller, _) = crate::commands::public::get_ids(env)?;
     let nonce = convert_name_to_memo(&opts.name);
     let neuron_subaccount = get_neuron_subaccount(&controller, nonce);
     let transfer_message = transfer::exec(

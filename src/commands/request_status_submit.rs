@@ -1,31 +1,12 @@
 use crate::lib::{
-    environment::Environment, get_idl_string, read_json, sign::signed_message::RequestStatus,
-    DfxResult,
+    environment::Environment, get_idl_string, sign::signed_message::RequestStatus, DfxResult,
 };
 use anyhow::{anyhow, Context};
-use clap::Clap;
 use ic_agent::agent::{Replied, RequestStatusResponse};
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
 use std::str::FromStr;
 use std::sync::Arc;
-
-/// Requests the status of a specified call from a canister.
-#[derive(Clap)]
-pub struct RequestStatusSubmitOpts {
-    /// Path to the signed status request
-    #[clap(long)]
-    file: String,
-}
-
-pub async fn exec(env: &dyn Environment, opts: RequestStatusSubmitOpts) -> DfxResult<String> {
-    let json = read_json(opts.file)?;
-    if let Ok(req) = serde_json::from_str::<RequestStatus>(&json) {
-        submit(env, &req, None).await
-    } else {
-        return Err(anyhow!("Invalid JSON content"));
-    }
-}
 
 pub async fn submit(
     env: &dyn Environment,

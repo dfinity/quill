@@ -3,46 +3,30 @@ use crate::lib::DfxResult;
 use clap::Clap;
 use tokio::runtime::Runtime;
 
-mod account_id;
-mod neuron;
-mod principal;
+mod neuron_stake;
+mod public;
 mod request_status_sign;
 mod request_status_submit;
 mod send;
 mod sign;
 mod transfer;
 
-pub use principal::get_principal;
+pub use public::get_ids;
 
 #[derive(Clap)]
 pub enum Command {
-    PrincipalId(principal::PrincipalIdOpts),
+    /// Prints the principal id and the accound id.
+    PublicIds,
     Send(send::SendOpts),
     Sign(sign::SignOpts),
-    AccountId(account_id::AccountIdOpts),
     Transfer(transfer::TransferOpts),
-    StakeToNeuron(neuron::TransferOpts),
-    RequestStatusSign(request_status_sign::RequestStatusSignOpts),
-    RequestStatusSubmit(request_status_submit::RequestStatusSubmitOpts),
+    NeuronStake(neuron_stake::TransferOpts),
 }
 
 pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::RequestStatusSign(v) => runtime.block_on(async {
-            request_status_sign::exec(env, v).await.and_then(|out| {
-                println!("{}", out);
-                Ok(())
-            })
-        }),
-        Command::RequestStatusSubmit(v) => runtime.block_on(async {
-            request_status_submit::exec(env, v).await.and_then(|out| {
-                println!("{}", out);
-                Ok(())
-            })
-        }),
-        Command::PrincipalId(v) => principal::exec(env, v),
-        Command::AccountId(v) => runtime.block_on(async { account_id::exec(env, v).await }),
+        Command::PublicIds => public::exec(env),
         Command::Transfer(v) => runtime.block_on(async {
             transfer::exec(env, v).await.and_then(|out| {
                 println!("{}", out);
@@ -55,8 +39,8 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
                 Ok(())
             })
         }),
-        Command::StakeToNeuron(v) => runtime.block_on(async {
-            neuron::exec(env, v).await.and_then(|out| {
+        Command::NeuronStake(v) => runtime.block_on(async {
+            neuron_stake::exec(env, v).await.and_then(|out| {
                 println!("{}", out);
                 Ok(())
             })
