@@ -3,6 +3,7 @@ use crate::lib::DfxResult;
 use clap::Clap;
 use tokio::runtime::Runtime;
 
+mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod request_status_sign;
@@ -20,7 +21,8 @@ pub enum Command {
     Send(send::SendOpts),
     Sign(sign::SignOpts),
     Transfer(transfer::TransferOpts),
-    NeuronStake(neuron_stake::TransferOpts),
+    NeuronStake(neuron_stake::StakeOpts),
+    NeuronManage(neuron_manage::ManageOpts),
 }
 
 pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
@@ -41,6 +43,12 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
         }),
         Command::NeuronStake(v) => runtime.block_on(async {
             neuron_stake::exec(env, v).await.and_then(|out| {
+                println!("{}", out);
+                Ok(())
+            })
+        }),
+        Command::NeuronManage(v) => runtime.block_on(async {
+            neuron_manage::exec(env, v).await.and_then(|out| {
                 println!("{}", out);
                 Ok(())
             })

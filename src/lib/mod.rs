@@ -1,8 +1,10 @@
-use crate::lib::nns_types::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use crate::{error_invalid_argument, error_invalid_data, error_unknown};
 use candid::parser::typing::{check_prog, TypeEnv};
 use candid::types::{Function, Type};
 use candid::{parser::value::IDLValue, IDLArgs, IDLProg};
+
+pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 
 /// The type to represent DFX results.
 pub type DfxResult<T = ()> = anyhow::Result<T>;

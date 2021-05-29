@@ -1,10 +1,12 @@
 use crate::commands::{request_status_sign, sign};
-use crate::lib::environment::Environment;
-use crate::lib::get_idl_string;
-use crate::lib::nns_types::account_identifier::AccountIdentifier;
-use crate::lib::nns_types::icpts::{ICPTs, TRANSACTION_FEE};
-use crate::lib::nns_types::{Memo, SendArgs, LEDGER_CANISTER_ID};
-use crate::lib::DfxResult;
+use crate::lib::{
+    environment::Environment,
+    get_idl_string,
+    nns_types::account_identifier::AccountIdentifier,
+    nns_types::icpts::{ICPTs, TRANSACTION_FEE},
+    nns_types::{Memo, SendArgs},
+    DfxResult, LEDGER_CANISTER_ID,
+};
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;

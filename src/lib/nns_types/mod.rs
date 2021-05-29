@@ -4,14 +4,10 @@
 // dfinity-lab/dfinity@25999dd54d29c24edb31483801bddfd8c1d780c8
 
 use candid::CandidType;
-use ic_types::principal::Principal;
 use serde::{Deserialize, Serialize};
 
 pub mod account_identifier;
 pub mod icpts;
-
-pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 
 #[derive(
     Serialize, Deserialize, CandidType, Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord,
@@ -27,12 +23,6 @@ impl Default for Memo {
 #[derive(CandidType)]
 pub struct TimeStamp {
     pub timestamp_nanos: u64,
-}
-
-#[derive(CandidType)]
-pub struct ClaimOrRefreshNeuronFromAccount {
-    pub memo: Memo,
-    pub controller: Option<Principal>,
 }
 
 #[derive(CandidType)]
