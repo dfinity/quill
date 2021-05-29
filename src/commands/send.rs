@@ -27,6 +27,10 @@ pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
     let json = read_json(opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(env, &val, opts.dry_run).await?;
+    } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
+        for tx in vals {
+            submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+        }
     } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
         submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
     } else if let Ok(val) = serde_json::from_str::<NeuronStakeMessage>(&json) {

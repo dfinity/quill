@@ -4,6 +4,7 @@ use crate::{
 };
 use candid::{CandidType, Encode};
 use clap::Clap;
+use ic_types::Principal;
 
 #[derive(CandidType)]
 pub struct IncreaseDissolveDelay {
@@ -16,8 +17,13 @@ pub struct NeuronId {
 }
 
 #[derive(CandidType)]
+pub struct AddHotKey {
+    pub new_hot_key: Option<Principal>,
+}
+
+#[derive(CandidType)]
 pub enum Operation {
-    // StartDissolving,
+    AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
 }
 
@@ -59,6 +65,16 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
         }))
     })?;
 
+    let msg = generate(env, args).await?;
+    let mut out = String::new();
+    out.push_str("[");
+    out.push_str(&msg);
+    out.push_str("]");
+
+    Ok(out)
+}
+
+pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> DfxResult<String> {
     let method_name = "manage_neuron".to_string();
     let argument = Some(get_idl_string(
         &args,
@@ -90,7 +106,6 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
     )
     .await?;
 
-    // Generate a JSON list of signed messages.
     let mut out = String::new();
     out.push_str("{ \"ingress\": ");
     out.push_str(&msg_with_req_id.buffer);
