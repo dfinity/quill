@@ -18,6 +18,9 @@ pub struct NeuronId {
 }
 
 #[derive(CandidType)]
+pub struct StartDissolving {}
+
+#[derive(CandidType)]
 pub struct AddHotKey {
     pub new_hot_key: Option<Principal>,
 }
@@ -26,6 +29,7 @@ pub struct AddHotKey {
 pub enum Operation {
     AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
+    StartDissolving(StartDissolving),
 }
 
 #[derive(CandidType)]
@@ -82,6 +86,13 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds
                 }))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::StartDissolving(StartDissolving {}))
             }))
         })?;
         msgs.push(generate(env, args).await?);
