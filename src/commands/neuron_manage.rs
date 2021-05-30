@@ -21,15 +21,25 @@ pub struct NeuronId {
 pub struct StartDissolving {}
 
 #[derive(CandidType)]
+pub struct StopDissolving {}
+
+#[derive(CandidType)]
+pub struct RemoveHotKey {
+    pub hot_key_to_remove: Option<Principal>,
+}
+
+#[derive(CandidType)]
 pub struct AddHotKey {
     pub new_hot_key: Option<Principal>,
 }
 
 #[derive(CandidType)]
 pub enum Operation {
+    RemoveHotKey(RemoveHotKey),
+    StartDissolving(StartDissolving),
+    StopDissolving(StopDissolving),
     AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
-    StartDissolving(StartDissolving),
 }
 
 #[derive(CandidType)]
@@ -51,17 +61,27 @@ struct ManageNeuron {
 /// Signs a neuron configuration
 #[derive(Clap)]
 pub struct ManageOpts {
-    /// Neuron Id
-    #[clap(long)]
     neuron_id: u64,
 
     /// Principal to be used as a hot key.
     #[clap(long)]
     add_hot_key: Option<Principal>,
 
+    /// Principal to be used as a hot key.
+    #[clap(long)]
+    remove_hot_key: Option<Principal>,
+
     /// Amount of dissolve seconds to add.
     #[clap(short, long)]
     additional_dissolve_delay_seconds: Option<u32>,
+
+    /// Start dissolving
+    #[clap(long)]
+    start_dissolving: bool,
+
+    /// Stop dissolving
+    #[clap(long)]
+    stop_dissolving: bool,
 }
 
 pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> {
@@ -79,6 +99,38 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
         msgs.push(generate(env, args).await?);
     };
 
+    if opts.remove_hot_key.is_some() {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::RemoveHotKey(RemoveHotKey {
+                    hot_key_to_remove: opts.remove_hot_key
+                }))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    };
+
+    if opts.stop_dissolving {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::StopDissolving(StopDissolving {}))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    }
+
+    if opts.start_dissolving {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::StartDissolving(StartDissolving {}))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    }
+
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
         let args = Encode!(&ManageNeuron {
             id: Some(NeuronId { id: opts.neuron_id }),
@@ -86,13 +138,6 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds
                 }))
-            }))
-        })?;
-        msgs.push(generate(env, args).await?);
-        let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
-            command: Some(Command::Configure(Configure {
-                operation: Some(Operation::StartDissolving(StartDissolving {}))
             }))
         })?;
         msgs.push(generate(env, args).await?);
