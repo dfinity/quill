@@ -36,12 +36,16 @@ pub struct StakeOpts {
 
 pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> DfxResult<String> {
     let (controller, _) = crate::commands::public::get_ids(env)?;
-    let nonce = convert_name_to_memo(&opts.name);
-    let neuron_subaccount = get_neuron_subaccount(&controller, nonce);
+    let nonce = convert_name_to_nonce(&opts.name);
+    let gov_subaccount = get_neuron_subaccount(&controller, nonce);
+    let account = AccountIdentifier::new(
+        Principal::from_text(GOVERNANCE_CANISTER_ID)?,
+        Some(gov_subaccount),
+    );
     let transfer_message = transfer::exec(
         env,
         transfer::TransferOpts {
-            to: AccountIdentifier::new(controller.clone(), Some(neuron_subaccount)).to_hex(),
+            to: account.to_hex(),
             amount: Some(opts.amount),
             fee: opts.fee,
             memo: Some(nonce.to_string()),
@@ -110,7 +114,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     Subaccount(data.finish())
 }
 
-fn convert_name_to_memo(name: &str) -> u64 {
+fn convert_name_to_nonce(name: &str) -> u64 {
     let mut bytes = std::collections::VecDeque::from(name.as_bytes().to_vec());
     while bytes.len() < 8 {
         bytes.push_front(0)
