@@ -17,7 +17,7 @@ To display the signed message in human-readable form:
 
     nano send --dry-run <path-to-file>
 
-`nano` could be used on an online computer to send the file:
+`nano` could be used on an online computer to send any signed transactions:
 
     nano send <path-to-file>
 
@@ -29,21 +29,27 @@ Submit the signed status check:
 
     nano request-status-submit --file <path>
 
-To get the principal id:
+To get the principal and the account id:
 
-    nano --pem-file <path> principal-id
+    nano --pem-file <path> public-ids
 
-For the account id:
 
-    nano --pem-file <path> account-id
+### Governance
+
+Currently, `nano` supports:
+
+- staking to neurons and toping up neurons,
+- full range of configure operations (add/remove hotkey, start/stop dissolving, add dissolve time),
+- disbursing.
 
 ## Roadmap
 
 0. ~~Support for offline signing of transfer transactions.~~
 1. ~~Human readable pretty print of the signed transcation. (Help needed!)~~
-2. Support for governance (neuron staking, dissolving, etc.)
-3. Reduce the code and dependnecies to the bare minimum for easy auditing.
+2. ~~Support for governance (neuron staking, dissolving, etc.)~~
+3. ~~Reduce the code and dependencies to the bare minimum for easy auditing.~~
 4. ~~Get rid of nix.~~
+5. Full governance support?
 
 ## Building
 
