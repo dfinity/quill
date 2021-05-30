@@ -1,6 +1,11 @@
 use crate::{
     commands::{request_status_sign, sign},
-    lib::{environment::Environment, get_idl_string, DfxResult, GOVERNANCE_CANISTER_ID},
+    lib::{
+        environment::Environment,
+        get_idl_string,
+        nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
+        DfxResult, GOVERNANCE_CANISTER_ID,
+    },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
@@ -48,8 +53,15 @@ pub struct Configure {
 }
 
 #[derive(CandidType)]
+pub struct Disburse {
+    pub to_account: Option<AccountIdentifier>,
+    pub amount: Option<ICPTs>,
+}
+
+#[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
+    Disburse(Disburse),
 }
 
 #[derive(CandidType)]
@@ -67,7 +79,7 @@ pub struct ManageOpts {
     #[clap(long)]
     add_hot_key: Option<Principal>,
 
-    /// Principal to be used as a hot key.
+    /// Principal hot key to be removed.
     #[clap(long)]
     remove_hot_key: Option<Principal>,
 
@@ -75,13 +87,17 @@ pub struct ManageOpts {
     #[clap(short, long)]
     additional_dissolve_delay_seconds: Option<u32>,
 
-    /// Start dissolving
+    /// Start dissolving.
     #[clap(long)]
     start_dissolving: bool,
 
-    /// Stop dissolving
+    /// Stop dissolving.
     #[clap(long)]
     stop_dissolving: bool,
+
+    /// Disburse the entire staked amount to the controller's account.
+    #[clap(long)]
+    disburse: bool,
 }
 
 pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> {
@@ -138,6 +154,17 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds
                 }))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    };
+
+    if opts.disburse {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Disburse(Disburse {
+                to_account: None,
+                amount: None
             }))
         })?;
         msgs.push(generate(env, args).await?);
