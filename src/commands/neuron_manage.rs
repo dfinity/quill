@@ -2,6 +2,7 @@ use crate::{
     commands::{request_status_sign, sign},
     lib::{environment::Environment, get_idl_string, DfxResult, GOVERNANCE_CANISTER_ID},
 };
+use anyhow::anyhow;
 use candid::{CandidType, Encode};
 use clap::Clap;
 use ic_types::Principal;
@@ -50,25 +51,49 @@ pub struct ManageOpts {
     #[clap(long)]
     neuron_id: u64,
 
+    /// Principal to be used as a hot key.
+    #[clap(long)]
+    add_hot_key: Option<Principal>,
+
     /// Amount of dissolve seconds to add.
     #[clap(short, long)]
-    additional_dissolve_delay_seconds: u32,
+    additional_dissolve_delay_seconds: Option<u32>,
 }
 
 pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> {
-    let args = Encode!(&ManageNeuron {
-        id: Some(NeuronId { id: opts.neuron_id }),
-        command: Some(Command::Configure(Configure {
-            operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
-                additional_dissolve_delay_seconds: opts.additional_dissolve_delay_seconds
-            }))
-        }))
-    })?;
+    let mut msgs = Vec::new();
 
-    let msg = generate(env, args).await?;
+    if opts.add_hot_key.is_some() {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::AddHotKey(AddHotKey {
+                    new_hot_key: opts.add_hot_key
+                }))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    };
+
+    if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
+                    additional_dissolve_delay_seconds
+                }))
+            }))
+        })?;
+        msgs.push(generate(env, args).await?);
+    };
+
+    if msgs.is_empty() {
+        return Err(anyhow!("No instructions provided"));
+    }
+
     let mut out = String::new();
     out.push_str("[");
-    out.push_str(&msg);
+    out.push_str(&msgs.join(","));
     out.push_str("]");
 
     Ok(out)
