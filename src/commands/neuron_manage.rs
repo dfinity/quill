@@ -1,5 +1,5 @@
 use crate::{
-    commands::{request_status_sign, sign},
+    commands::{request_status, sign},
     lib::{
         environment::Environment,
         get_idl_string,
@@ -204,7 +204,7 @@ pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> DfxResult<String>
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status_sign(env, request_id, canister_id).await?;
+    let req_status_signed_msg = request_status::sign(env, request_id, canister_id).await?;
 
     let mut out = String::new();
     out.push_str("{ \"ingress\": ");

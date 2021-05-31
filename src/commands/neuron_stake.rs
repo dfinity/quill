@@ -1,5 +1,5 @@
 use crate::{
-    commands::{request_status_sign, sign, transfer},
+    commands::{request_status, sign, transfer},
     lib::{
         environment::Environment,
         get_idl_string,
@@ -79,7 +79,7 @@ pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> DfxResult<String> {
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status_sign(env, request_id, canister_id).await?;
+    let req_status_signed_msg = request_status::sign(env, request_id, canister_id).await?;
 
     // Generate a JSON list of signed messages.
     let mut out = String::new();

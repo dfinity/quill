@@ -1,17 +1,12 @@
 use crate::lib::environment::Environment;
-use crate::lib::sign::sign_transport::SignReplicaV2Transport;
-use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
 use crate::lib::DfxResult;
-use anyhow::anyhow;
 use clap::Clap;
-use ic_agent::{AgentError, RequestId};
-use ic_types::Principal;
 use tokio::runtime::Runtime;
 
 mod neuron_manage;
 mod neuron_stake;
 mod public;
-mod request_status_submit;
+mod request_status;
 mod send;
 mod sign;
 mod transfer;
@@ -58,25 +53,5 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
             })
         }),
         Command::Send(v) => runtime.block_on(async { send::exec(env, v).await }),
-    }
-}
-
-pub async fn request_status_sign(
-    env: &dyn Environment,
-    request_id: RequestId,
-    canister_id: Principal,
-) -> DfxResult<String> {
-    let mut agent = env
-        .get_agent()
-        .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
-    let data = SignedMessageWithRequestId::new();
-    data.write().unwrap().request_id = Some(request_id);
-    let transport = SignReplicaV2Transport { data: data.clone() };
-    agent.set_transport(transport);
-    match agent.request_status_raw(&request_id, canister_id).await {
-        Err(AgentError::MissingReplicaTransport()) => {
-            return Ok(data.read().unwrap().buffer.clone());
-        }
-        val => panic!("Unexpected output from the signing agent: {:?}", val),
     }
 }

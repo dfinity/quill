@@ -1,4 +1,4 @@
-use crate::commands::request_status_submit;
+use crate::commands::request_status;
 use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
     environment::Environment,
@@ -57,8 +57,7 @@ async fn submit_ingress_and_check_status(
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status_submit::submit(env, &message.request_status, Some(method_name.to_string()))
-        .await
+    match request_status::submit(env, &message.request_status, Some(method_name.to_string())).await
     {
         Ok(result) => println!("{}\n", result),
         Err(err) => print!("{}\n", err),
