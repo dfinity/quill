@@ -172,13 +172,18 @@ macro_rules! error_unknown {
     }
 }
 
-pub fn read_json(path: String) -> DfxResult<String> {
+pub fn read_json(path: &str) -> DfxResult<String> {
     use anyhow::anyhow;
-    let path = std::path::Path::new(&path);
-    let mut file = std::fs::File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
-    let mut json = String::new();
     use std::io::Read;
-    file.read_to_string(&mut json)
-        .map_err(|_| anyhow!("Cannot read the message file."))?;
+    let mut json = String::new();
+    if path == "-" {
+        std::io::stdin().read_to_string(&mut json)?;
+    } else {
+        let path = std::path::Path::new(&path);
+        let mut file =
+            std::fs::File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
+        file.read_to_string(&mut json)
+            .map_err(|_| anyhow!("Cannot read the message file."))?;
+    }
     Ok(json)
 }

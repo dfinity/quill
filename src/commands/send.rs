@@ -21,21 +21,25 @@ pub struct SendOpts {
     /// Will display the signed message, but not send it.
     #[clap(long)]
     dry_run: bool,
+
+    /// Skips confirmation and sends the message directly.
+    #[clap(long)]
+    yes: bool,
 }
 
 pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
-    let json = read_json(opts.file_name)?;
+    let json = read_json(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
-        send(env, &val, opts.dry_run).await?;
+        send(env, &val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
-            submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+            submit_ingress_and_check_status(env, &tx, &opts).await?;
         }
     } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
-        submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+        submit_ingress_and_check_status(env, &tx, &opts).await?;
     } else if let Ok(val) = serde_json::from_str::<NeuronStakeMessage>(&json) {
         for tx in &[val.transfer, val.claim] {
-            submit_ingress_and_check_status(env, &tx, opts.dry_run).await?;
+            submit_ingress_and_check_status(env, &tx, &opts).await?;
         }
     } else {
         return Err(anyhow!("Invalid JSON content"));
@@ -46,10 +50,10 @@ pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
 async fn submit_ingress_and_check_status(
     env: &dyn Environment,
     message: &IngressWithRequestId,
-    dry_run: bool,
+    opts: &SendOpts,
 ) -> DfxResult {
-    send(env, &message.ingress, dry_run).await?;
-    if dry_run {
+    send(env, &message.ingress, opts).await?;
+    if opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
@@ -62,7 +66,7 @@ async fn submit_ingress_and_check_status(
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: &Ingress, dry_run: bool) -> DfxResult {
+async fn send(env: &dyn Environment, message: &Ingress, opts: &SendOpts) -> DfxResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
     println!("Sending message with\n");
@@ -72,16 +76,16 @@ async fn send(env: &dyn Environment, message: &Ingress, dry_run: bool) -> DfxRes
     println!("  Method name: {}", method_name);
     println!("  Arguments:   {}", args);
 
-    if dry_run {
+    if opts.dry_run {
         return Ok(());
     }
 
-    if message.call_type == "update" {
+    if message.call_type == "update" && !opts.yes {
         println!("\nDo you want to send this message? [y/N]");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
         if !["y", "yes"].contains(&input.to_lowercase().trim()) {
-            return Ok(());
+            std::process::exit(0);
         }
     }
 
