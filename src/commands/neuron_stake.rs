@@ -66,9 +66,9 @@ pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> DfxResult<String> {
         "args",
         "raw",
     )?);
-    let canister_id = GOVERNANCE_CANISTER_ID.to_string();
+    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
     let opts = sign::SignOpts {
-        canister_id: canister_id.clone(),
+        canister_id: canister_id.to_string(),
         method_name,
         query: false,
         update: true,
@@ -76,18 +76,10 @@ pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> DfxResult<String> {
         r#type: Some("raw".to_string()),
     };
     let msg_with_req_id = sign::exec(env, opts).await?;
-    let request_id: String = msg_with_req_id
+    let request_id = msg_with_req_id
         .request_id
-        .expect("No request id for transfer call found")
-        .into();
-    let req_status_signed_msg = request_status_sign::exec(
-        env,
-        request_status_sign::RequestStatusSignOpts {
-            request_id: format!("0x{}", request_id),
-            canister_id,
-        },
-    )
-    .await?;
+        .expect("No request id for transfer call found");
+    let req_status_signed_msg = request_status_sign(env, request_id, canister_id).await?;
 
     // Generate a JSON list of signed messages.
     let mut out = String::new();
