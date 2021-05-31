@@ -33,14 +33,21 @@ To get the principal and the account id:
 
     nano --pem-file <path> public-ids
 
-
 ### Governance
 
-Currently, `nano` supports:
+This is how you’d stake/topup a neuron:
 
-- staking to neurons and toping up neurons,
-- full range of configure operations (add/remove hotkey, start/stop dissolving, add dissolve time),
-- disbursing.
+    nano --pem-file <path> neuron-stake --amount 2.5 --name 1
+
+Managing the neuron:
+
+    nano --pem-file <path> neuron-manage <neuron-id> [OPERATIONS]
+
+Currently supported operations are: `--start-dissolving`, `--stop-dissolving`, `--disburse`, `--add-hot-key`, `--remove-hot-key`.
+
+All of the commands above will generate signed messages, which can be sent on the online machine like this:
+
+    nano send <file>
 
 ## Roadmap
 
