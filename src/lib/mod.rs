@@ -10,7 +10,6 @@ pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
 pub mod environment;
-pub mod identity;
 pub mod nns_types;
 pub mod sign;
 

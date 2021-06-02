@@ -1,6 +1,8 @@
-use crate::lib::{identity::Identity as NanoIdentity, AnyhowResult, NetworkDescriptor};
-use ic_agent::{Agent, Identity};
-use ic_types::Principal;
+use crate::lib::{AnyhowResult, NetworkDescriptor};
+use ic_agent::{
+    identity::{BasicIdentity, Secp256k1Identity},
+    Agent, Identity,
+};
 use std::time::Duration;
 
 pub trait Environment {
@@ -10,7 +12,7 @@ pub trait Environment {
 
     fn get_network_descriptor(&self) -> NetworkDescriptor;
 
-    fn get_selected_identity_principal(&self) -> Option<Principal>;
+    fn identity(&self) -> Option<Box<dyn ic_agent::Identity + Sync + Send>>;
 }
 
 pub struct EnvironmentImpl {
@@ -38,8 +40,8 @@ impl Environment for EnvironmentImpl {
             )
             .with_ingress_expiry(Some(timeout));
 
-        let builder = match self.pem.clone() {
-            Some(pem) => builder.with_boxed_identity(Box::new(NanoIdentity::load(pem))),
+        let builder = match self.identity() {
+            Some(identity) => builder.with_boxed_identity(identity),
             None => builder,
         };
 
@@ -54,9 +56,17 @@ impl Environment for EnvironmentImpl {
         }
     }
 
-    fn get_selected_identity_principal(&self) -> Option<Principal> {
-        self.pem
-            .clone()
-            .and_then(move |pem| NanoIdentity::load(pem.clone()).sender().ok())
+    fn identity(&self) -> Option<Box<dyn Identity + Sync + Send>> {
+        let pem = self.pem.clone()?;
+        match Secp256k1Identity::from_pem(pem.as_bytes()) {
+            Ok(identity) => return Some(Box::new(identity)),
+            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+                Ok(identity) => return Some(Box::new(identity)),
+                Err(_) => {
+                    eprintln!("Couldn't load identity from PEM file");
+                    std::process::exit(1);
+                }
+            },
+        }
     }
 }
