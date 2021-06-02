@@ -2,7 +2,7 @@ use crate::lib::environment::Environment;
 use crate::lib::get_local_candid;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
-use crate::lib::DfxResult;
+use crate::lib::AnyhowResult;
 use crate::lib::{blob_from_arguments, get_candid_type};
 use anyhow::{anyhow, bail};
 use clap::Clap;
@@ -36,7 +36,7 @@ pub struct SignOpts {
     pub r#type: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: SignOpts) -> DfxResult<SignedMessageWithRequestId> {
+pub async fn exec(env: &dyn Environment, opts: SignOpts) -> AnyhowResult<SignedMessageWithRequestId> {
     let callee_canister = opts.canister_id.as_str();
     let method_name = opts.method_name.as_str();
 

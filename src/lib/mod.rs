@@ -7,7 +7,7 @@ pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 
 /// The type to represent DFX results.
-pub type DfxResult<T = ()> = anyhow::Result<T>;
+pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
 pub mod environment;
 pub mod identity;
@@ -39,7 +39,7 @@ pub fn get_idl_string(
     method_name: &str,
     part: &str,
     output_type: &str,
-) -> DfxResult<String> {
+) -> AnyhowResult<String> {
     let spec = get_local_candid(canister_id);
     let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
     match output_type {
@@ -80,7 +80,7 @@ pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Funct
     Some((env, method))
 }
 
-pub fn check_candid(idl: String) -> DfxResult<(TypeEnv, Option<Type>)> {
+pub fn check_candid(idl: String) -> AnyhowResult<(TypeEnv, Option<Type>)> {
     let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl)?;
     let mut env = TypeEnv::new();
     let actor = check_prog(&mut env, &ast)?;
@@ -91,7 +91,7 @@ pub fn blob_from_arguments(
     arguments: Option<&str>,
     arg_type: Option<&str>,
     method_type: &Option<(TypeEnv, Function)>,
-) -> DfxResult<Vec<u8>> {
+) -> AnyhowResult<Vec<u8>> {
     let arg_type = arg_type.unwrap_or("idl");
     match arg_type {
         "raw" => {
@@ -172,7 +172,7 @@ macro_rules! error_unknown {
     }
 }
 
-pub fn read_json(path: &str) -> DfxResult<String> {
+pub fn read_json(path: &str) -> AnyhowResult<String> {
     use anyhow::anyhow;
     use std::io::Read;
     let mut json = String::new();

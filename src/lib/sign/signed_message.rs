@@ -1,5 +1,5 @@
 use crate::lib::get_idl_string;
-use crate::lib::DfxResult;
+use crate::lib::AnyhowResult;
 use anyhow::{anyhow, bail};
 use chrono::{TimeZone, Utc};
 use ic_agent::RequestId;
@@ -51,7 +51,7 @@ impl Ingress {
         self
     }
 
-    pub fn parse(&self) -> DfxResult<(Principal, Principal, String, String)> {
+    pub fn parse(&self) -> AnyhowResult<(Principal, Principal, String, String)> {
         let content = hex::decode(&self.content)?;
         let cbor: Value = serde_cbor::from_slice(&content)
             .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;

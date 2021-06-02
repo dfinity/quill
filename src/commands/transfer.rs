@@ -5,7 +5,7 @@ use crate::lib::{
     nns_types::account_identifier::AccountIdentifier,
     nns_types::icpts::{ICPTs, TRANSACTION_FEE},
     nns_types::{Memo, SendArgs},
-    DfxResult, LEDGER_CANISTER_ID,
+    AnyhowResult, LEDGER_CANISTER_ID,
 };
 use anyhow::anyhow;
 use candid::Encode;
@@ -44,7 +44,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> DfxResult<String> {
+pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> AnyhowResult<String> {
     let amount = get_icpts_from_args(opts.amount, opts.icp, opts.e8s)?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         ICPTs::from_str(&v).map_err(|err| anyhow!(err))
@@ -97,7 +97,7 @@ fn get_icpts_from_args(
     amount: Option<String>,
     icp: Option<String>,
     e8s: Option<String>,
-) -> DfxResult<ICPTs> {
+) -> AnyhowResult<ICPTs> {
     if amount.is_none() {
         let icp = match icp {
             Some(s) => {

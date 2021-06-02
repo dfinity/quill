@@ -1,5 +1,5 @@
 use crate::lib::environment::Environment;
-use crate::lib::DfxResult;
+use crate::lib::AnyhowResult;
 use clap::Clap;
 use tokio::runtime::Runtime;
 
@@ -24,7 +24,7 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
 }
 
-pub fn exec(env: &dyn Environment, cmd: Command) -> DfxResult {
+pub fn exec(env: &dyn Environment, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds => public::exec(env),

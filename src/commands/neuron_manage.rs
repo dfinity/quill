@@ -4,7 +4,7 @@ use crate::{
         environment::Environment,
         get_idl_string,
         nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
-        DfxResult, GOVERNANCE_CANISTER_ID,
+        AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
 };
 use anyhow::anyhow;
@@ -100,7 +100,7 @@ pub struct ManageOpts {
     disburse: bool,
 }
 
-pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> {
+pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<String> {
     let mut msgs = Vec::new();
 
     if opts.add_hot_key.is_some() {
@@ -182,7 +182,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> DfxResult<String> 
     Ok(out)
 }
 
-pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> DfxResult<String> {
+pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> AnyhowResult<String> {
     let method_name = "manage_neuron".to_string();
     let argument = Some(get_idl_string(
         &args,

@@ -1,7 +1,7 @@
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
 use crate::lib::{
-    environment::Environment, get_idl_string, sign::signed_message::RequestStatus, DfxResult,
+    environment::Environment, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult,
 };
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{Replied, RequestStatusResponse};
@@ -14,7 +14,7 @@ pub async fn sign(
     env: &dyn Environment,
     request_id: RequestId,
     canister_id: Principal,
-) -> DfxResult<String> {
+) -> AnyhowResult<String> {
     let mut agent = env
         .get_agent()
         .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
@@ -34,7 +34,7 @@ pub async fn submit(
     env: &dyn Environment,
     req: &RequestStatus,
     method_name: Option<String>,
-) -> DfxResult<String> {
+) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;

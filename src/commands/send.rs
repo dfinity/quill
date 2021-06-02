@@ -4,7 +4,7 @@ use crate::lib::{
     environment::Environment,
     read_json,
     sign::signed_message::{Ingress, IngressWithRequestId},
-    DfxResult,
+    AnyhowResult,
 };
 use anyhow::anyhow;
 use clap::Clap;
@@ -27,7 +27,7 @@ pub struct SendOpts {
     yes: bool,
 }
 
-pub async fn exec(env: &dyn Environment, opts: SendOpts) -> DfxResult {
+pub async fn exec(env: &dyn Environment, opts: SendOpts) -> AnyhowResult {
     let json = read_json(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(env, &val, &opts).await?;
@@ -51,7 +51,7 @@ async fn submit_ingress_and_check_status(
     env: &dyn Environment,
     message: &IngressWithRequestId,
     opts: &SendOpts,
-) -> DfxResult {
+) -> AnyhowResult {
     send(env, &message.ingress, opts).await?;
     if opts.dry_run {
         return Ok(());
@@ -65,7 +65,7 @@ async fn submit_ingress_and_check_status(
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: &Ingress, opts: &SendOpts) -> DfxResult {
+async fn send(env: &dyn Environment, message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
     println!("Sending message with\n");

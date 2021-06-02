@@ -5,7 +5,7 @@ use crate::{
         get_idl_string,
         nns_types::account_identifier::{AccountIdentifier, Subaccount},
         nns_types::Memo,
-        DfxResult, GOVERNANCE_CANISTER_ID,
+        AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
 };
 use candid::{CandidType, Encode};
@@ -34,7 +34,7 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> DfxResult<String> {
+pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> AnyhowResult<String> {
     let (controller, _) = crate::commands::public::get_ids(env)?;
     let nonce = convert_name_to_nonce(&opts.name);
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);

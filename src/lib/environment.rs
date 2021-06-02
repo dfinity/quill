@@ -1,4 +1,4 @@
-use crate::lib::{identity::Identity as NanoIdentity, DfxResult, NetworkDescriptor};
+use crate::lib::{identity::Identity as NanoIdentity, AnyhowResult, NetworkDescriptor};
 use ic_agent::{Agent, Identity};
 use ic_types::Principal;
 use std::time::Duration;
@@ -18,7 +18,7 @@ pub struct EnvironmentImpl {
 }
 
 impl EnvironmentImpl {
-    pub fn new(pem: Option<String>) -> DfxResult<Self> {
+    pub fn new(pem: Option<String>) -> AnyhowResult<Self> {
         Ok(EnvironmentImpl { pem })
     }
 }
