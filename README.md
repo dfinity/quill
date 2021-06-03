@@ -21,14 +21,6 @@ To display the signed message in human-readable form:
 
     nano send <path-to-file>
 
-Sign a request status check:
-
-    nano --pem-file <path> request-status-sign <request-id>
-
-Submit the signed status check:
-
-    nano request-status-submit --file <path>
-
 To get the principal and the account id:
 
     nano --pem-file <path> public-ids
