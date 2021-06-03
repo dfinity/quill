@@ -18,7 +18,6 @@ pub enum Command {
     /// Prints the principal id and the accound id.
     PublicIds,
     Send(send::SendOpts),
-    Sign(sign::SignOpts),
     Transfer(transfer::TransferOpts),
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
@@ -31,12 +30,6 @@ pub fn exec(env: &dyn Environment, cmd: Command) -> AnyhowResult {
         Command::Transfer(v) => runtime.block_on(async {
             transfer::exec(env, v).await.and_then(|out| {
                 println!("{}", out);
-                Ok(())
-            })
-        }),
-        Command::Sign(v) => runtime.block_on(async {
-            sign::exec(env, v).await.and_then(|out| {
-                println!("{}", out.buffer);
                 Ok(())
             })
         }),

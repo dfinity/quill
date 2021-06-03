@@ -1,7 +1,6 @@
-use crate::commands::{request_status, sign};
+use crate::commands::{request_status, sign::sign};
 use crate::lib::{
     environment::Environment,
-    get_idl_string,
     nns_types::account_identifier::AccountIdentifier,
     nns_types::icpts::{ICPTs, TRANSACTION_FEE},
     nns_types::{Memo, SendArgs},
@@ -62,22 +61,7 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> AnyhowResult<Str
         created_at_time: None,
     })?;
 
-    let argument = Some(get_idl_string(
-        &args,
-        &canister_id.clone().to_string(),
-        SEND_METHOD,
-        "args",
-        "raw",
-    )?);
-    let opts = sign::SignOpts {
-        canister_id: canister_id.clone().to_string(),
-        method_name: SEND_METHOD.to_string(),
-        query: false,
-        update: true,
-        argument,
-        r#type: Some("raw".to_string()),
-    };
-    let msg_with_req_id = sign::exec(env, opts).await?;
+    let msg_with_req_id = sign(env, canister_id.clone(), SEND_METHOD, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");

@@ -1,8 +1,7 @@
 use crate::{
-    commands::{request_status, sign},
+    commands::{request_status, sign::sign},
     lib::{
         environment::Environment,
-        get_idl_string,
         nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
         AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
@@ -184,23 +183,8 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
 
 pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> AnyhowResult<String> {
     let method_name = "manage_neuron".to_string();
-    let argument = Some(get_idl_string(
-        &args,
-        GOVERNANCE_CANISTER_ID,
-        &method_name,
-        "args",
-        "raw",
-    )?);
     let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
-    let opts = sign::SignOpts {
-        canister_id: canister_id.to_string(),
-        method_name,
-        query: false,
-        update: true,
-        argument,
-        r#type: Some("raw".to_string()),
-    };
-    let msg_with_req_id = sign::exec(env, opts).await?;
+    let msg_with_req_id = sign(env, canister_id.clone(), &method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
