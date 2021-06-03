@@ -40,7 +40,7 @@ pub struct SendArgs {
     pub created_at_time: Option<TimeStamp>,
 }
 
-/// Send a signed message of a set of messages.
+/// Sends a signed message or a set of messages.
 #[derive(Clap)]
 pub struct SendOpts {
     /// Path to the signed message

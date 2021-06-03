@@ -3,7 +3,7 @@ use clap::{AppSettings, Clap};
 mod commands;
 mod lib;
 
-/// Ledger & Governance ToolKit.
+/// Ledger & Governance ToolKit for cold wallets.
 #[derive(Clap)]
 #[clap(name("nano"), global_setting = AppSettings::ColoredHelp)]
 pub struct CliOpts {

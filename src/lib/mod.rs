@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use candid::parser::typing::{check_prog, TypeEnv};
-use candid::types::{Function, Type};
+use candid::types::Function;
 use candid::IDLProg;
 use ic_agent::{
     identity::{BasicIdentity, Secp256k1Identity},
@@ -11,7 +11,6 @@ pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 pub const IC_URL: &str = "https://ic0.app";
 
-/// The type to represent DFX results.
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
 pub mod nns_types;
@@ -66,21 +65,12 @@ pub fn get_idl_string(
     }
 }
 
-/// Parse IDL file into TypeEnv. This is a best effort function: it will succeed if
-/// the IDL file can be parsed and type checked in Rust parser, and has an
-/// actor in the IDL file. If anything fails, it returns None.
 pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
-    let (env, ty) = check_candid(idl).ok()?;
-    let actor = ty?;
-    let method = env.get_method(&actor, method_name).ok()?.clone();
-    Some((env, method))
-}
-
-pub fn check_candid(idl: String) -> AnyhowResult<(TypeEnv, Option<Type>)> {
-    let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl)?;
+    let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
     let mut env = TypeEnv::new();
-    let actor = check_prog(&mut env, &ast)?;
-    Ok((env, actor))
+    let actor = check_prog(&mut env, &ast).ok()?;
+    let method = env.get_method(&actor?, method_name).ok()?.clone();
+    Some((env, method))
 }
 
 pub fn read_json(path: &str) -> AnyhowResult<String> {

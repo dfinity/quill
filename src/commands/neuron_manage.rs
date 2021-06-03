@@ -68,7 +68,7 @@ struct ManageNeuron {
     command: Option<Command>,
 }
 
-/// Signs a neuron configuration
+/// Signs a neuron configuration change.
 #[derive(Clap)]
 pub struct ManageOpts {
     neuron_id: u64,

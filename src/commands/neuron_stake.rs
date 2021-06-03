@@ -15,7 +15,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
     pub controller: Option<Principal>,
 }
 
-/// Creates a neuron with the specified amount of ICPs
+/// Signs creation of a new neuron with the specified amount of ICPs.
 #[derive(Clap)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.

@@ -37,24 +37,13 @@ Managing the neuron:
 
 Currently supported operations are: `--start-dissolving`, `--stop-dissolving`, `--disburse`, `--add-hot-key`, `--remove-hot-key`.
 
-All of the commands above will generate signed messages, which can be sent on the online machine like this:
-
-    nano send <file>
-
-## Roadmap
-
-0. ~~Support for offline signing of transfer transactions.~~
-1. ~~Human readable pretty print of the signed transcation. (Help needed!)~~
-2. ~~Support for governance (neuron staking, dissolving, etc.)~~
-3. ~~Reduce the code and dependencies to the bare minimum for easy auditing.~~
-4. ~~Get rid of nix.~~
-5. Full governance support?
+All of the commands above will generate signed messages, which can be sent on the online machine using the `send` command from above.
 
 ## Building
 
 0. Build by running `cargo build --release`.
 1. Find the binary at `target/release/nano`.
 
-## Source Code
+## Credit
 
-Derived from [SDK](https://github.com/dfinity/sdk).
+Originally forked from the [SDK](https://github.com/dfinity/sdk).

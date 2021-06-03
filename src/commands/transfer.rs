@@ -16,7 +16,7 @@ use std::str::FromStr;
 
 const SEND_METHOD: &str = "send_dfx";
 
-/// Transfer ICP
+/// Signs an ICP transfer transaction.
 #[derive(Default, Clap)]
 pub struct TransferOpts {
     /// Destination account.
