@@ -1,6 +1,5 @@
 use crate::commands::{request_status, sign::sign};
 use crate::lib::{
-    environment::Environment,
     nns_types::account_identifier::AccountIdentifier,
     nns_types::icpts::{ICPTs, TRANSACTION_FEE},
     nns_types::{Memo, SendArgs},
@@ -43,7 +42,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> AnyhowResult<String> {
+pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<String> {
     let amount = get_icpts_from_args(opts.amount, opts.icp, opts.e8s)?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         ICPTs::from_str(&v).map_err(|err| anyhow!(err))
@@ -61,11 +60,11 @@ pub async fn exec(env: &dyn Environment, opts: TransferOpts) -> AnyhowResult<Str
         created_at_time: None,
     })?;
 
-    let msg_with_req_id = sign(env, canister_id.clone(), SEND_METHOD, args).await?;
+    let msg_with_req_id = sign(pem, canister_id.clone(), SEND_METHOD, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(env, request_id, canister_id).await?;
+    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
 
     let mut out = String::new();
     out.push_str("{ \"ingress\": ");

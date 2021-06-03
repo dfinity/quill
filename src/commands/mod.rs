@@ -1,4 +1,3 @@
-use crate::lib::environment::Environment;
 use crate::lib::AnyhowResult;
 use clap::Clap;
 use tokio::runtime::Runtime;
@@ -23,28 +22,28 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
 }
 
-pub fn exec(env: &dyn Environment, cmd: Command) -> AnyhowResult {
+pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::PublicIds => public::exec(env),
-        Command::Transfer(v) => runtime.block_on(async {
-            transfer::exec(env, v).await.and_then(|out| {
+        Command::PublicIds => public::exec(pem),
+        Command::Transfer(opts) => runtime.block_on(async {
+            transfer::exec(pem, opts).await.and_then(|out| {
                 println!("{}", out);
                 Ok(())
             })
         }),
-        Command::NeuronStake(v) => runtime.block_on(async {
-            neuron_stake::exec(env, v).await.and_then(|out| {
+        Command::NeuronStake(opts) => runtime.block_on(async {
+            neuron_stake::exec(pem, opts).await.and_then(|out| {
                 println!("{}", out);
                 Ok(())
             })
         }),
-        Command::NeuronManage(v) => runtime.block_on(async {
-            neuron_manage::exec(env, v).await.and_then(|out| {
+        Command::NeuronManage(opts) => runtime.block_on(async {
+            neuron_manage::exec(pem, opts).await.and_then(|out| {
                 println!("{}", out);
                 Ok(())
             })
         }),
-        Command::Send(v) => runtime.block_on(async { send::exec(env, v).await }),
+        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
     }
 }

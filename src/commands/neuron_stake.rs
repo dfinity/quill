@@ -1,7 +1,6 @@
 use crate::{
     commands::{request_status, sign::sign, transfer},
     lib::{
-        environment::Environment,
         nns_types::account_identifier::{AccountIdentifier, Subaccount},
         nns_types::Memo,
         AnyhowResult, GOVERNANCE_CANISTER_ID,
@@ -33,8 +32,8 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> AnyhowResult<String> {
-    let (controller, _) = crate::commands::public::get_ids(env)?;
+pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<String> {
+    let (controller, _) = crate::commands::public::get_ids(pem)?;
     let nonce = convert_name_to_nonce(&opts.name);
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(
@@ -42,7 +41,7 @@ pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> AnyhowResult<String
         Some(gov_subaccount),
     );
     let transfer_message = transfer::exec(
-        env,
+        pem,
         transfer::TransferOpts {
             to: account.to_hex(),
             amount: Some(opts.amount),
@@ -59,11 +58,11 @@ pub async fn exec(env: &dyn Environment, opts: StakeOpts) -> AnyhowResult<String
 
     let method_name = "claim_or_refresh_neuron_from_account".to_string();
     let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
-    let msg_with_req_id = sign(env, canister_id.clone(), &&method_name, args).await?;
+    let msg_with_req_id = sign(pem, canister_id.clone(), &&method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(env, request_id, canister_id).await?;
+    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
 
     // Generate a JSON list of signed messages.
     let mut out = String::new();

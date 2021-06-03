@@ -2,23 +2,20 @@ use anyhow::anyhow;
 use candid::parser::typing::{check_prog, TypeEnv};
 use candid::types::{Function, Type};
 use candid::IDLProg;
+use ic_agent::{
+    identity::{BasicIdentity, Secp256k1Identity},
+    Agent, Identity,
+};
 
 pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
+pub const IC_URL: &str = "https://ic0.app";
 
 /// The type to represent DFX results.
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
-pub mod environment;
 pub mod nns_types;
 pub mod sign;
-
-#[derive(Clone, Debug)]
-pub struct NetworkDescriptor {
-    pub name: String,
-    pub providers: Vec<String>,
-    pub is_ic: bool,
-}
 
 pub fn get_local_candid(canister_id: &str) -> Option<String> {
     match canister_id {
@@ -99,4 +96,38 @@ pub fn read_json(path: &str) -> AnyhowResult<String> {
             .map_err(|_| anyhow!("Cannot read the message file."))?;
     }
     Ok(json)
+}
+
+pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
+    let timeout = std::time::Duration::from_secs(60 * 5);
+    let builder = Agent::builder()
+        .with_transport(
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
+                IC_URL.to_string(),
+            )
+            .unwrap(),
+        )
+        .with_ingress_expiry(Some(timeout));
+
+    {
+        match pem {
+            Some(pem) => builder.with_boxed_identity(get_identity(pem)),
+            None => builder,
+        }
+    }
+    .build()
+    .map_err(|err| anyhow!(err))
+}
+
+pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
+    match Secp256k1Identity::from_pem(pem.as_bytes()) {
+        Ok(identity) => return Box::new(identity),
+        Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+            Ok(identity) => return Box::new(identity),
+            Err(_) => {
+                eprintln!("Couldn't load identity from PEM file");
+                std::process::exit(1);
+            }
+        },
+    }
 }

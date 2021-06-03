@@ -1,10 +1,9 @@
 use crate::commands::request_status;
 use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
-    environment::Environment,
     read_json,
     sign::signed_message::{Ingress, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, IC_URL,
 };
 use anyhow::anyhow;
 use clap::Clap;
@@ -27,19 +26,19 @@ pub struct SendOpts {
     yes: bool,
 }
 
-pub async fn exec(env: &dyn Environment, opts: SendOpts) -> AnyhowResult {
+pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
     let json = read_json(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
-        send(env, &val, &opts).await?;
+        send(&val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
-            submit_ingress_and_check_status(env, &tx, &opts).await?;
+            submit_ingress_and_check_status(pem, &tx, &opts).await?;
         }
     } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
-        submit_ingress_and_check_status(env, &tx, &opts).await?;
+        submit_ingress_and_check_status(pem, &tx, &opts).await?;
     } else if let Ok(val) = serde_json::from_str::<NeuronStakeMessage>(&json) {
         for tx in &[val.transfer, val.claim] {
-            submit_ingress_and_check_status(env, &tx, &opts).await?;
+            submit_ingress_and_check_status(pem, &tx, &opts).await?;
         }
     } else {
         return Err(anyhow!("Invalid JSON content"));
@@ -48,16 +47,16 @@ pub async fn exec(env: &dyn Environment, opts: SendOpts) -> AnyhowResult {
 }
 
 async fn submit_ingress_and_check_status(
-    env: &dyn Environment,
+    pem: &Option<String>,
     message: &IngressWithRequestId,
     opts: &SendOpts,
 ) -> AnyhowResult {
-    send(env, &message.ingress, opts).await?;
+    send(&message.ingress, opts).await?;
     if opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status::submit(env, &message.request_status, Some(method_name.to_string())).await
+    match request_status::submit(pem, &message.request_status, Some(method_name.to_string())).await
     {
         Ok(result) => println!("{}\n", result),
         Err(err) => print!("{}\n", err),
@@ -65,7 +64,7 @@ async fn submit_ingress_and_check_status(
     Ok(())
 }
 
-async fn send(env: &dyn Environment, message: &Ingress, opts: &SendOpts) -> AnyhowResult {
+async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
     println!("Sending message with\n");
@@ -88,13 +87,7 @@ async fn send(env: &dyn Environment, message: &Ingress, opts: &SendOpts) -> Anyh
         }
     }
 
-    let network = env
-        .get_network_descriptor()
-        .providers
-        .first()
-        .expect("Cannot get network provider (url).")
-        .to_string();
-    let transport = ReqwestHttpReplicaV2Transport::create(network)?;
+    let transport = ReqwestHttpReplicaV2Transport::create(IC_URL.to_string())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

@@ -1,8 +1,7 @@
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
-use crate::lib::{
-    environment::Environment, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult,
-};
+use crate::lib::IC_URL;
+use crate::lib::{get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{Replied, RequestStatusResponse};
 use ic_agent::{AgentError, RequestId};
@@ -11,13 +10,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn sign(
-    env: &dyn Environment,
+    pem: &Option<String>,
     request_id: RequestId,
     canister_id: Principal,
 ) -> AnyhowResult<String> {
-    let mut agent = env
-        .get_agent()
-        .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
+    let mut agent = get_agent(pem)?;
     let data = SignedMessageWithRequestId::new();
     data.write().unwrap().request_id = Some(request_id);
     let transport = SignReplicaV2Transport { data: data.clone() };
@@ -31,21 +28,19 @@ pub async fn sign(
 }
 
 pub async fn submit(
-    env: &dyn Environment,
+    pem: &Option<String>,
     req: &RequestStatus,
     method_name: Option<String>,
 ) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
-    let mut agent = env
-        .get_agent()
-        .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
+    let mut agent = get_agent(pem)?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
-                env.get_network_descriptor().providers[0].clone(),
+                IC_URL.to_string(),
             )
             .unwrap(),
         ),

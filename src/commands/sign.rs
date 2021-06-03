@@ -1,16 +1,15 @@
-use crate::lib::environment::Environment;
 use crate::lib::get_candid_type;
 use crate::lib::get_local_candid;
 use crate::lib::sign::sign_transport::SignReplicaV2Transport;
 use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
-use crate::lib::AnyhowResult;
+use crate::lib::{get_agent, AnyhowResult};
 use anyhow::anyhow;
 use ic_agent::AgentError;
 use ic_types::principal::Principal;
 use std::time::SystemTime;
 
 pub async fn sign(
-    env: &dyn Environment,
+    pem: &Option<String>,
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
@@ -22,9 +21,7 @@ pub async fn sign(
         _ => false,
     };
 
-    let mut sign_agent = env
-        .get_agent()
-        .ok_or_else(|| anyhow!("Cannot get HTTP client from environment."))?;
+    let mut sign_agent = get_agent(pem)?;
 
     let timeout = std::time::Duration::from_secs(5 * 60);
     let expiration_system_time = SystemTime::now()

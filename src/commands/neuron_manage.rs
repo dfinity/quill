@@ -1,7 +1,6 @@
 use crate::{
     commands::{request_status, sign::sign},
     lib::{
-        environment::Environment,
         nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
         AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
@@ -99,7 +98,7 @@ pub struct ManageOpts {
     disburse: bool,
 }
 
-pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<String> {
+pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String> {
     let mut msgs = Vec::new();
 
     if opts.add_hot_key.is_some() {
@@ -111,7 +110,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 }))
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     };
 
     if opts.remove_hot_key.is_some() {
@@ -123,7 +122,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 }))
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     };
 
     if opts.stop_dissolving {
@@ -133,7 +132,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     }
 
     if opts.start_dissolving {
@@ -143,7 +142,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     }
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
@@ -155,7 +154,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 }))
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     };
 
     if opts.disburse {
@@ -166,7 +165,7 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
                 amount: None
             }))
         })?;
-        msgs.push(generate(env, args).await?);
+        msgs.push(generate(pem, args).await?);
     };
 
     if msgs.is_empty() {
@@ -181,14 +180,14 @@ pub async fn exec(env: &dyn Environment, opts: ManageOpts) -> AnyhowResult<Strin
     Ok(out)
 }
 
-pub async fn generate(env: &dyn Environment, args: Vec<u8>) -> AnyhowResult<String> {
+pub async fn generate(pem: &Option<String>, args: Vec<u8>) -> AnyhowResult<String> {
     let method_name = "manage_neuron".to_string();
     let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
-    let msg_with_req_id = sign(env, canister_id.clone(), &method_name, args).await?;
+    let msg_with_req_id = sign(pem, canister_id.clone(), &method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(env, request_id, canister_id).await?;
+    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
 
     let mut out = String::new();
     out.push_str("{ \"ingress\": ");

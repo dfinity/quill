@@ -1,8 +1,5 @@
 #![warn(unused_extern_crates)]
-use crate::lib::environment::EnvironmentImpl;
-
 use clap::{AppSettings, Clap};
-
 mod commands;
 mod lib;
 
@@ -37,8 +34,7 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    let env = EnvironmentImpl::new(pem).expect("Couldn't instantiate the environment");
-    match commands::exec(&env, command) {
+    match commands::exec(&pem, command) {
         Err(err) => {
             eprintln!("{}", err);
             std::process::exit(1);
