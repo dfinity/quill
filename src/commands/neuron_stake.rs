@@ -1,8 +1,7 @@
 use crate::{
-    commands::{request_status, sign::sign, transfer},
+    commands::{request_status, send::Memo, sign::sign, transfer},
     lib::{
         nns_types::account_identifier::{AccountIdentifier, Subaccount},
-        nns_types::Memo,
         AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
 };

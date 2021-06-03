@@ -1,4 +1,5 @@
 use crate::commands::request_status;
+use crate::lib::nns_types::{account_identifier, icpts};
 use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
     read_json,
@@ -6,10 +7,38 @@ use crate::lib::{
     AnyhowResult, IC_URL,
 };
 use anyhow::anyhow;
+use candid::CandidType;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+#[derive(
+    Serialize, Deserialize, CandidType, Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord,
+)]
+pub struct Memo(pub u64);
+
+impl Default for Memo {
+    fn default() -> Memo {
+        Memo(0)
+    }
+}
+
+#[derive(CandidType)]
+pub struct TimeStamp {
+    pub timestamp_nanos: u64,
+}
+
+#[derive(CandidType)]
+pub struct SendArgs {
+    pub memo: Memo,
+    pub amount: icpts::ICPTs,
+    pub fee: icpts::ICPTs,
+    pub from_subaccount: Option<account_identifier::Subaccount>,
+    pub to: account_identifier::AccountIdentifier,
+    pub created_at_time: Option<TimeStamp>,
+}
 
 /// Send a signed message of a set of messages.
 #[derive(Clap)]

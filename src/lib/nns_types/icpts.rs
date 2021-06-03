@@ -59,25 +59,6 @@ impl ICPTs {
         Ok(Self { e8s })
     }
 
-    /// ```
-    /// # use ledger_canister::ICPTs;
-    /// let icpt = ICPTs::from_icpts(12).unwrap();
-    /// assert_eq!(icpt.unpack(), (12, 0))
-    /// ```
-    pub fn from_icpts(icp: u64) -> Result<Self, String> {
-        Self::new(icp, 0)
-    }
-
-    /// Construct ICPTs from e8s, 10E8 e8s == 1 ICP
-    /// ```
-    /// # use ledger_canister::ICPTs;
-    /// let icpt = ICPTs::from_e8s(1200000200);
-    /// assert_eq!(icpt.unpack(), (12, 200))
-    /// ```
-    pub const fn from_e8s(e8s: u64) -> Self {
-        ICPTs { e8s }
-    }
-
     /// Gets the total number of whole ICPTs
     /// ```
     /// # use ledger_canister::ICPTs;
