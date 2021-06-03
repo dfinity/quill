@@ -36,10 +36,10 @@ pub struct TransferOpts {
 }
 
 pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<String> {
-    let amount = ICPTs::from_str(&opts.amount.unwrap())
+    let amount = parse_icpts(&opts.amount.unwrap())
         .map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
-        ICPTs::from_str(&v).map_err(|err| anyhow!(err))
+        parse_icpts(&v).map_err(|err| anyhow!(err))
     })?;
     let memo = Memo(opts.memo.unwrap_or("0".to_string()).parse::<u64>().unwrap());
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
@@ -70,8 +70,27 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Stri
     Ok(out)
 }
 
+fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
+    let mut it = amount.split(".");
+    let icpts = it
+        .next()
+        .unwrap_or("0")
+        .parse::<u64>()
+        .map_err(|err| format!("Couldn't parse icpts: {:?}", err))?;
+
+    let mut e8s = it.next().unwrap_or("0").to_string();
+    while e8s.len() < 8 {
+        e8s.push_str("0");
+    }
+    let e8s = e8s
+        .parse::<u64>()
+        .map_err(|err| format!("Couldn't parse e8s: {:?}", err))?;
+
+    ICPTs::new(icpts, e8s)
+}
+
 fn icpts_amount_validator(icpts: &str) -> Result<(), String> {
-    ICPTs::from_str(icpts).map(|_| ())
+    parse_icpts(icpts).map(|_| ())
 }
 
 fn memo_validator(memo: &str) -> Result<(), String> {

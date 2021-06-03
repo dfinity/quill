@@ -1,15 +1,9 @@
-// DISCLAIMER:
-// Do not modify this file arbitrarily.
-// The contents are borrowed from:
-// dfinity-lab/dfinity@25999dd54d29c24edb31483801bddfd8c1d780c8
-// https://github.com/dfinity-lab/dfinity/blob/master/rs/rosetta-api/ledger_canister/src/icpts.rs
+// Copied from https://raw.githubusercontent.com/dfinity/ic/master/rs/rosetta-api/ledger_canister/src/icpts.rs
+// Commit: 779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f
 
 use candid::CandidType;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::str::FromStr;
 
 #[derive(
     Serialize,
@@ -31,15 +25,16 @@ pub struct ICPTs {
     e8s: u64,
 }
 
-pub const DECIMAL_PLACES: u32 = 8;
 /// How many times can ICPs be divided
 pub const ICP_SUBDIVIDABLE_BY: u64 = 100_000_000;
 
-pub const TRANSACTION_FEE: ICPTs = ICPTs { e8s: 10000 };
+/// This is 1/10,000th of an ICP, this is probably more than it costs us to
+/// store a transaction so it will likely come down in the future
+pub const TRANSACTION_FEE: ICPTs = ICPTs { e8s: 10_000 };
 
 impl ICPTs {
     /// Construct a new instance of ICPTs.
-    /// This function will not allow you use more than 1 ICPTs worth of e8s.
+    /// This function will not allow you use more than 1 ICPTs worth of E8s.
     pub fn new(icpt: u64, e8s: u64) -> Result<Self, String> {
         static CONSTRUCTION_FAILED: &str =
             "Constructing ICP failed because the underlying u64 overflowed";
@@ -49,7 +44,7 @@ impl ICPTs {
             .ok_or_else(|| CONSTRUCTION_FAILED.to_string())?;
         if e8s >= ICP_SUBDIVIDABLE_BY {
             return Err(format!(
-                "You've added too many e8s, make sure there are less than {}",
+                "You've added too many E8s, make sure there are less than {}",
                 ICP_SUBDIVIDABLE_BY
             ));
         }
@@ -69,7 +64,7 @@ impl ICPTs {
         self.e8s / ICP_SUBDIVIDABLE_BY
     }
 
-    /// Gets the total number of e8s not part of a whole ICPT
+    /// Gets the total number of E8s not part of a whole ICPT
     /// The returned amount is always in the half-open interval [0, 1 ICP).
     /// ```
     /// # use ledger_canister::ICPTs;
@@ -81,49 +76,6 @@ impl ICPTs {
     }
 }
 
-impl Add for ICPTs {
-    type Output = Result<Self, String>;
-
-    /// This returns a result, in normal operation this should always return Ok
-    /// because of the cap in the total number of ICP, but when dealing with
-    /// money it's better to be safe than sorry
-    fn add(self, other: Self) -> Self::Output {
-        let e8s = self.e8s.checked_add(other.e8s).ok_or_else(|| {
-            format!(
-                "Add ICP {} + {} failed because the underlying u64 overflowed",
-                self.e8s, other.e8s
-            )
-        })?;
-        Ok(Self { e8s })
-    }
-}
-
-impl AddAssign for ICPTs {
-    fn add_assign(&mut self, other: Self) {
-        *self = (*self + other).expect("+= panicked");
-    }
-}
-
-impl Sub for ICPTs {
-    type Output = Result<Self, String>;
-
-    fn sub(self, other: Self) -> Self::Output {
-        let e8s = self.e8s.checked_sub(other.e8s).ok_or_else(|| {
-            format!(
-                "Subtracting ICP {} - {} failed because the underlying u64 underflowed",
-                self.e8s, other.e8s
-            )
-        })?;
-        Ok(Self { e8s })
-    }
-}
-
-impl SubAssign for ICPTs {
-    fn sub_assign(&mut self, other: Self) {
-        *self = (*self - other).expect("-= panicked");
-    }
-}
-
 /// ```
 /// # use ledger_canister::ICPTs;
 /// let icpt = ICPTs::new(12, 200).unwrap();
@@ -131,44 +83,12 @@ impl SubAssign for ICPTs {
 /// assert_eq!(&s[..], "12.00000200 ICP")
 /// ```
 impl fmt::Display for ICPTs {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}.{:08} ICP",
             self.get_icpts(),
             self.get_remainder_e8s()
         )
-    }
-}
-
-impl FromStr for ICPTs {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<ICPTs, String> {
-        match Decimal::from_str(s) {
-            Ok(amount) => {
-                if amount.scale() > DECIMAL_PLACES {
-                    return Err("e8s can only be specified to the 8th decimal.".to_string());
-                }
-                let icpts = match amount.trunc().to_string().parse::<u64>() {
-                    Ok(v) => v,
-                    Err(e) => return Err(format!("{}", e)),
-                };
-                let e8s = match amount.fract().to_string().as_str() {
-                    "0" => 0_u64,
-                    e8s => {
-                        let e8s = &e8s.to_string()[2..e8s.to_string().len()];
-                        let amount = e8s.chars().enumerate().fold(0, |amount, (idx, val)| {
-                            amount
-                                + (10_u64.pow(DECIMAL_PLACES - 1 - (idx as u32))
-                                    * (val.to_digit(10).unwrap() as u64))
-                        });
-                        amount as u64
-                    }
-                };
-                ICPTs::new(icpts, e8s)
-            }
-            Err(e) => Err(format!("Decimal conversion error: {}", e)),
-        }
     }
 }

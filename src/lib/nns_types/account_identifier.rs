@@ -1,19 +1,15 @@
-// DISCLAIMER:
-// Do not modify this file arbitrarily.
-// The contents are borrowed from:
-// dfinity-lab/dfinity@25999dd54d29c24edb31483801bddfd8c1d780c8
-// https://github.com/dfinity-lab/dfinity/blob/master/rs/rosetta-api/canister/src/account_identifier.rs
+// Copied from https://raw.githubusercontent.com/dfinity/ic/master/rs/rosetta-api/ledger_canister/src/account_identifier.rs
+// Commit: 779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f
 
 use candid::CandidType;
-use ic_types::principal::Principal;
+use ic_types::principal::Principal as PrincipalId;
 use openssl::sha::Sha224;
 use serde::{de, de::Error, Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-
-const SUB_ACCOUNT_ZERO: Subaccount = Subaccount([0; 32]);
-const ACCOUNT_DOMAIN_SEPERATOR: &[u8] = b"\x0Aaccount-id";
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 /// While this is backed by an array of length 28, it's canonical representation
 /// is a hex string of length 64. The first 8 characters are the CRC-32 encoded
@@ -27,8 +23,11 @@ pub struct AccountIdentifier {
     pub hash: [u8; 28],
 }
 
+pub static SUB_ACCOUNT_ZERO: Subaccount = Subaccount([0; 32]);
+static ACCOUNT_DOMAIN_SEPERATOR: &[u8] = b"\x0Aaccount-id";
+
 impl AccountIdentifier {
-    pub fn new(account: Principal, sub_account: Option<Subaccount>) -> AccountIdentifier {
+    pub fn new(account: PrincipalId, sub_account: Option<Subaccount>) -> AccountIdentifier {
         let mut hash = Sha224::new();
         hash.update(ACCOUNT_DOMAIN_SEPERATOR);
         hash.update(account.as_slice());
@@ -114,6 +113,12 @@ impl<'de> Deserialize<'de> for AccountIdentifier {
     }
 }
 
+impl From<PrincipalId> for AccountIdentifier {
+    fn from(pid: PrincipalId) -> Self {
+        AccountIdentifier::new(pid, None)
+    }
+}
+
 fn check_sum(hex: [u8; 32]) -> Result<AccountIdentifier, String> {
     // Get the checksum provided
     let found_checksum = &hex[0..4];
@@ -153,14 +158,12 @@ impl CandidType for AccountIdentifier {
 }
 
 /// Subaccounts are arbitrary 32-byte values.
-#[derive(CandidType, Deserialize, Clone, Hash, Debug, PartialEq, Eq, Copy)]
+#[derive(Serialize, Deserialize, CandidType, Clone, Hash, Debug, PartialEq, Eq, Copy)]
 #[serde(transparent)]
 pub struct Subaccount(pub [u8; 32]);
 
-impl Subaccount {}
-
-impl From<&Principal> for Subaccount {
-    fn from(principal_id: &Principal) -> Self {
+impl From<&PrincipalId> for Subaccount {
+    fn from(principal_id: &PrincipalId) -> Self {
         let mut subaccount = [0; std::mem::size_of::<Subaccount>()];
         let principal_id = principal_id.as_slice();
         subaccount[0] = principal_id.len().try_into().unwrap();
@@ -169,10 +172,22 @@ impl From<&Principal> for Subaccount {
     }
 }
 
+impl Into<Vec<u8>> for Subaccount {
+    fn into(self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
 impl TryFrom<&[u8]> for Subaccount {
     type Error = std::array::TryFromSliceError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         slice.try_into().map(Subaccount)
+    }
+}
+
+impl Display for Subaccount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        hex::encode(self.0).fmt(f)
     }
 }
