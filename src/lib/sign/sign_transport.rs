@@ -6,6 +6,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
+/// Represents a signed message with the corresponding request id.
 #[derive(Clone)]
 pub struct SignedMessageWithRequestId {
     pub buffer: String,
@@ -21,6 +22,8 @@ impl SignedMessageWithRequestId {
     }
 }
 
+/// Implement a "transport" component, which is not using networking, but writes all requests to
+/// the specified buffer.
 pub struct SignReplicaV2Transport {
     pub data: Arc<RwLock<SignedMessageWithRequestId>>,
 }

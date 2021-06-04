@@ -1,7 +1,11 @@
+//! All the common functionality.
+
 use anyhow::anyhow;
-use candid::parser::typing::{check_prog, TypeEnv};
-use candid::types::Function;
-use candid::IDLProg;
+use candid::{
+    parser::typing::{check_prog, TypeEnv},
+    types::Function,
+    IDLProg,
+};
 use ic_agent::{
     identity::{BasicIdentity, Secp256k1Identity},
     Agent, Identity,
@@ -11,11 +15,12 @@ pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 pub const IC_URL: &str = "https://ic0.app";
 
-pub type AnyhowResult<T = ()> = anyhow::Result<T>;
-
 pub mod nns_types;
 pub mod sign;
 
+pub type AnyhowResult<T = ()> = anyhow::Result<T>;
+
+// Returns the candid for the specified canister id, if there is one.
 pub fn get_local_candid(canister_id: &str) -> Option<String> {
     match canister_id {
         GOVERNANCE_CANISTER_ID => {
@@ -28,43 +33,31 @@ pub fn get_local_candid(canister_id: &str) -> Option<String> {
     }
 }
 
+/// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
     blob: &[u8],
     canister_id: &str,
     method_name: &str,
     part: &str,
-    output_type: &str,
 ) -> AnyhowResult<String> {
     let spec = get_local_candid(canister_id);
     let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
-    match output_type {
-        "raw" => {
-            let hex_string = hex::encode(blob);
-            return Ok(format!("{}", hex_string));
-        }
-        "idl" | "pp" => {
-            let result = match method_type {
-                None => candid::IDLArgs::from_bytes(blob),
-                Some((env, func)) => candid::IDLArgs::from_bytes_with_types(
-                    blob,
-                    &env,
-                    if part == "args" {
-                        &func.args
-                    } else {
-                        &func.rets
-                    },
-                ),
-            };
-            return Ok(if output_type == "idl" {
-                format!("{:?}", result?)
+    let result = match method_type {
+        None => candid::IDLArgs::from_bytes(blob),
+        Some((env, func)) => candid::IDLArgs::from_bytes_with_types(
+            blob,
+            &env,
+            if part == "args" {
+                &func.args
             } else {
-                format!("{}", result?)
-            });
-        }
-        v => return Err(anyhow!("Invalid output type: {}", v)),
-    }
+                &func.rets
+            },
+        ),
+    };
+    Ok(format!("{}", result?))
 }
 
+/// Returns the candid type of a specifed method and correspondig idl description.
 pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
     let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
     let mut env = TypeEnv::new();
@@ -73,42 +66,42 @@ pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Funct
     Some((env, method))
 }
 
-pub fn read_json(path: &str) -> AnyhowResult<String> {
+/// Reads from the file path or STDIN and returns the content.
+pub fn read_from_file(path: &str) -> AnyhowResult<String> {
     use std::io::Read;
-    let mut json = String::new();
+    let mut content = String::new();
     if path == "-" {
-        std::io::stdin().read_to_string(&mut json)?;
+        std::io::stdin().read_to_string(&mut content)?;
     } else {
         let path = std::path::Path::new(&path);
         let mut file =
             std::fs::File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
-        file.read_to_string(&mut json)
+        file.read_to_string(&mut content)
             .map_err(|_| anyhow!("Cannot read the message file."))?;
     }
-    Ok(json)
+    Ok(content)
 }
 
+/// Returns an agent with an identity derived from a private key if it was provided.
 pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
                 IC_URL.to_string(),
-            )
-            .unwrap(),
+            )?,
         )
         .with_ingress_expiry(Some(timeout));
 
-    {
-        match pem {
-            Some(pem) => builder.with_boxed_identity(get_identity(pem)),
-            None => builder,
-        }
+    match pem {
+        Some(pem) => builder.with_boxed_identity(get_identity(pem)),
+        None => builder,
     }
     .build()
     .map_err(|err| anyhow!(err))
 }
 
+/// Returns an identity derived from the private key.
 pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
     match Secp256k1Identity::from_pem(pem.as_bytes()) {
         Ok(identity) => return Box::new(identity),

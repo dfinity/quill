@@ -2,7 +2,7 @@ use crate::commands::request_status;
 use crate::lib::nns_types::{account_identifier, icpts};
 use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
-    read_json,
+    read_from_file,
     sign::signed_message::{Ingress, IngressWithRequestId},
     AnyhowResult, IC_URL,
 };
@@ -56,7 +56,7 @@ pub struct SendOpts {
 }
 
 pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
-    let json = read_json(&opts.file_name)?;
+    let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
@@ -136,7 +136,6 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
             let request_id = format!("0x{}", String::from(request_id));
             println!("Request ID: {}", request_id);
         }
-        // message.validate() guarantee that call_type must be query or update
         _ => unreachable!(),
     }
     Ok(())

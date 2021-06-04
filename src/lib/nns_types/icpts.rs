@@ -1,4 +1,4 @@
-// Copied from https://raw.githubusercontent.com/dfinity/ic/master/rs/rosetta-api/ledger_canister/src/icpts.rs
+// Copied (and trimmed) from https://raw.githubusercontent.com/dfinity/ic/master/rs/rosetta-api/ledger_canister/src/icpts.rs
 // Commit: 779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f
 
 use candid::CandidType;

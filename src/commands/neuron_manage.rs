@@ -1,5 +1,5 @@
 use crate::{
-    commands::{request_status, sign::sign},
+    commands::sign::sign_ingress_with_request_status_query,
     lib::{
         nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
         AnyhowResult, GOVERNANCE_CANISTER_ID,
@@ -71,6 +71,7 @@ struct ManageNeuron {
 /// Signs a neuron configuration change.
 #[derive(Clap)]
 pub struct ManageOpts {
+    /// The id of the neuron to manage.
     neuron_id: u64,
 
     /// Principal to be used as a hot key.
@@ -110,7 +111,7 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 }))
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     };
 
     if opts.remove_hot_key.is_some() {
@@ -122,7 +123,7 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 }))
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     };
 
     if opts.stop_dissolving {
@@ -132,7 +133,7 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     }
 
     if opts.start_dissolving {
@@ -142,7 +143,7 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     }
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
@@ -154,7 +155,7 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 }))
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     };
 
     if opts.disburse {
@@ -165,36 +166,26 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 amount: None
             }))
         })?;
-        msgs.push(generate(pem, args).await?);
+        msgs.push(args);
     };
 
     if msgs.is_empty() {
         return Err(anyhow!("No instructions provided"));
     }
 
+    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
+    let mut generated = Vec::new();
+    for args in msgs {
+        generated.push(
+            sign_ingress_with_request_status_query(pem, canister_id.clone(), "manage_neuron", args)
+                .await?,
+        );
+    }
+
     let mut out = String::new();
     out.push_str("[");
-    out.push_str(&msgs.join(","));
+    out.push_str(&generated.join(","));
     out.push_str("]");
-
-    Ok(out)
-}
-
-pub async fn generate(pem: &Option<String>, args: Vec<u8>) -> AnyhowResult<String> {
-    let method_name = "manage_neuron".to_string();
-    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
-    let msg_with_req_id = sign(pem, canister_id.clone(), &method_name, args).await?;
-    let request_id = msg_with_req_id
-        .request_id
-        .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
-
-    let mut out = String::new();
-    out.push_str("{ \"ingress\": ");
-    out.push_str(&msg_with_req_id.buffer);
-    out.push_str(", \"request_status\": ");
-    out.push_str(&req_status_signed_msg);
-    out.push_str("}");
 
     Ok(out)
 }

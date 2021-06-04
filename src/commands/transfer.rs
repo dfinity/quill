@@ -1,7 +1,6 @@
 use crate::commands::{
-    request_status,
     send::{Memo, SendArgs},
-    sign::sign,
+    sign::sign_ingress_with_request_status_query,
 };
 use crate::lib::{
     nns_types::account_identifier::AccountIdentifier,
@@ -13,8 +12,6 @@ use candid::Encode;
 use clap::Clap;
 use ic_types::principal::Principal;
 use std::str::FromStr;
-
-const SEND_METHOD: &str = "send_dfx";
 
 /// Signs an ICP transfer transaction.
 #[derive(Default, Clap)]
@@ -54,20 +51,7 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Stri
         created_at_time: None,
     })?;
 
-    let msg_with_req_id = sign(pem, canister_id.clone(), SEND_METHOD, args).await?;
-    let request_id = msg_with_req_id
-        .request_id
-        .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
-
-    let mut out = String::new();
-    out.push_str("{ \"ingress\": ");
-    out.push_str(&msg_with_req_id.buffer);
-    out.push_str(", \"request_status\": ");
-    out.push_str(&req_status_signed_msg);
-    out.push_str("}");
-
-    Ok(out)
+    sign_ingress_with_request_status_query(pem, canister_id, "send_dfx", args).await
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {

@@ -1,3 +1,5 @@
+//! This module implements the nano command-line API.
+
 use crate::lib::AnyhowResult;
 use clap::Clap;
 use tokio::runtime::Runtime;

@@ -1,5 +1,5 @@
 use crate::{
-    commands::{request_status, send::Memo, sign::sign, transfer},
+    commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
     lib::{
         nns_types::account_identifier::{AccountIdentifier, Subaccount},
         AnyhowResult, GOVERNANCE_CANISTER_ID,
@@ -32,13 +32,11 @@ pub struct StakeOpts {
 }
 
 pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<String> {
+    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
     let (controller, _) = crate::commands::public::get_ids(pem)?;
     let nonce = convert_name_to_nonce(&opts.name);
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
-    let account = AccountIdentifier::new(
-        Principal::from_text(GOVERNANCE_CANISTER_ID)?,
-        Some(gov_subaccount),
-    );
+    let account = AccountIdentifier::new(canister_id.clone(), Some(gov_subaccount));
     let transfer_message = transfer::exec(
         pem,
         transfer::TransferOpts {
@@ -55,29 +53,26 @@ pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<String>
         controller: Some(controller),
     })?;
 
-    let method_name = "claim_or_refresh_neuron_from_account".to_string();
-    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
-    let msg_with_req_id = sign(pem, canister_id.clone(), &&method_name, args).await?;
-    let request_id = msg_with_req_id
-        .request_id
-        .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
+    let claim_message = sign_ingress_with_request_status_query(
+        pem,
+        canister_id,
+        "claim_or_refresh_neuron_from_account",
+        args,
+    )
+    .await?;
 
     // Generate a JSON list of signed messages.
     let mut out = String::new();
     out.push_str("{ \"transfer\": ");
     out.push_str(&transfer_message);
     out.push_str(", \"claim\": ");
-    out.push_str("{ \"ingress\": ");
-    out.push_str(&msg_with_req_id.buffer);
-    out.push_str(", \"request_status\": ");
-    out.push_str(&req_status_signed_msg);
-    out.push_str("}");
+    out.push_str(&claim_message);
     out.push_str("}");
 
     Ok(out)
 }
 
+// This function _must_ correspond to how the governance canister computes the subaccount.
 fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     use openssl::sha::Sha256;
     let mut data = Sha256::new();
@@ -99,7 +94,7 @@ fn convert_name_to_nonce(name: &str) -> u64 {
 }
 
 fn neuron_name_validator(name: &str) -> Result<(), String> {
-    // Convert to bytes before checking the length to restrict it ot ASCII only
+    // Convert to bytes before checking the length to restrict it to ASCII only
     if name.as_bytes().len() > 8 {
         return Err("The neuron name must be 8 character or less".to_string());
     }

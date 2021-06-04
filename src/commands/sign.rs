@@ -1,14 +1,15 @@
-use crate::lib::get_candid_type;
-use crate::lib::get_local_candid;
-use crate::lib::sign::sign_transport::SignReplicaV2Transport;
-use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
-use crate::lib::{get_agent, AnyhowResult};
+use crate::commands::request_status;
+use crate::lib::{
+    get_agent, get_candid_type, get_local_candid,
+    sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId},
+    AnyhowResult,
+};
 use anyhow::anyhow;
 use ic_agent::AgentError;
 use ic_types::principal::Principal;
 use std::time::SystemTime;
 
-pub async fn sign(
+async fn sign(
     pem: &Option<String>,
     canister_id: Principal,
     method_name: &str,
@@ -58,4 +59,25 @@ pub async fn sign(
 
     let data = data.read().unwrap().clone();
     Ok(data)
+}
+
+/// Generates a bundle of signed messages (ingress + request status query).
+pub async fn sign_ingress_with_request_status_query(
+    pem: &Option<String>,
+    canister_id: Principal,
+    method_name: &str,
+    args: Vec<u8>,
+) -> AnyhowResult<String> {
+    let msg_with_req_id = sign(pem, canister_id.clone(), &method_name, args).await?;
+    let request_id = msg_with_req_id
+        .request_id
+        .expect("No request id for transfer call found");
+    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
+    let mut out = String::new();
+    out.push_str("{ \"ingress\": ");
+    out.push_str(&msg_with_req_id.buffer);
+    out.push_str(", \"request_status\": ");
+    out.push_str(&req_status_signed_msg);
+    out.push_str("}");
+    Ok(out)
 }
