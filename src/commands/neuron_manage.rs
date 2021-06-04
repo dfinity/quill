@@ -2,6 +2,7 @@ use crate::{
     commands::sign::sign_ingress_with_request_status_query,
     lib::{
         nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
+        sign::signed_message::IngressWithRequestId,
         AnyhowResult, GOVERNANCE_CANISTER_ID,
     },
 };
@@ -99,7 +100,10 @@ pub struct ManageOpts {
     disburse: bool,
 }
 
-pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String> {
+pub async fn exec(
+    pem: &Option<String>,
+    opts: ManageOpts,
+) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
     if opts.add_hot_key.is_some() {
@@ -181,11 +185,5 @@ pub async fn exec(pem: &Option<String>, opts: ManageOpts) -> AnyhowResult<String
                 .await?,
         );
     }
-
-    let mut out = String::new();
-    out.push_str("[");
-    out.push_str(&generated.join(","));
-    out.push_str("]");
-
-    Ok(out)
+    Ok(generated)
 }

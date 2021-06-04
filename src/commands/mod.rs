@@ -30,19 +30,19 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
         Command::PublicIds => public::exec(pem),
         Command::Transfer(opts) => runtime.block_on(async {
             transfer::exec(pem, opts).await.and_then(|out| {
-                println!("{}", out);
+                println!("{}", serde_json::to_string(&out)?);
                 Ok(())
             })
         }),
         Command::NeuronStake(opts) => runtime.block_on(async {
             neuron_stake::exec(pem, opts).await.and_then(|out| {
-                println!("{}", out);
+                println!("{}", serde_json::to_string(&out)?);
                 Ok(())
             })
         }),
         Command::NeuronManage(opts) => runtime.block_on(async {
             neuron_manage::exec(pem, opts).await.and_then(|out| {
-                println!("{}", out);
+                println!("{}", serde_json::to_string(&out)?);
                 Ok(())
             })
         }),
