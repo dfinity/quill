@@ -44,6 +44,11 @@ All of the commands above will generate signed messages, which can be sent on th
 0. Build by running `cargo build --release`.
 1. Find the binary at `target/release/nano`.
 
+## Testing
+
+0. `cd tests`
+1. `./run.sh`
+
 ## Credit
 
 Originally forked from the [SDK](https://github.com/dfinity/sdk).
