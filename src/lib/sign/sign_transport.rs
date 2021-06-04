@@ -2,30 +2,98 @@ use crate::lib::sign::signed_message::{Ingress, RequestStatus};
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
+use std::convert::TryFrom;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
+#[derive(Debug)]
+pub struct MessageError(String);
+
+impl std::fmt::Display for MessageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+impl std::error::Error for MessageError {}
+
+#[derive(Clone)]
+pub enum Message {
+    Ingress(Ingress),
+    RequestStatus(RequestStatus),
+}
+
+impl TryFrom<Message> for Ingress {
+    type Error = MessageError;
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
+        match message {
+            Message::Ingress(ingress) => Ok(ingress),
+            Message::RequestStatus(_) => Err(MessageError(
+                "Expect Ingress but got RequestStatus".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<Message> for RequestStatus {
+    type Error = MessageError;
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
+        match message {
+            Message::RequestStatus(request_status) => Ok(request_status),
+            Message::Ingress(_) => Err(MessageError(
+                "Expect RequestStatus but got Ingress".to_string(),
+            )),
+        }
+    }
+}
+
 /// Represents a signed message with the corresponding request id.
 #[derive(Clone)]
 pub struct SignedMessageWithRequestId {
-    pub buffer: String,
+    pub message: Message,
     pub request_id: Option<RequestId>,
 }
 
-impl SignedMessageWithRequestId {
-    pub fn new() -> Arc<RwLock<Self>> {
-        Arc::new(RwLock::new(Self {
-            buffer: String::new(),
-            request_id: None,
-        }))
+#[derive(Clone)]
+pub enum TransportState {
+    SignedMessageWithRequestId(SignedMessageWithRequestId),
+    RequestId(Option<RequestId>),
+}
+
+impl TransportState {
+    fn get_request_id(&self) -> Option<RequestId> {
+        match self {
+            TransportState::SignedMessageWithRequestId(msg) => msg.request_id.clone(),
+            TransportState::RequestId(req_id) => req_id.clone(),
+        }
+    }
+}
+
+impl TryFrom<TransportState> for SignedMessageWithRequestId {
+    type Error = MessageError;
+
+    fn try_from(state: TransportState) -> Result<Self, Self::Error> {
+        match state {
+            TransportState::SignedMessageWithRequestId(msg) => Ok(msg),
+            TransportState::RequestId(_) => {
+                Err(MessageError("Message is not available".to_string()))
+            }
+        }
     }
 }
 
 /// Implement a "transport" component, which is not using networking, but writes all requests to
 /// the specified buffer.
 pub struct SignReplicaV2Transport {
-    pub data: Arc<RwLock<SignedMessageWithRequestId>>,
+    pub data: Arc<RwLock<TransportState>>,
+}
+
+impl SignReplicaV2Transport {
+    pub fn new(request_id: Option<RequestId>) -> Self {
+        Self {
+            data: Arc::new(RwLock::new(TransportState::RequestId(request_id))),
+        }
+    }
 }
 
 fn run(
@@ -41,9 +109,10 @@ fn run(
         None => message.with_call_type("query".to_string()),
     };
     let mut data = s.data.write().unwrap();
-    data.request_id = request_id;
-    data.buffer =
-        serde_json::to_string(&message).map_err(|err| AgentError::MessageError(err.to_string()))?;
+    *data = TransportState::SignedMessageWithRequestId(SignedMessageWithRequestId {
+        request_id,
+        message: Message::Ingress(message),
+    });
     Ok(())
 }
 
@@ -59,12 +128,15 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
             content: Vec<u8>,
         ) -> Result<Vec<u8>, AgentError> {
             let status_req = RequestStatus {
-                request_id: s.data.read().unwrap().request_id.clone().unwrap().into(),
+                request_id: s.data.read().unwrap().get_request_id().unwrap().into(),
                 canister_id: canister_id.to_string(),
                 content: hex::encode(content),
             };
-            s.data.write().unwrap().buffer = serde_json::to_string(&status_req)
-                .map_err(|err| AgentError::MessageError(err.to_string()))?;
+            let mut data = s.data.write().unwrap();
+            *data = TransportState::SignedMessageWithRequestId(SignedMessageWithRequestId {
+                message: Message::RequestStatus(status_req),
+                request_id: data.get_request_id(),
+            });
             Err(AgentError::MissingReplicaTransport())
         }
         Box::pin(filler(self, canister_id, content))

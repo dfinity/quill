@@ -5,6 +5,7 @@ use crate::commands::{
 use crate::lib::{
     nns_types::account_identifier::AccountIdentifier,
     nns_types::icpts::{ICPTs, TRANSACTION_FEE},
+    sign::signed_message::IngressWithRequestId,
     AnyhowResult, LEDGER_CANISTER_ID,
 };
 use anyhow::anyhow;
@@ -32,7 +33,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<String> {
+pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<IngressWithRequestId> {
     let amount = parse_icpts(&opts.amount.unwrap())
         .map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {

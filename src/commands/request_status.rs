@@ -1,11 +1,11 @@
-use crate::lib::sign::sign_transport::SignReplicaV2Transport;
-use crate::lib::sign::sign_transport::SignedMessageWithRequestId;
+use crate::lib::sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId};
 use crate::lib::IC_URL;
 use crate::lib::{get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{Replied, RequestStatusResponse};
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -13,15 +13,16 @@ pub async fn sign(
     pem: &Option<String>,
     request_id: RequestId,
     canister_id: Principal,
-) -> AnyhowResult<String> {
+) -> AnyhowResult<RequestStatus> {
     let mut agent = get_agent(pem)?;
-    let data = SignedMessageWithRequestId::new();
-    data.write().unwrap().request_id = Some(request_id);
-    let transport = SignReplicaV2Transport { data: data.clone() };
+    let transport = SignReplicaV2Transport::new(Some(request_id));
+    let data = transport.data.clone();
     agent.set_transport(transport);
     match agent.request_status_raw(&request_id, canister_id).await {
         Err(AgentError::MissingReplicaTransport()) => {
-            return Ok(data.read().unwrap().buffer.clone());
+            let message_with_id: SignedMessageWithRequestId =
+                data.read().unwrap().clone().try_into()?;
+            return Ok(message_with_id.message.try_into()?);
         }
         val => panic!("Unexpected output from the signing agent: {:?}", val),
     }

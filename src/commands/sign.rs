@@ -2,11 +2,13 @@ use crate::commands::request_status;
 use crate::lib::{
     get_agent, get_candid_type, get_local_candid,
     sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId},
+    sign::signed_message::IngressWithRequestId,
     AnyhowResult,
 };
 use anyhow::anyhow;
 use ic_agent::AgentError;
 use ic_types::principal::Principal;
+use std::convert::TryInto;
 use std::time::SystemTime;
 
 async fn sign(
@@ -29,8 +31,8 @@ async fn sign(
         .checked_add(timeout)
         .ok_or_else(|| anyhow!("Time wrapped around."))?;
 
-    let data = SignedMessageWithRequestId::new();
-    let transport = SignReplicaV2Transport { data: data.clone() };
+    let transport = SignReplicaV2Transport::new(None);
+    let data = transport.data.clone();
     sign_agent.set_transport(transport);
 
     if is_query {
@@ -57,8 +59,8 @@ async fn sign(
             .map_err(|e| anyhow!(e))?;
     }
 
-    let data = data.read().unwrap().clone();
-    Ok(data)
+    let message = data.read().unwrap().clone().try_into()?;
+    Ok(message)
 }
 
 /// Generates a bundle of signed messages (ingress + request status query).
@@ -67,17 +69,15 @@ pub async fn sign_ingress_with_request_status_query(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
-) -> AnyhowResult<String> {
+) -> AnyhowResult<IngressWithRequestId> {
     let msg_with_req_id = sign(pem, canister_id.clone(), &method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let req_status_signed_msg = request_status::sign(pem, request_id, canister_id).await?;
-    let mut out = String::new();
-    out.push_str("{ \"ingress\": ");
-    out.push_str(&msg_with_req_id.buffer);
-    out.push_str(", \"request_status\": ");
-    out.push_str(&req_status_signed_msg);
-    out.push_str("}");
-    Ok(out)
+    let request_status = request_status::sign(pem, request_id, canister_id).await?;
+    let message = IngressWithRequestId {
+        ingress: msg_with_req_id.message.try_into()?,
+        request_status,
+    };
+    Ok(message)
 }
