@@ -39,7 +39,12 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Ingr
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         parse_icpts(&v).map_err(|err| anyhow!(err))
     })?;
-    let memo = Memo(opts.memo.unwrap_or("0".to_string()).parse::<u64>().unwrap());
+    let memo = Memo(
+        opts.memo
+            .unwrap_or_else(|| "0".to_string())
+            .parse::<u64>()
+            .unwrap(),
+    );
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
     let canister_id = Principal::from_text(LEDGER_CANISTER_ID)?;
 
@@ -56,7 +61,7 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Ingr
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
-    let mut it = amount.split(".");
+    let mut it = amount.split('.');
     let icpts = it
         .next()
         .unwrap_or("0")
@@ -65,7 +70,7 @@ fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
 
     let mut e8s = it.next().unwrap_or("0").to_string();
     while e8s.len() < 8 {
-        e8s.push_str("0");
+        e8s.push('0');
     }
     let e8s = e8s
         .parse::<u64>()

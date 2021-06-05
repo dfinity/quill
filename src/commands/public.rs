@@ -12,9 +12,12 @@ pub fn exec(pem: &Option<String>) -> AnyhowResult {
 
 /// Returns the account id and the principal id if the private key was provided.
 pub fn get_ids(pem: &Option<String>) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    let principal_id = get_identity(pem.as_ref().ok_or(anyhow!("No PEM file provided"))?)
-        .sender()
-        .map_err(|e| anyhow!(e))?;
+    let principal_id = get_identity(
+        pem.as_ref()
+            .ok_or_else(|| anyhow!("No PEM file provided"))?,
+    )
+    .sender()
+    .map_err(|e| anyhow!(e))?;
     let account_id = AccountIdentifier::new(principal_id.clone(), None);
     Ok((principal_id, account_id))
 }

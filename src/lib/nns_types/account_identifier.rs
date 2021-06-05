@@ -172,9 +172,9 @@ impl From<&PrincipalId> for Subaccount {
     }
 }
 
-impl Into<Vec<u8>> for Subaccount {
-    fn into(self) -> Vec<u8> {
-        self.0.to_vec()
+impl From<Subaccount> for Vec<u8> {
+    fn from(account: Subaccount) -> Self {
+        account.0.to_vec()
     }
 }
 

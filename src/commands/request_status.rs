@@ -81,7 +81,7 @@ pub async fn submit(
     get_idl_string(
         &blob,
         &canister_id.to_string(),
-        &method_name.unwrap_or("".to_string()),
+        &method_name.unwrap_or_default(),
         "rets",
     )
     .context("Invalid IDL blob.")

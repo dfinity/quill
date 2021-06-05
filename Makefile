@@ -1,9 +1,12 @@
 .PHONY: all build check clippy test
 
-all: check build clippy test fmt
+all: check clippy fmt build test
 
 build:
 	cargo build
+
+release:
+	cargo build --release
 
 check:
 	cargo check --all --all-targets --all-features --tests

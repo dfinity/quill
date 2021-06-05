@@ -34,11 +34,8 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    match commands::exec(&pem, command) {
-        Err(err) => {
-            eprintln!("{}", err);
-            std::process::exit(1);
-        }
-        _ => {}
-    };
+    if let Err(err) = commands::exec(&pem, command) {
+        eprintln!("{}", err);
+        std::process::exit(1);
+    }
 }

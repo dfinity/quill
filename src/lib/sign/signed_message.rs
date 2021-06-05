@@ -86,7 +86,7 @@ impl Ingress {
                     return Ok((
                         sender,
                         canister_id.clone(),
-                        method_name.to_string().to_string(),
+                        method_name.to_string(),
                         get_idl_string(arg, &canister_id.to_string(), &method_name, "args")?,
                     ));
                 }

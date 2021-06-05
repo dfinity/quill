@@ -45,7 +45,6 @@ pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronS
             amount: Some(opts.amount),
             fee: opts.fee,
             memo: Some(nonce.to_string()),
-            ..Default::default()
         },
     )
     .await?;
