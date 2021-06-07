@@ -88,7 +88,7 @@ async fn submit_ingress_and_check_status(
     match request_status::submit(pem, &message.request_status, Some(method_name.to_string())).await
     {
         Ok(result) => println!("{}\n", result),
-        Err(err) => print!("{}\n", err),
+        Err(err) => println!("{}\n", err),
     };
     Ok(())
 }

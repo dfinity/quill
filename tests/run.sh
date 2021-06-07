@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 PEM=`cat ./identity.pem`
 
 tests=0

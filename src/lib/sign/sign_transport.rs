@@ -63,8 +63,8 @@ pub enum TransportState {
 impl TransportState {
     fn get_request_id(&self) -> Option<RequestId> {
         match self {
-            TransportState::SignedMessageWithRequestId(msg) => msg.request_id.clone(),
-            TransportState::RequestId(req_id) => req_id.clone(),
+            TransportState::SignedMessageWithRequestId(msg) => msg.request_id,
+            TransportState::RequestId(req_id) => *req_id,
         }
     }
 }

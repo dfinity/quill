@@ -104,9 +104,9 @@ pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
 /// Returns an identity derived from the private key.
 pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
     match Secp256k1Identity::from_pem(pem.as_bytes()) {
-        Ok(identity) => return Box::new(identity),
+        Ok(identity) => Box::new(identity),
         Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-            Ok(identity) => return Box::new(identity),
+            Ok(identity) => Box::new(identity),
             Err(_) => {
                 eprintln!("Couldn't load identity from PEM file");
                 std::process::exit(1);
