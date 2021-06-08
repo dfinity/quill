@@ -48,10 +48,7 @@ pub async fn submit(
     });
     let Replied::CallReplied(blob) = async {
         loop {
-            match agent
-                .request_status_raw(&request_id, canister_id.clone())
-                .await?
-            {
+            match agent.request_status_raw(&request_id, canister_id).await? {
                 RequestStatusResponse::Replied { reply } => return Ok(reply),
                 RequestStatusResponse::Rejected {
                     reject_code,
@@ -78,13 +75,8 @@ pub async fn submit(
         }
     }
     .await?;
-    get_idl_string(
-        &blob,
-        &canister_id.to_string(),
-        &method_name.unwrap_or_default(),
-        "rets",
-    )
-    .context("Invalid IDL blob.")
+    get_idl_string(&blob, canister_id, &method_name.unwrap_or_default(), "rets")
+        .context("Invalid IDL blob.")
 }
 
 pub(crate) struct ProxySignReplicaV2Transport {

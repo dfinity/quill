@@ -1,11 +1,11 @@
 #![warn(unused_extern_crates)]
-use clap::{AppSettings, Clap};
+use clap::{crate_version, AppSettings, Clap};
 mod commands;
 mod lib;
 
 /// Ledger & Governance ToolKit for cold wallets.
 #[derive(Clap)]
-#[clap(name("nano"), global_setting = AppSettings::ColoredHelp)]
+#[clap(name("nano"), version = crate_version!(), global_setting = AppSettings::ColoredHelp)]
 pub struct CliOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]

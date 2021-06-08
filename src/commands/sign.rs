@@ -17,8 +17,8 @@ async fn sign(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
-    let spec = get_local_candid(&canister_id.to_string());
-    let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
+    let spec = get_local_candid(canister_id)?;
+    let method_type = get_candid_type(spec, method_name);
     let is_query = match &method_type {
         Some((_, f)) => f.is_query(),
         _ => false,
@@ -70,7 +70,7 @@ pub async fn sign_ingress_with_request_status_query(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(pem, canister_id.clone(), &method_name, args).await?;
+    let msg_with_req_id = sign(pem, canister_id, &method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");

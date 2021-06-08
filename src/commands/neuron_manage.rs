@@ -1,6 +1,6 @@
 use crate::{
     commands::sign::sign_ingress_with_request_status_query,
-    lib::{sign::signed_message::IngressWithRequestId, AnyhowResult, GOVERNANCE_CANISTER_ID},
+    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
@@ -174,12 +174,16 @@ pub async fn exec(
         return Err(anyhow!("No instructions provided"));
     }
 
-    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
     let mut generated = Vec::new();
     for args in msgs {
         generated.push(
-            sign_ingress_with_request_status_query(pem, canister_id.clone(), "manage_neuron", args)
-                .await?,
+            sign_ingress_with_request_status_query(
+                pem,
+                governance_canister_id(),
+                "manage_neuron",
+                args,
+            )
+            .await?,
         );
     }
     Ok(generated)
