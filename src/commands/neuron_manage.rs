@@ -1,15 +1,12 @@
 use crate::{
     commands::sign::sign_ingress_with_request_status_query,
-    lib::{
-        nns_types::{account_identifier::AccountIdentifier, icpts::ICPTs},
-        sign::signed_message::IngressWithRequestId,
-        AnyhowResult, GOVERNANCE_CANISTER_ID,
-    },
+    lib::{sign::signed_message::IngressWithRequestId, AnyhowResult, GOVERNANCE_CANISTER_ID},
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
 use clap::Clap;
 use ic_types::Principal;
+use ledger_canister::{AccountIdentifier, ICPTs};
 
 #[derive(CandidType)]
 pub struct IncreaseDissolveDelay {

@@ -1,5 +1,4 @@
 use crate::commands::request_status;
-use crate::lib::nns_types::{account_identifier, icpts};
 use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
     read_from_file,
@@ -11,6 +10,7 @@ use candid::CandidType;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
+use ledger_canister::{AccountIdentifier, ICPTs, Subaccount};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -33,10 +33,10 @@ pub struct TimeStamp {
 #[derive(CandidType)]
 pub struct SendArgs {
     pub memo: Memo,
-    pub amount: icpts::ICPTs,
-    pub fee: icpts::ICPTs,
-    pub from_subaccount: Option<account_identifier::Subaccount>,
-    pub to: account_identifier::AccountIdentifier,
+    pub amount: ICPTs,
+    pub fee: ICPTs,
+    pub from_subaccount: Option<Subaccount>,
+    pub to: AccountIdentifier,
     pub created_at_time: Option<TimeStamp>,
 }
 

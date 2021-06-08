@@ -15,7 +15,6 @@ pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 pub const IC_URL: &str = "https://ic0.app";
 
-pub mod nns_types;
 pub mod sign;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;

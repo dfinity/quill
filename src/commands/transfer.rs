@@ -2,16 +2,12 @@ use crate::commands::{
     send::{Memo, SendArgs},
     sign::sign_ingress_with_request_status_query,
 };
-use crate::lib::{
-    nns_types::account_identifier::AccountIdentifier,
-    nns_types::icpts::{ICPTs, TRANSACTION_FEE},
-    sign::signed_message::IngressWithRequestId,
-    AnyhowResult, LEDGER_CANISTER_ID,
-};
+use crate::lib::{sign::signed_message::IngressWithRequestId, AnyhowResult, LEDGER_CANISTER_ID};
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;
 use ic_types::principal::Principal;
+use ledger_canister::{AccountIdentifier, ICPTs, TRANSACTION_FEE};
 use std::str::FromStr;
 
 /// Signs an ICP transfer transaction.
