@@ -14,7 +14,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
     pub controller: Option<Principal>,
 }
 
-/// Signs topping up of a neuron (new or existing) with the specified amount of ICPs.
+/// Signs topping up of a neuron (new or existing).
 #[derive(Clap)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
