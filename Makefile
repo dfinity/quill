@@ -6,7 +6,7 @@ build:
 	cargo build
 
 release:
-	cargo build --release
+	cargo build --release --locked
 
 check:
 	cargo check --all --all-targets --all-features --tests
