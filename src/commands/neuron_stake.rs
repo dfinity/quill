@@ -16,7 +16,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
     pub controller: Option<Principal>,
 }
 
-/// Signs creation of a new neuron with the specified amount of ICPs.
+/// Signs topping up of a neuron (new or existing) with the specified amount of ICPs.
 #[derive(Clap)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
@@ -42,7 +42,7 @@ pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronS
         pem,
         transfer::TransferOpts {
             to: account.to_hex(),
-            amount: Some(opts.amount),
+            amount: opts.amount,
             fee: opts.fee,
             memo: Some(nonce.to_string()),
         },

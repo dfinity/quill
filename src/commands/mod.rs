@@ -16,7 +16,7 @@ pub use public::get_ids;
 
 #[derive(Clap)]
 pub enum Command {
-    /// Prints the principal id and the accound id.
+    /// Prints the principal id and the account id.
     PublicIds,
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),

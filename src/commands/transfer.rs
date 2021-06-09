@@ -22,9 +22,9 @@ pub struct TransferOpts {
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
     #[clap(long, validator(icpts_amount_validator))]
-    pub amount: Option<String>,
+    pub amount: String,
 
-    /// Reference number.
+    /// Reference number, default is 0.
     #[clap(long, validator(memo_validator))]
     pub memo: Option<String>,
 
@@ -34,8 +34,8 @@ pub struct TransferOpts {
 }
 
 pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<IngressWithRequestId> {
-    let amount = parse_icpts(&opts.amount.unwrap())
-        .map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
+    let amount =
+        parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         parse_icpts(&v).map_err(|err| anyhow!(err))
     })?;
