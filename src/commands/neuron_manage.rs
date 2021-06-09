@@ -80,7 +80,7 @@ pub struct ManageOpts {
     #[clap(long)]
     remove_hot_key: Option<Principal>,
 
-    /// Amount of dissolve seconds to add.
+    /// Number of dissolve seconds to add.
     #[clap(short, long)]
     additional_dissolve_delay_seconds: Option<u32>,
 
