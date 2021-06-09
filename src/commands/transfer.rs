@@ -2,16 +2,11 @@ use crate::commands::{
     send::{Memo, SendArgs},
     sign::sign_ingress_with_request_status_query,
 };
-use crate::lib::{
-    nns_types::account_identifier::AccountIdentifier,
-    nns_types::icpts::{ICPTs, TRANSACTION_FEE},
-    sign::signed_message::IngressWithRequestId,
-    AnyhowResult, LEDGER_CANISTER_ID,
-};
+use crate::lib::{ledger_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult};
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;
-use ic_types::principal::Principal;
+use ledger_canister::{AccountIdentifier, ICPTs, TRANSACTION_FEE};
 use std::str::FromStr;
 
 /// Signs an ICP transfer transaction.
@@ -46,7 +41,6 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Ingr
             .unwrap(),
     );
     let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
-    let canister_id = Principal::from_text(LEDGER_CANISTER_ID)?;
 
     let args = Encode!(&SendArgs {
         memo,
@@ -57,7 +51,7 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Ingr
         created_at_time: None,
     })?;
 
-    sign_ingress_with_request_status_query(pem, canister_id, "send_dfx", args).await
+    sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args).await
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {

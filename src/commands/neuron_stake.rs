@@ -1,14 +1,12 @@
 use crate::{
     commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
-    lib::{
-        nns_types::account_identifier::{AccountIdentifier, Subaccount},
-        sign::signed_message::NeuronStakeMessage,
-        AnyhowResult, GOVERNANCE_CANISTER_ID,
-    },
+    lib::{governance_canister_id, sign::signed_message::NeuronStakeMessage, AnyhowResult},
 };
 use candid::{CandidType, Encode};
 use clap::Clap;
+use ic_nns_constants::GOVERNANCE_CANISTER_ID;
 use ic_types::Principal;
+use ledger_canister::{AccountIdentifier, Subaccount};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
@@ -33,11 +31,10 @@ pub struct StakeOpts {
 }
 
 pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronStakeMessage> {
-    let canister_id = Principal::from_text(GOVERNANCE_CANISTER_ID)?;
     let (controller, _) = crate::commands::public::get_ids(pem)?;
     let nonce = convert_name_to_nonce(&opts.name);
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
-    let account = AccountIdentifier::new(canister_id.clone(), Some(gov_subaccount));
+    let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
     let transfer_message = transfer::exec(
         pem,
         transfer::TransferOpts {
@@ -55,7 +52,7 @@ pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronS
 
     let claim_message = sign_ingress_with_request_status_query(
         pem,
-        canister_id,
+        governance_canister_id(),
         "claim_or_refresh_neuron_from_account",
         args,
     )

@@ -15,6 +15,9 @@ chrono = "0.4.9"
 clap = "3.0.0-beta.2"
 crc32fast = "1.2.0"
 hex = {version = "0.4.2", features = ["serde"] }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
 openssl = "0.10.32"
 serde = "1.0"
 serde_cbor = "0.11.1"
@@ -24,18 +27,18 @@ tokio = { version = "1.2.0", features = [ "fs" ] }
 
 [dependencies.ic-agent]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "95a0782cd6f432cb1e98ed9422cf9d7327236b17"
+rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
 features = ["reqwest"]
 
 [dependencies.ic-types]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "95a0782cd6f432cb1e98ed9422cf9d7327236b17"
+rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
 
 [patch.crates-io.ic-agent]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "95a0782cd6f432cb1e98ed9422cf9d7327236b17"
+rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
 
 [patch.crates-io.ic-types]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "95a0782cd6f432cb1e98ed9422cf9d7327236b17"
+rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
 

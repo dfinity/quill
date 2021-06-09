@@ -85,9 +85,9 @@ impl Ingress {
                     let canister_id = Principal::try_from(canister_id)?;
                     return Ok((
                         sender,
-                        canister_id.clone(),
+                        canister_id,
                         method_name.to_string(),
-                        get_idl_string(arg, &canister_id.to_string(), &method_name, "args")?,
+                        get_idl_string(arg, canister_id, &method_name, "args")?,
                     ));
                 }
             }

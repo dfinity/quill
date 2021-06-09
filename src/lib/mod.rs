@@ -10,38 +10,45 @@ use ic_agent::{
     identity::{BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
+use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
+use ic_types::Principal;
 
-pub const LEDGER_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-pub const GOVERNANCE_CANISTER_ID: &str = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 pub const IC_URL: &str = "https://ic0.app";
 
-pub mod nns_types;
 pub mod sign;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
+pub fn ledger_canister_id() -> Principal {
+    Principal::from_slice(LEDGER_CANISTER_ID.as_ref())
+}
+
+pub fn governance_canister_id() -> Principal {
+    Principal::from_slice(GOVERNANCE_CANISTER_ID.as_ref())
+}
+
 // Returns the candid for the specified canister id, if there is one.
-pub fn get_local_candid(canister_id: &str) -> Option<String> {
-    match canister_id {
-        GOVERNANCE_CANISTER_ID => {
-            Some(String::from_utf8(include_bytes!("../../candid/governance.did").to_vec()).ok()?)
-        }
-        LEDGER_CANISTER_ID => {
-            Some(String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec()).ok()?)
-        }
-        _ => None,
+pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
+    if canister_id == governance_canister_id() {
+        String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
+            .map_err(|e| anyhow!(e))
+    } else if canister_id == ledger_canister_id() {
+        String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
+            .map_err(|e| anyhow!(e))
+    } else {
+        unreachable!()
     }
 }
 
 /// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
     blob: &[u8],
-    canister_id: &str,
+    canister_id: Principal,
     method_name: &str,
     part: &str,
 ) -> AnyhowResult<String> {
-    let spec = get_local_candid(canister_id);
-    let method_type = spec.and_then(|spec| get_candid_type(spec, method_name));
+    let spec = get_local_candid(canister_id)?;
+    let method_type = get_candid_type(spec, method_name);
     let result = match method_type {
         None => candid::IDLArgs::from_bytes(blob),
         Some((env, func)) => candid::IDLArgs::from_bytes_with_types(
