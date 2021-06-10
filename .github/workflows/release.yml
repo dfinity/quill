@@ -6,38 +6,63 @@ on:
       - '*'
 
 jobs:
-  linux-x86_64-static:
-    name: Release binary for Linux x86_64
-    runs-on: ubuntu-latest
+  build:
+    name: Release binary for ${{ matrix.os }} x86_64
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target_file: target/x86_64-unknown-linux-musl/release/quill
+            asset_name: quill-linux-x86_64
+            make_target: musl-static
+          - os: windows-latest
+            target_file: target/release/quill.exe
+            asset_name: quill-windows-x86_64.exe
+            make_target: release
+            rust: stable
+          - os: macos-latest
+            target_file: target/release/quill
+            asset_name: quill-macos-x86_64
+            make_target: release
+            rust: stable
     steps:
     - uses: actions/checkout@master
-    - uses: gmiam/rust-musl-action@master
-      with:
-        args: cargo build --target x86_64-unknown-linux-musl --release --locked
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/x86_64-unknown-linux-musl/release/quill
-        asset_name: quill-linux-x86_64
-        tag: ${{ github.ref }}
 
-  macos-x86_64:
-    name: Release binary for MacOS x86_64
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@master
-    - uses: actions-rs/toolchain@v1
+    - name: Install dependencies (windows only)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        vcpkg integrate install
+        vcpkg install openssl:x64-windows-static-md
+        echo "::set-env OPENSSL_DIR 'C:\Tools\vcpkg\installed\x64-windows-static-md'"
+        echo "::set-env OPENSSL_STATIC Yes"
+      env:
+        VCPKG_ROOT: 'C:\vcpkg'
+
+    - name: Install toolchain (Linux static)
+      if: matrix.os == 'ubuntu-latest'
+      uses: gmiam/rust-musl-action@master
+      with:
+        args: make ${{ matrix.make_target }}
+
+    - name: Install toolchain (Non-linux)
+      if: matrix.os != 'ubuntu-latest'
+      uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
         override: true
-    - name: build
-      run: make release
+
+    - name: Make
+      if: matrix.os != 'ubuntu-latest'
+      run: make ${{ matrix.make_target }}
+
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/release/quill
-        asset_name: quill-macos-x86_64
+        file: ${{ matrix.target_file }}
+        asset_name: ${{ matrix.asset_name }}
         tag: ${{ github.ref }}
