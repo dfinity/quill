@@ -1,5 +1,4 @@
 use crate::commands::request_status;
-use crate::lib::sign::signed_message::NeuronStakeMessage;
 use crate::lib::{
     read_from_file,
     sign::signed_message::{Ingress, IngressWithRequestId},
@@ -65,10 +64,6 @@ pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
         }
     } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
         submit_ingress_and_check_status(pem, &tx, &opts).await?;
-    } else if let Ok(val) = serde_json::from_str::<NeuronStakeMessage>(&json) {
-        for tx in &[val.transfer, val.claim] {
-            submit_ingress_and_check_status(pem, &tx, &opts).await?;
-        }
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }

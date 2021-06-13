@@ -1,6 +1,6 @@
 use crate::{
     commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
-    lib::{governance_canister_id, sign::signed_message::NeuronStakeMessage, AnyhowResult},
+    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
 };
 use candid::{CandidType, Encode};
 use clap::Clap;
@@ -30,7 +30,10 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronStakeMessage> {
+pub async fn exec(
+    pem: &Option<String>,
+    opts: StakeOpts,
+) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (controller, _) = crate::commands::public::get_ids(pem)?;
     let nonce = convert_name_to_nonce(&opts.name);
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
@@ -58,12 +61,7 @@ pub async fn exec(pem: &Option<String>, opts: StakeOpts) -> AnyhowResult<NeuronS
     )
     .await?;
 
-    // Generate a JSON list of signed messages.
-    let message = NeuronStakeMessage {
-        transfer: transfer_message,
-        claim: claim_message,
-    };
-    Ok(message)
+    Ok(vec![transfer_message, claim_message])
 }
 
 // This function _must_ correspond to how the governance canister computes the subaccount.
