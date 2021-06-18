@@ -1,4 +1,4 @@
-//! This module implements the nano command-line API.
+//! This module implements the command-line API.
 
 use crate::lib::AnyhowResult;
 use clap::Clap;

@@ -1,11 +1,11 @@
 [package]
-name = "nano"
+name = "quill"
 version = "0.2.0"
 authors = ["DFINITY Team"]
 edition = "2018"
 
 [[bin]]
-name = "nano"
+name = "quill"
 path = "src/main.rs"
 
 [dependencies]

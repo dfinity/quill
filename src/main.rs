@@ -5,7 +5,7 @@ mod lib;
 
 /// Ledger & Governance ToolKit for cold wallets.
 #[derive(Clap)]
-#[clap(name("nano"), version = crate_version!(), global_setting = AppSettings::ColoredHelp)]
+#[clap(name("quill"), version = crate_version!(), global_setting = AppSettings::ColoredHelp)]
 pub struct CliOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]
