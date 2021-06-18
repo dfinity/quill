@@ -96,11 +96,7 @@ impl SignReplicaV2Transport {
     }
 }
 
-fn run(
-    s: &SignReplicaV2Transport,
-    envelope: Vec<u8>,
-    request_id: Option<RequestId>,
-) -> Result<(), AgentError> {
+fn run(s: &SignReplicaV2Transport, envelope: Vec<u8>, request_id: Option<RequestId>) {
     let message = Ingress::default().with_content(hex::encode(&envelope));
     let message = match request_id {
         Some(request_id) => message
@@ -113,7 +109,6 @@ fn run(
         request_id,
         message: Message::Ingress(message),
     });
-    Ok(())
 }
 
 impl ReplicaV2Transport for SignReplicaV2Transport {
@@ -148,7 +143,7 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
         envelope: Vec<u8>,
         request_id: RequestId,
     ) -> Pin<Box<dyn Future<Output = Result<(), AgentError>> + Send + 'a>> {
-        run(self, envelope, Some(request_id)).expect("Couldn't execute call");
+        run(self, envelope, Some(request_id));
         async fn filler() -> Result<(), AgentError> {
             Ok(())
         }
@@ -160,7 +155,7 @@ impl ReplicaV2Transport for SignReplicaV2Transport {
         _effective_canister_id: Principal,
         envelope: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
-        run(self, envelope, None).expect("Couldn't execute call");
+        run(self, envelope, None);
         async fn filler() -> Result<Vec<u8>, AgentError> {
             Err(AgentError::MissingReplicaTransport())
         }
