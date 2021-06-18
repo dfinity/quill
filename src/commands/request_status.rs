@@ -22,7 +22,7 @@ pub async fn sign(
         Err(AgentError::MissingReplicaTransport()) => {
             let message_with_id: SignedMessageWithRequestId =
                 data.read().unwrap().clone().try_into()?;
-            return Ok(message_with_id.message.try_into()?);
+            Ok(message_with_id.message.try_into()?)
         }
         val => panic!("Unexpected output from the signing agent: {:?}", val),
     }

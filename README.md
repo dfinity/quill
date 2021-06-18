@@ -1,4 +1,4 @@
-# nano
+# quill
 
 Minimalistic ledger and governance toolkit for cold wallets.
 
@@ -11,29 +11,29 @@ AUTHORS OF THIS SOFTWARE SHALL NOT BE LIABLE FOR DAMAGES OF ANY TYPE, WHETHER DI
 
 This will sign a transfer transaction and print to STDOUT:
 
-    nano --pem-file <path> transfer <account-id> --amount <amount>
+    quill --pem-file <path> transfer <account-id> --amount <amount>
 
 To display the signed message in human-readable form:
 
-    nano send --dry-run <path-to-file>
+    quill send --dry-run <path-to-file>
 
-`nano` could be used on an online computer to send any signed transactions:
+`quill` could be used on an online computer to send any signed transactions:
 
-    nano send <path-to-file>
+    quill send <path-to-file>
 
 To get the principal and the account id:
 
-    nano --pem-file <path> public-ids
+    quill --pem-file <path> public-ids
 
 ### Governance
 
 This is how you’d stake/topup a neuron:
 
-    nano --pem-file <path> neuron-stake --amount 2.5 --name 1
+    quill --pem-file <path> neuron-stake --amount 2.5 --name 1
 
 Managing the neuron:
 
-    nano --pem-file <path> neuron-manage <neuron-id> [OPERATIONS]
+    quill --pem-file <path> neuron-manage <neuron-id> [OPERATIONS]
 
 Currently supported operations are: `--start-dissolving`, `--stop-dissolving`, `--disburse`, `--add-hot-key`, `--remove-hot-key`.
 
