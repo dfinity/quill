@@ -39,6 +39,21 @@ Currently supported operations are: `--start-dissolving`, `--stop-dissolving`, `
 
 All of the commands above will generate signed messages, which can be sent on the online machine using the `send` command from above.
 
+## Download
+
+Use binaries from the latest [release](https://github.com/dfinity/quill/releases).
+
+## Build
+
+To compile `quill` run:
+
+1. `rustup set profile minimal`
+2. `rustup toolchain install stable --component rustfmt --component clippy`
+3. `rustup override set stable`
+4. `make release`
+
+After this, find the binary at `target/release/quill`.
+
 ## Credit
 
 Originally forked from the [SDK](https://github.com/dfinity/sdk).
