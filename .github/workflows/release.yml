@@ -6,20 +6,24 @@ on:
       - '*'
 
 jobs:
-  linux-x86_64-static:
-    name: Release binary for Linux x86_64
+  linux:
+    name: Release binary for ${{ matrix.target }}
     runs-on: ubuntu-latest
-    steps:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+  steps:
     - uses: actions/checkout@master
-    - uses: gmiam/rust-musl-action@master
+    - uses: dfinity/rust-musl-action@master
       with:
-        args: cargo build --target x86_64-unknown-linux-musl --release --locked
+        args: cargo build --target ${{ matrix.release }} --release --locked
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/x86_64-unknown-linux-musl/release/quill
-        asset_name: quill-linux-x86_64
+        file: target/${{ matrix.release }}/release/quill
+        asset_name: quill-${{ matrix.release }}
         tag: ${{ github.ref }}
 
   macos-x86_64:
