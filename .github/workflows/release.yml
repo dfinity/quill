@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
-  steps:
+    steps:
     - uses: actions/checkout@master
     - uses: dfinity/rust-musl-action@master
       with:
