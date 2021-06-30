@@ -23,22 +23,30 @@ jobs:
         asset_name: quill-${{ matrix.target }}
         tag: ${{ github.ref }}
 
-  macos-x86_64:
-    name: Release binary for MacOS x86_64
+  macos:
+    name: Release binary for MacOS ${{ matrix.target }}
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
     steps:
     - uses: actions/checkout@master
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
+        target: ${{ matrix.target }}
         override: true
-    - name: build
-      run: make release
+    - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --target ${{ matrix.target }} --release --locked
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/release/quill
-        asset_name: quill-macos-x86_64
+        file: target/${{ matrix.target }}/release/quill
+        asset_name: quill-${{ matrix.target }}
         tag: ${{ github.ref }}
