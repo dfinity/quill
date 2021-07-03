@@ -61,7 +61,7 @@ pub struct Spawn {
 
 #[derive(CandidType)]
 pub struct Split {
-    pub amount_e8s: Option<u64>,
+    pub amount_e8s: u64,
 }
 
 #[derive(CandidType)]
@@ -198,11 +198,11 @@ pub async fn exec(
         msgs.push(args);
     };
 
-    if opts.split.is_some() {
+    if let Some(amount) = opts.split {
         let args = Encode!(&ManageNeuron {
             id: Some(NeuronId { id: opts.neuron_id }),
             command: Some(Command::Split(Split {
-                amount_e8s: opts.split.map(|v| v * 100_000_000)
+                amount_e8s: amount * 100_000_000
             }))
         })?;
         msgs.push(args);
