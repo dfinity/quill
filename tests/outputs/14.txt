@@ -1,7 +1,7 @@
 Sending message with
 
   Call type:   update
-  Sender:      2vxsx-fae
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
   Method name: manage_neuron
   Arguments:   (
