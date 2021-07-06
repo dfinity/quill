@@ -59,33 +59,6 @@ pub struct Spawn {
     pub new_controller: Option<Principal>,
 }
 
-// #[derive(CandidType)]
-// pub struct Split {
-//     pub amount_e8s: Option<u64>,
-// }
-
-// #[derive(CandidType)]
-// pub struct Follow {
-//     pub topic: i32,
-//     pub followees: Vec<NeuronId>,
-// }
-
-// #[derive(CandidType)]
-// pub struct RegisterVote {
-//     pub vote: i32,
-//     pub proposal: Option<NeuronId>,
-// }
-
-// #[derive(CandidType)]
-// pub struct DisburseToNeuron {
-//     pub operation: Option<Operation>,
-//     pub dissolve_delay_seconds: u64,
-//     pub kyc_verified: bool,
-//     pub amount_e8s: u64,
-//     pub new_controller: Option<Principal>,
-//     pub nonce: u64,
-// }
-
 #[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
@@ -129,13 +102,12 @@ pub struct ManageOpts {
     #[clap(long)]
     disburse: bool,
 
-    /// Spawn rewards
+    /// Spawn rewards to a new neuron under the controller's account.
     #[clap(long)]
     spawn: bool,
-
-    /// Spawn rewards to a specific principal
-    #[clap(long)]
-    spawn_to_controller: Option<Principal>,
+    /* /// Spawn rewards to a specific controller, identified by principal-id
+     * #[clap(long)]
+     * spawn_to_controller: Option<Principal>, */
 }
 
 pub async fn exec(
@@ -211,11 +183,13 @@ pub async fn exec(
         msgs.push(args);
     };
 
-    if opts.spawn || opts.spawn_to_controller.is_some() {
+    if opts.spawn
+    // || opts.spawn_to_controller.is_some()
+    {
         let args = Encode!(&ManageNeuron {
             id: Some(NeuronId { id: opts.neuron_id }),
             command: Some(Command::Spawn(Spawn {
-                new_controller: opts.spawn_to_controller,
+                new_controller: None // opts.spawn_to_controller
             }))
         })?;
         msgs.push(args);
