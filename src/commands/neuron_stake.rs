@@ -43,7 +43,7 @@ pub async fn exec(
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
         (_, Some(name)) => convert_name_to_nonce(name),
-        _ => return Err(anyhow!("Nonce or neuron name should be specified")),
+        _ => return Err(anyhow!("Either a nonce or a name should be specified")),
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
