@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = opt record { id = 2_313_380_519_530_470_538 };
+    command = opt variant { Split = record { amount_e8s = 10_000_000_000 } };
+  },
+)

@@ -60,10 +60,16 @@ pub struct Spawn {
 }
 
 #[derive(CandidType)]
+pub struct Split {
+    pub amount_e8s: u64,
+}
+
+#[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
     Disburse(Disburse),
     Spawn(Spawn),
+    Split(Split),
 }
 
 #[derive(CandidType)]
@@ -105,6 +111,10 @@ pub struct ManageOpts {
     /// Spawn rewards to a new neuron under the controller's account.
     #[clap(long)]
     spawn: bool,
+
+    /// Split off the given number of ICP from a neuron
+    #[clap(long)]
+    split: Option<u64>,
 }
 
 pub async fn exec(
@@ -184,6 +194,16 @@ pub async fn exec(
         let args = Encode!(&ManageNeuron {
             id: Some(NeuronId { id: opts.neuron_id }),
             command: Some(Command::Spawn(Default::default()))
+        })?;
+        msgs.push(args);
+    };
+
+    if let Some(amount) = opts.split {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Split(Split {
+                amount_e8s: amount * 100_000_000
+            }))
         })?;
         msgs.push(args);
     };
