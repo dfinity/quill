@@ -18,4 +18,5 @@ clippy:
 	cargo clippy --all --all-targets --all-features --tests -- -D warnings
 
 test:
+	cargo build
 	cd tests && ./run.sh

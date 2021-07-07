@@ -1,1 +1,1 @@
-cargo run -- --pem-file - public-ids
+../target/debug/quill --pem-file - public-ids
