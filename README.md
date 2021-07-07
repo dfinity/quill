@@ -54,6 +54,17 @@ To compile `quill` run:
 
 After this, find the binary at `target/release/quill`.
 
+## Contribution
+
+`quill` is a very critical link in the workflow of the management of valuable assets.
+`quill`'s code must stay clean, simple, readable and leave no room for ambiguities, so that it can be reviewed and audited by anyone.
+Hence, if you would like to propose a change, please adhere to the following principals:
+
+1. Be concise and only add functional code.
+2. Optimize for correctness, then for readability.
+3. Avoid adding dependencies at all costs unless it's completely unreasonable.
+4. Every new feature (+ a test) is proposed only after it was tested on real wallets.
+
 ## Credit
 
 Originally forked from the [SDK](https://github.com/dfinity/sdk).
