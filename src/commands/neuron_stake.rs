@@ -2,6 +2,7 @@ use crate::{
     commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
     lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
 };
+use anyhow::anyhow;
 use candid::{CandidType, Encode};
 use clap::Clap;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
@@ -23,7 +24,11 @@ pub struct StakeOpts {
 
     /// The name of the neuron (up to 8 ASCII characters).
     #[clap(long, validator(neuron_name_validator))]
-    name: String,
+    name: Option<String>,
+
+    /// The nonce of the neuron.
+    #[clap(long, validator(neuron_name_validator), conflicts_with("name"))]
+    nonce: Option<u64>,
 
     /// Transaction fee, default is 10000 e8s.
     #[clap(long)]
@@ -35,7 +40,11 @@ pub async fn exec(
     opts: StakeOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (controller, _) = crate::commands::public::get_ids(pem)?;
-    let nonce = convert_name_to_nonce(&opts.name);
+    let nonce = match (&opts.nonce, &opts.name) {
+        (Some(nonce), _) => *nonce,
+        (_, Some(name)) => convert_name_to_nonce(name),
+        _ => return Err(anyhow!("Either a nonce or a name should be specified")),
+    };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
     let transfer_message = transfer::exec(
