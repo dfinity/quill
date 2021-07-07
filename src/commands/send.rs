@@ -54,16 +54,16 @@ pub struct SendOpts {
     yes: bool,
 }
 
-pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
+pub async fn exec(pem: &Option<String>, opts: SendOpts, url: &Option<String>) -> AnyhowResult {
     let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
-        send(&val, &opts).await?;
+        send(&val, &opts, url).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
-            submit_ingress_and_check_status(pem, &tx, &opts).await?;
+            submit_ingress_and_check_status(pem, &tx, &opts, url).await?;
         }
     } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
-        submit_ingress_and_check_status(pem, &tx, &opts).await?;
+        submit_ingress_and_check_status(pem, &tx, &opts, url).await?;
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }
@@ -74,13 +74,14 @@ async fn submit_ingress_and_check_status(
     pem: &Option<String>,
     message: &IngressWithRequestId,
     opts: &SendOpts,
+    url: &Option<String>,
 ) -> AnyhowResult {
-    send(&message.ingress, opts).await?;
+    send(&message.ingress, opts, url).await?;
     if opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status::submit(pem, &message.request_status, Some(method_name.to_string())).await
+    match request_status::submit(pem, &message.request_status, Some(method_name.to_string()), url).await
     {
         Ok(result) => println!("{}\n", result),
         Err(err) => println!("{}\n", err),
@@ -88,7 +89,7 @@ async fn submit_ingress_and_check_status(
     Ok(())
 }
 
-async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
+async fn send(message: &Ingress, opts: &SendOpts, url: &Option<String>) -> AnyhowResult {
     let (sender, canister_id, method_name, args) = message.parse()?;
 
     println!("Sending message with\n");
@@ -111,7 +112,11 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestHttpReplicaV2Transport::create(IC_URL.to_string())?;
+    let ic_url = match url {
+        Some(ic_url) => String::from(ic_url),
+        None => IC_URL.to_string(),
+    };
+    let transport = ReqwestHttpReplicaV2Transport::create(ic_url)?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

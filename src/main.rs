@@ -1,5 +1,6 @@
 #![warn(unused_extern_crates)]
 use clap::{crate_version, AppSettings, Clap};
+use url::Url;
 mod commands;
 mod lib;
 
@@ -10,6 +11,9 @@ pub struct CliOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]
     pem_file: Option<String>,
+
+    #[clap(long)]
+    ic_url: Option<String>,
 
     #[clap(subcommand)]
     command: commands::Command,
@@ -34,7 +38,20 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    if let Err(err) = commands::exec(&pem, command) {
+
+    let url = match opts.ic_url {
+        Some(url) => {
+            if Url::parse(url.as_str()).is_err() {
+                None
+            } else {
+                Some(url)
+            }
+        },
+        None => {
+            None
+        }
+    };
+    if let Err(err) = commands::exec(&pem, command, &url) {
         eprintln!("{}", err);
         std::process::exit(1);
     }

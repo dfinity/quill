@@ -22,7 +22,7 @@ pub async fn sign(
         Err(AgentError::MissingReplicaTransport()) => {
             let message_with_id: SignedMessageWithRequestId =
                 data.read().unwrap().clone().try_into()?;
-            Ok(message_with_id.message.try_into()?)
+            return Ok(message_with_id.message.try_into()?);
         }
         val => panic!("Unexpected output from the signing agent: {:?}", val),
     }
@@ -32,16 +32,21 @@ pub async fn submit(
     pem: &Option<String>,
     req: &RequestStatus,
     method_name: Option<String>,
+    url: &Option<String>,
 ) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
     let mut agent = get_agent(pem)?;
+    let ic_url = match url {
+        Some(ic_url) => String::from(ic_url),
+        None => IC_URL.to_string(),
+    };
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
-                IC_URL.to_string(),
+                ic_url,
             )
             .unwrap(),
         ),

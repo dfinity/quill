@@ -25,7 +25,7 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
 }
 
-pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
+pub fn exec(pem: &Option<String>, cmd: Command, url: &Option<String>) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds => public::exec(pem),
@@ -42,7 +42,7 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .await
                 .and_then(|out| print(&out))
         }),
-        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
+        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts, url).await }),
     }
 }
 
