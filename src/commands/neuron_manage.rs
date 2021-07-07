@@ -54,7 +54,7 @@ pub struct Disburse {
     pub amount: Option<ICPTs>,
 }
 
-#[derive(CandidType)]
+#[derive(CandidType, Default)]
 pub struct Spawn {
     pub new_controller: Option<Principal>,
 }
@@ -105,9 +105,6 @@ pub struct ManageOpts {
     /// Spawn rewards to a new neuron under the controller's account.
     #[clap(long)]
     spawn: bool,
-    /* /// Spawn rewards to a specific controller, identified by principal-id
-     * #[clap(long)]
-     * spawn_to_controller: Option<Principal>, */
 }
 
 pub async fn exec(
@@ -183,14 +180,10 @@ pub async fn exec(
         msgs.push(args);
     };
 
-    if opts.spawn
-    // || opts.spawn_to_controller.is_some()
-    {
+    if opts.spawn {
         let args = Encode!(&ManageNeuron {
             id: Some(NeuronId { id: opts.neuron_id }),
-            command: Some(Command::Spawn(Spawn {
-                new_controller: None // opts.spawn_to_controller
-            }))
+            command: Some(Command::Spawn(Default::default()))
         })?;
         msgs.push(args);
     };
