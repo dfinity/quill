@@ -54,10 +54,16 @@ pub struct Disburse {
     pub amount: Option<ICPTs>,
 }
 
+#[derive(CandidType, Default)]
+pub struct Spawn {
+    pub new_controller: Option<Principal>,
+}
+
 #[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
     Disburse(Disburse),
+    Spawn(Spawn),
 }
 
 #[derive(CandidType)]
@@ -95,6 +101,10 @@ pub struct ManageOpts {
     /// Disburse the entire staked amount to the controller's account.
     #[clap(long)]
     disburse: bool,
+
+    /// Spawn rewards to a new neuron under the controller's account.
+    #[clap(long)]
+    spawn: bool,
 }
 
 pub async fn exec(
@@ -166,6 +176,14 @@ pub async fn exec(
                 to_account: None,
                 amount: None
             }))
+        })?;
+        msgs.push(args);
+    };
+
+    if opts.spawn {
+        let args = Encode!(&ManageNeuron {
+            id: Some(NeuronId { id: opts.neuron_id }),
+            command: Some(Command::Spawn(Default::default()))
         })?;
         msgs.push(args);
     };
