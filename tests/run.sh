@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 PEM=`cat ./identity.pem`
 
+set -euo pipefail
+
 tests=0
 for f in `ls -1 ./commands/| sort -n`; do
     expected=`cat outputs/${f/sh/txt}`
