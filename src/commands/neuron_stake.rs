@@ -70,14 +70,11 @@ pub async fn exec(
     )
     .await?;
 
-    Ok(if opts.amount == "0" {
-        vec![claim_message]
-    } else {
-        vec![transfer_message, claim_message]
-    })
+    Ok(vec![claim_message, transfer_message])
 }
 
-// This function _must_ correspond to how the governance canister computes the subaccount.
+// This function _must_ correspond to how the governance canister computes the
+// subaccount.
 fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     use openssl::sha::Sha256;
     let mut data = Sha256::new();
