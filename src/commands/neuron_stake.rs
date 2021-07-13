@@ -51,7 +51,7 @@ pub async fn exec(
         pem,
         transfer::TransferOpts {
             to: account.to_hex(),
-            amount: opts.amount.clone(),
+            amount: opts.amount,
             fee: opts.fee,
             memo: Some(nonce.to_string()),
         },
