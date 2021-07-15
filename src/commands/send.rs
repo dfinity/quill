@@ -58,6 +58,10 @@ pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
     let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
+    } else if let Ok(vals) = serde_json::from_str::<Vec<Ingress>>(&json) {
+        for msg in vals {
+            send(&msg, &opts).await?;
+        }
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
             submit_ingress_and_check_status(pem, &tx, &opts).await?;

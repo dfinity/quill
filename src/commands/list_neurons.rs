@@ -1,6 +1,6 @@
 use crate::{
-    commands::sign::sign_ingress_with_request_status_query,
-    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
+    commands::sign::sign_ingress,
+    lib::{governance_canister_id, sign::signed_message::Ingress, AnyhowResult},
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
@@ -24,27 +24,24 @@ pub struct ListOpts {
     include_neurons_readable_by_caller: bool,
 }
 
-pub async fn exec(pem: &Option<String>, opts: ListOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let mut msgs = Vec::new();
+pub async fn exec(pem: &Option<String>, opts: ListOpts) -> AnyhowResult<Vec<Ingress>> {
+    let mut msg_args = Vec::new();
 
     if !opts.neuron_ids.is_empty() {
         let args = Encode!(&ListNeurons {
             neuron_ids: opts.neuron_ids,
             include_neurons_readable_by_caller: opts.include_neurons_readable_by_caller,
         })?;
-        msgs.push(args);
+        msg_args.push(args);
     };
 
-    if msgs.is_empty() {
+    if msg_args.is_empty() {
         return Err(anyhow!("No instructions provided"));
     }
 
-    let mut generated = Vec::new();
-    for args in msgs {
-        generated.push(
-            sign_ingress_with_request_status_query(pem, governance_canister_id(), "list_neurons", args)
-                .await?,
-        );
+    let mut msgs = Vec::new();
+    for args in msg_args {
+        msgs.push(sign_ingress(pem, governance_canister_id(), "list_neurons", args).await?);
     }
-    Ok(generated)
+    Ok(msgs)
 }
