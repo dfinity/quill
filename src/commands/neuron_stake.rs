@@ -20,7 +20,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
     #[clap(long)]
-    amount: String,
+    amount: Option<String>,
 
     /// The name of the neuron (up to 8 ASCII characters).
     #[clap(long, validator(neuron_name_validator))]
@@ -47,33 +47,41 @@ pub async fn exec(
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
-    let transfer_message = transfer::exec(
-        pem,
-        transfer::TransferOpts {
-            to: account.to_hex(),
-            amount: opts.amount,
-            fee: opts.fee,
-            memo: Some(nonce.to_string()),
-        },
-    )
-    .await?;
+    let mut messages = Vec::new();
+    if let Some(amount) = opts.amount {
+        messages.push(
+            transfer::exec(
+                pem,
+                transfer::TransferOpts {
+                    to: account.to_hex(),
+                    amount,
+                    fee: opts.fee,
+                    memo: Some(nonce.to_string()),
+                },
+            )
+            .await?,
+        );
+    }
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
         memo: Memo(nonce),
         controller: Some(controller),
     })?;
 
-    let claim_message = sign_ingress_with_request_status_query(
-        pem,
-        governance_canister_id(),
-        "claim_or_refresh_neuron_from_account",
-        args,
-    )
-    .await?;
+    messages.push(
+        sign_ingress_with_request_status_query(
+            pem,
+            governance_canister_id(),
+            "claim_or_refresh_neuron_from_account",
+            args,
+        )
+        .await?,
+    );
 
-    Ok(vec![transfer_message, claim_message])
+    Ok(messages)
 }
 
-// This function _must_ correspond to how the governance canister computes the subaccount.
+// This function _must_ correspond to how the governance canister computes the
+// subaccount.
 fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     use openssl::sha::Sha256;
     let mut data = Sha256::new();
