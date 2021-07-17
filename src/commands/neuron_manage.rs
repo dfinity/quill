@@ -13,7 +13,7 @@ pub struct IncreaseDissolveDelay {
     pub additional_dissolve_delay_seconds: u32,
 }
 
-#[derive(CandidType)]
+#[derive(CandidType, Copy, Clone)]
 pub struct NeuronId {
     pub id: u64,
 }
@@ -82,7 +82,7 @@ struct ManageNeuron {
 #[derive(Clap)]
 pub struct ManageOpts {
     /// The id of the neuron to manage.
-    neuron_id: u64,
+    neuron_id: String,
 
     /// Principal to be used as a hot key.
     #[clap(long)]
@@ -123,9 +123,12 @@ pub async fn exec(
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
+    let id = Some(NeuronId {
+        id: parse_neuron_id(opts.neuron_id),
+    });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::AddHotKey(AddHotKey {
                     new_hot_key: opts.add_hot_key
@@ -137,7 +140,7 @@ pub async fn exec(
 
     if opts.remove_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
                     hot_key_to_remove: opts.remove_hot_key
@@ -149,7 +152,7 @@ pub async fn exec(
 
     if opts.stop_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             }))
@@ -159,7 +162,7 @@ pub async fn exec(
 
     if opts.start_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             }))
@@ -169,7 +172,7 @@ pub async fn exec(
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds
@@ -181,7 +184,7 @@ pub async fn exec(
 
     if opts.disburse {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Disburse(Disburse {
                 to_account: None,
                 amount: None
@@ -192,7 +195,7 @@ pub async fn exec(
 
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Spawn(Default::default()))
         })?;
         msgs.push(args);
@@ -200,7 +203,7 @@ pub async fn exec(
 
     if let Some(amount) = opts.split {
         let args = Encode!(&ManageNeuron {
-            id: Some(NeuronId { id: opts.neuron_id }),
+            id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
             }))
@@ -225,4 +228,10 @@ pub async fn exec(
         );
     }
     Ok(generated)
+}
+
+fn parse_neuron_id(id: String) -> u64 {
+    id.replace("_", "")
+        .parse()
+        .expect("Couldn't parse the neuron id")
 }
