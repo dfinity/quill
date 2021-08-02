@@ -64,6 +64,7 @@ Hence, if you would like to propose a change, please adhere to the following pri
 2. Optimize for correctness, then for readability.
 3. Avoid adding dependencies at all costs unless it's completely unreasonable.
 4. Every new feature (+ a test) is proposed only after it was tested on real wallets.
+5. Increment the last digit of the crate version whenever the functionality scope changes. 
 
 ## Credit
 
