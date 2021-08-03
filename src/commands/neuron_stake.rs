@@ -87,7 +87,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     let mut data = Sha256::new();
     data.update(&[0x0c]);
     data.update(b"neuron-stake");
-    data.update(&controller.as_slice());
+    data.update(controller.as_slice());
     data.update(&nonce.to_be_bytes());
     Subaccount(data.finish())
 }
