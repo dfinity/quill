@@ -28,7 +28,10 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<IngressWithRequestId> {
+pub async fn exec(
+    pem: &Option<String>,
+    opts: TransferOpts,
+) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let amount =
         parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
@@ -51,7 +54,9 @@ pub async fn exec(pem: &Option<String>, opts: TransferOpts) -> AnyhowResult<Ingr
         created_at_time: None,
     })?;
 
-    sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args).await
+    let msg =
+        sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args).await?;
+    Ok(vec![msg])
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {

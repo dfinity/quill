@@ -81,7 +81,7 @@ impl Ingress {
                         sender,
                         canister_id,
                         method_name.to_string(),
-                        get_idl_string(arg, canister_id, &method_name, "args")?,
+                        get_idl_string(arg, canister_id, method_name, "args")?,
                     ));
                 }
             }
