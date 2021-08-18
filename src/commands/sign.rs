@@ -70,7 +70,7 @@ pub async fn sign_ingress_with_request_status_query(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(pem, canister_id, &method_name, args).await?;
+    let msg_with_req_id = sign(pem, canister_id, method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");

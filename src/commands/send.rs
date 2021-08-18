@@ -66,8 +66,6 @@ pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
         for tx in vals {
             submit_ingress_and_check_status(pem, &tx, &opts).await?;
         }
-    } else if let Ok(tx) = serde_json::from_str::<IngressWithRequestId>(&json) {
-        submit_ingress_and_check_status(pem, &tx, &opts).await?;
     } else {
         return Err(anyhow!("Invalid JSON content"));
     }

@@ -47,9 +47,8 @@ pub async fn exec(
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
-    let mut messages = Vec::new();
-    if let Some(amount) = opts.amount {
-        messages.push(
+    let mut messages = match opts.amount {
+        Some(amount) => {
             transfer::exec(
                 pem,
                 transfer::TransferOpts {
@@ -59,9 +58,10 @@ pub async fn exec(
                     memo: Some(nonce.to_string()),
                 },
             )
-            .await?,
-        );
-    }
+            .await?
+        }
+        _ => Vec::new(),
+    };
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
         memo: Memo(nonce),
         controller: Some(controller),
@@ -87,7 +87,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     let mut data = Sha256::new();
     data.update(&[0x0c]);
     data.update(b"neuron-stake");
-    data.update(&controller.as_slice());
+    data.update(controller.as_slice());
     data.update(&nonce.to_be_bytes());
     Subaccount(data.finish())
 }
