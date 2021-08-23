@@ -116,7 +116,7 @@ pub fn parse_query_response(
             m.get(&Value::Text("reply".to_string())),
         ) {
             if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
-                return Ok(get_idl_string(reply, canister_id, method_name, "rets")?);
+                return get_idl_string(reply, canister_id, method_name, "rets");
             }
         }
     }

@@ -89,6 +89,6 @@ pub async fn sign_ingress(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<Ingress> {
-    let msg = sign(pem, canister_id, &method_name, args).await?;
+    let msg = sign(pem, canister_id, method_name, args).await?;
     Ok(msg.message.try_into()?)
 }
