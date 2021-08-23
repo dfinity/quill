@@ -17,7 +17,7 @@ To display the signed message in human-readable form:
 
     quill send --dry-run <path-to-file>
 
-`quill` could be used on an online computer to send any signed transactions:
+`quill` could be used on an online computer to send any signed transaction:
 
     quill send <path-to-file>
 
@@ -58,11 +58,11 @@ After this, find the binary at `target/release/quill`.
 
 `quill` is a very critical link in the workflow of the management of valuable assets.
 `quill`'s code must stay clean, simple, readable and leave no room for ambiguities, so that it can be reviewed and audited by anyone.
-Hence, if you would like to propose a change, please adhere to the following principals:
+Hence, if you would like to propose a change, please adhere to the following principles:
 
 1. Be concise and only add functional code.
 2. Optimize for correctness, then for readability.
-3. Avoid adding dependencies at all costs unless it's completely unreasonable.
+3. Avoid adding dependencies at all costs unless it's completely reasonable.
 4. Every new feature (+ a test) is proposed only after it was tested on real wallets.
 5. Increment the last digit of the crate version whenever the functionality scope changes. 
 
