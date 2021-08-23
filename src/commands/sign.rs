@@ -2,7 +2,7 @@ use crate::commands::request_status;
 use crate::lib::{
     get_agent, get_candid_type, get_local_candid,
     sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId},
-    sign::signed_message::IngressWithRequestId,
+    sign::signed_message::{Ingress, IngressWithRequestId},
     AnyhowResult,
 };
 use anyhow::anyhow;
@@ -80,4 +80,15 @@ pub async fn sign_ingress_with_request_status_query(
         request_status,
     };
     Ok(message)
+}
+
+/// Generates a signed ingress message.
+pub async fn sign_ingress(
+    pem: &Option<String>,
+    canister_id: Principal,
+    method_name: &str,
+    args: Vec<u8>,
+) -> AnyhowResult<Ingress> {
+    let msg = sign(pem, canister_id, method_name, args).await?;
+    Ok(msg.message.try_into()?)
 }
