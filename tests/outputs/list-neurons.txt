@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   query
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: list_neurons
+  Arguments:   (record { neuron_ids = vec {}; include_neurons_readable_by_caller = true })

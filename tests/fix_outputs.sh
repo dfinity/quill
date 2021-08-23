@@ -1,3 +1,5 @@
+#!/bin/bash
+
 PEM=`cat ./identity.pem`
 
 for f in `ls -1 ./commands/`; do

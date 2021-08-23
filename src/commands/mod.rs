@@ -24,7 +24,8 @@ pub enum Command {
     Transfer(transfer::TransferOpts),
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
-    ListNeurons(list_neurons::ListOpts),
+    /// Signs the query for all neurons belonging to the signin principal.
+    ListNeurons,
 }
 
 pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
@@ -45,11 +46,9 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .and_then(|out| print(&out))
         }),
         Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
-        Command::ListNeurons(opts) => runtime.block_on(async {
-            list_neurons::exec(pem, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
+        Command::ListNeurons => {
+            runtime.block_on(async { list_neurons::exec(pem).await.and_then(|out| print(&out)) })
+        }
     }
 }
 
