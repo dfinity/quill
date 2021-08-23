@@ -1,7 +1,7 @@
 use crate::commands::request_status;
 use crate::lib::{
     read_from_file,
-    sign::signed_message::{Ingress, IngressWithRequestId},
+    sign::signed_message::{parse_query_response, Ingress, IngressWithRequestId},
     AnyhowResult, IC_URL,
 };
 use anyhow::anyhow;
@@ -118,9 +118,12 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
 
     match message.call_type.as_str() {
         "query" => {
-            let response = transport.query(canister_id, content).await?;
-            print!("Response: ");
-            println!("{}", hex::encode(response));
+            let response = parse_query_response(
+                transport.query(canister_id, content).await?,
+                canister_id,
+                &method_name,
+            )?;
+            println!("Response: {}", response);
         }
         "update" => {
             let request_id = RequestId::from_str(
