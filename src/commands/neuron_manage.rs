@@ -64,12 +64,18 @@ pub struct Split {
     pub amount_e8s: u64,
 }
 
+#[derive(candid::CandidType)]
+pub struct MergeMaturity {
+    pub percentage_to_merge: u32,
+}
+
 #[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
     Disburse(Disburse),
     Spawn(Spawn),
     Split(Split),
+    MergeMaturity(MergeMaturity),
 }
 
 #[derive(CandidType)]
@@ -115,6 +121,10 @@ pub struct ManageOpts {
     /// Split off the given number of ICP from a neuron
     #[clap(long)]
     split: Option<u64>,
+
+    /// Merge the maturity of a neuron into the current stake.
+    #[clap(long)]
+    merge_maturity: Option<u32>,
 }
 
 pub async fn exec(
@@ -206,6 +216,16 @@ pub async fn exec(
             id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
+            }))
+        })?;
+        msgs.push(args);
+    };
+
+    if let Some(percentage_to_merge) = opts.merge_maturity {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::MergeMaturity(MergeMaturity {
+                percentage_to_merge
             }))
         })?;
         msgs.push(args);
