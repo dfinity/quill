@@ -1,7 +1,6 @@
 name: Arm Release
 
-on:
-  push:
+on: pull_request
 
 jobs:
   arm:
