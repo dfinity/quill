@@ -19,5 +19,5 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --target armv7-unknown-linux-gnueabihf
+        args: --target armv7-unknown-linux-gnueabihf --features static-ssl --release
 
