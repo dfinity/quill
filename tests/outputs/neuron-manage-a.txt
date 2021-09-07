@@ -16,5 +16,6 @@ Sending message with
         };
       }
     };
+    neuron_id_or_subaccount = null;
   },
 )
