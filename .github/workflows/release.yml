@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   build:
-    name: Release binary for ${{ matrix.os }} x86_64
+    name: Release binary for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -74,7 +74,7 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --target armv7-unknown-linux-gnueabihf --features static-ssl --release --lock
+        args: --target armv7-unknown-linux-gnueabihf --features static-ssl --release --locked
 
     - name: Make
       if: matrix.name != 'linux' && matrix.name != 'arm'
