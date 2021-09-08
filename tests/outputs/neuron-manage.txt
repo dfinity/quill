@@ -16,6 +16,7 @@ Sending message with
         };
       }
     };
+    neuron_id_or_subaccount = null;
   },
 )
 Sending message with
@@ -32,6 +33,7 @@ Sending message with
         operation = opt variant { StartDissolving = record {} };
       }
     };
+    neuron_id_or_subaccount = null;
   },
 )
 Sending message with
@@ -52,5 +54,6 @@ Sending message with
         };
       }
     };
+    neuron_id_or_subaccount = null;
   },
 )
