@@ -19,7 +19,7 @@ pub use public::get_ids;
 #[derive(Clap)]
 pub enum Command {
     /// Prints the principal id and the account id.
-    PublicIds,
+    PublicIds(public::PublicOpts),
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
     NeuronStake(neuron_stake::StakeOpts),
@@ -31,7 +31,7 @@ pub enum Command {
 pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::PublicIds => public::exec(pem),
+        Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
             runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
         }
