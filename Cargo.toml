@@ -1,6 +1,6 @@
 [package]
 name = "quill"
-version = "0.2.6"
+version = "0.2.7"
 authors = ["DFINITY Team"]
 edition = "2018"
 
