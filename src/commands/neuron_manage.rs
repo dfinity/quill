@@ -122,7 +122,7 @@ pub struct ManageOpts {
     #[clap(long)]
     split: Option<u64>,
 
-    /// Merge the percentage (from 1 to 100) of the maturity of a neuron into the current stake.
+    /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
     #[clap(long)]
     merge_maturity: Option<u32>,
 }
