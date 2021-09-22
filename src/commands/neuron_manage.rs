@@ -118,11 +118,11 @@ pub struct ManageOpts {
     #[clap(long)]
     spawn: bool,
 
-    /// Split off the given number of ICP from a neuron
+    /// Split off the given number of ICP from a neuron.
     #[clap(long)]
     split: Option<u64>,
 
-    /// Merge the maturity of a neuron into the current stake.
+    /// Merge the percentage (from 1 to 100) of the maturity of a neuron into the current stake.
     #[clap(long)]
     merge_maturity: Option<u32>,
 }
@@ -222,6 +222,11 @@ pub async fn exec(
     };
 
     if let Some(percentage_to_merge) = opts.merge_maturity {
+        if percentage_to_merge == 0 || percentage_to_merge > 100 {
+            return Err(anyhow!(
+                "Percentage to merge must be a number from 1 to 100"
+            ));
+        }
         let args = Encode!(&ManageNeuron {
             id,
             command: Some(Command::MergeMaturity(MergeMaturity {
