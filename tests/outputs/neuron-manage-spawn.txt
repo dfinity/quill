@@ -8,5 +8,6 @@ Sending message with
   record {
     id = opt record { id = 2_313_380_519_530_470_538 };
     command = opt variant { Spawn = record { new_controller = null } };
+    neuron_id_or_subaccount = null;
   },
 )
