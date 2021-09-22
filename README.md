@@ -35,8 +35,6 @@ Managing the neuron:
 
     quill --pem-file <path> neuron-manage <neuron-id> [OPERATIONS]
 
-Currently supported operations are: `--start-dissolving`, `--stop-dissolving`, `--disburse`, `--add-hot-key`, `--remove-hot-key`, `--spawn`, `--split`.
-
 All of the commands above will generate signed messages, which can be sent on the online machine using the `send` command from above.
 
 ## Download
