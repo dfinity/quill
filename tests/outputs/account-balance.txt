@@ -4,4 +4,8 @@ Sending message with
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
   Method name: account_balance_dfx
-  Arguments:   (record { account = "ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693" })
+  Arguments:   (
+  record {
+    account = "ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693";
+  },
+)
