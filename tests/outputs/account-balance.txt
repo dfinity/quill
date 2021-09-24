@@ -1,7 +1,7 @@
 Sending message with
 
   Call type:   query
-  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Sender:      2vxsx-fae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
   Method name: account_balance_dfx
   Arguments:   (

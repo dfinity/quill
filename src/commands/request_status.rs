@@ -28,15 +28,11 @@ pub async fn sign(
     }
 }
 
-pub async fn submit(
-    pem: &Option<String>,
-    req: &RequestStatus,
-    method_name: Option<String>,
-) -> AnyhowResult<String> {
+pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
-    let mut agent = get_agent(pem)?;
+    let mut agent = get_agent(&None)?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(

@@ -1,6 +1,6 @@
 use crate::{
-    commands::sign::sign_ingress,
-    lib::{ledger_canister_id, sign::signed_message::Ingress, AnyhowResult},
+    commands::send::submit_unsigned_ingress,
+    lib::{ledger_canister_id, AnyhowResult},
 };
 use candid::{CandidType, Encode};
 use clap::Clap;
@@ -15,14 +15,22 @@ pub struct AccountBalanceArgs {
 pub struct AccountBalanceOpts {
     /// The id of the account to query.
     account_id: String,
+
+    /// Will display the query, but not send it.
+    #[clap(long)]
+    dry_run: bool,
 }
 
 // We currently only support a subset of the functionality.
-pub async fn exec(pem: &Option<String>, opts: AccountBalanceOpts) -> AnyhowResult<Vec<Ingress>> {
+pub async fn exec(opts: AccountBalanceOpts) -> AnyhowResult {
     let args = Encode!(&AccountBalanceArgs {
         account: opts.account_id,
     })?;
-    Ok(vec![
-        sign_ingress(pem, ledger_canister_id(), "account_balance_dfx", args).await?,
-    ])
+    submit_unsigned_ingress(
+        ledger_canister_id(),
+        "account_balance_dfx",
+        args,
+        opts.dry_run,
+    )
+    .await
 }
