@@ -5,6 +5,7 @@ use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
+mod account_balance;
 mod list_neurons;
 mod neuron_manage;
 mod neuron_stake;
@@ -26,6 +27,8 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
     ListNeurons,
+    /// Queries a ledger account balance
+    AccountBalance(account_balance::AccountBalanceOpts),
 }
 
 pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
@@ -45,9 +48,12 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .await
                 .and_then(|out| print(&out))
         }),
-        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::ListNeurons => {
             runtime.block_on(async { list_neurons::exec(pem).await.and_then(|out| print(&out)) })
+        }
+        Command::AccountBalance(opts) => {
+            runtime.block_on(async { account_balance::exec(opts).await })
         }
     }
 }
