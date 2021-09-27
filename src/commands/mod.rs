@@ -48,7 +48,6 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .await
                 .and_then(|out| print(&out))
         }),
-        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
         Command::ListNeurons(opts) => runtime.block_on(async {
             list_neurons::exec(pem, opts)
                 .await
@@ -57,6 +56,7 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
         }
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
     }
 }
 

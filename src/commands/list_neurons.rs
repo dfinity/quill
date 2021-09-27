@@ -14,7 +14,11 @@ pub struct ListNeurons {
 /// Signs a neuron configuration change.
 #[derive(Clap)]
 pub struct ListNeuronsOpts {
-    /// The id of the neuron to manage.
+    /// The optional ids of the specific neuron to query. Note that these ids
+    /// may only be those that occur in the usual output from `list-neurons`,
+    /// i.e., they should be ids of the user's own neurons. The purpose of
+    /// this option is to narrow the query, and not to allow querying of
+    /// arbtirary neuron ids.
     neuron_id: Vec<u64>,
 }
 
