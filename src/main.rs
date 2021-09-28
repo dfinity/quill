@@ -18,6 +18,18 @@ pub struct CliOpts {
     #[clap(long)]
     pem_file: Option<String>,
 
+    #[clap(long)]
+    hsm: bool,
+
+    #[clap(long)]
+    hsm_libpath: Option<String>,
+
+    #[clap(long)]
+    hsm_slot: Option<usize>,
+
+    #[clap(long)]
+    hsm_id: Option<String>,
+
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -41,18 +53,23 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    let auth = match std::env::var("NITROHSM_PIN") {
-        Ok(_) => lib::AuthInfo::NitroHsm(lib::HSMInfo {
-            libpath: std::path::PathBuf::from(
-                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
-            ),
-            slot: std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap()),
-            ident: std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string()),
-        }),
-        Err(_) => match pem {
+    let auth = if opts.hsm {
+        lib::AuthInfo::NitroHsm(lib::HSMInfo {
+            libpath: std::path::PathBuf::from(opts.hsm_libpath.unwrap_or_else(|| {
+                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string())
+            })),
+            slot: opts.hsm_slot.unwrap_or_else(|| {
+                std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap())
+            }),
+            ident: opts.hsm_id.unwrap_or_else(|| {
+                std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string())
+            }),
+        })
+    } else {
+        match pem {
             Some(path) => lib::AuthInfo::PemFile(path),
             None => lib::AuthInfo::NoAuth,
-        },
+        }
     };
     if let Err(err) = commands::exec(&auth, command) {
         eprintln!("{}", err);

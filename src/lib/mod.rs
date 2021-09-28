@@ -140,10 +140,14 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
         },
         AuthInfo::NitroHsm(info) => Box::new(
             hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
-                std::env::var("NITROHSM_PIN").map_err(|_| {
-                    eprintln!("NITROHSM_PIN not set");
-                    std::process::exit(1);
-                })
+                Ok(std::env::var("NITROHSM_PIN").unwrap_or_else(|_| {
+                    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+                        .map_err(|_| {
+                            eprintln!("NITROHSM_PIN not set");
+                            std::process::exit(1);
+                        })
+                        .unwrap()
+                }))
             })
             .unwrap(),
         ),

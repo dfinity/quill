@@ -28,6 +28,7 @@ num-bigint = "0.4.1"
 pkcs11 = "0.5.0"
 simple_asn1 = "0.5.4"
 thiserror = "1.0.20"
+rpassword = "4.0.0"
 
 [features]
 static-ssl = ["openssl/vendored"]
