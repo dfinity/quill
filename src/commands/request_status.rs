@@ -1,5 +1,5 @@
+use crate::lib::get_ic_url;
 use crate::lib::sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId};
-use crate::lib::IC_URL;
 use crate::lib::{
     get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult, AuthInfo,
 };
@@ -38,10 +38,8 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
-                IC_URL.to_string(),
-            )
-            .unwrap(),
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
+                .unwrap(),
         ),
     });
     let Replied::CallReplied(blob) = async {

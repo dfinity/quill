@@ -1,10 +1,10 @@
 use crate::commands::request_status;
 use crate::lib::sign::sign_transport::{Message, SignedMessageWithRequestId};
 use crate::lib::{
-    get_agent, get_candid_type, get_local_candid, read_from_file,
+    get_agent, get_candid_type, get_ic_url, get_local_candid, read_from_file,
     sign::sign_transport::SignReplicaV2Transport,
     sign::signed_message::{parse_query_response, Ingress, IngressWithRequestId},
-    AnyhowResult, AuthInfo, IC_URL,
+    AnyhowResult, AuthInfo,
 };
 use anyhow::anyhow;
 use candid::CandidType;
@@ -169,7 +169,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestHttpReplicaV2Transport::create(IC_URL.to_string())?;
+    let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

@@ -16,6 +16,10 @@ use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
 
+pub fn get_ic_url() -> String {
+    std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
+}
+
 pub mod hsm;
 pub mod sign;
 
@@ -111,9 +115,9 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(
-                IC_URL.to_string(),
-            )?,
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create({
+                get_ic_url()
+            })?,
         )
         .with_ingress_expiry(Some(timeout));
 
