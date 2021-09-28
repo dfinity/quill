@@ -1,6 +1,8 @@
 use crate::lib::sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId};
 use crate::lib::IC_URL;
-use crate::lib::{get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult};
+use crate::lib::{
+    get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult, AuthInfo,
+};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{Replied, RequestStatusResponse};
 use ic_agent::{AgentError, RequestId};
@@ -10,11 +12,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn sign(
-    pem: &Option<String>,
+    auth: &AuthInfo,
     request_id: RequestId,
     canister_id: Principal,
 ) -> AnyhowResult<RequestStatus> {
-    let mut agent = get_agent(pem)?;
+    let mut agent = get_agent(auth)?;
     let transport = SignReplicaV2Transport::new(Some(request_id));
     let data = transport.data.clone();
     agent.set_transport(transport);
@@ -32,7 +34,7 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
-    let mut agent = get_agent(&None)?;
+    let mut agent = get_agent(&AuthInfo::NoAuth)?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(

@@ -12,12 +12,27 @@ use ic_agent::{
 };
 use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
+use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
 
+pub mod hsm;
 pub mod sign;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
+
+pub struct HSMInfo {
+    pub libpath: PathBuf,
+    pub slot: usize,
+    pub ident: String,
+}
+
+pub enum AuthInfo {
+    NoAuth, // No authentication details were provided;
+    // only unsigned queries are allowed.
+    PemFile(String), // --private-pem file specified
+    NitroHsm(HSMInfo),
+}
 
 pub fn ledger_canister_id() -> Principal {
     Principal::from_slice(LEDGER_CANISTER_ID.as_ref())
@@ -64,7 +79,8 @@ pub fn get_idl_string(
     Ok(format!("{}", result?))
 }
 
-/// Returns the candid type of a specifed method and correspondig idl description.
+/// Returns the candid type of a specifed method and correspondig idl
+/// description.
 pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
     let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
     let mut env = TypeEnv::new();
@@ -89,8 +105,9 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
     Ok(content)
 }
 
-/// Returns an agent with an identity derived from a private key if it was provided.
-pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
+/// Returns an agent with an identity derived from a private key if it was
+/// provided.
+pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
@@ -100,24 +117,36 @@ pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
-    match pem {
-        Some(pem) => builder.with_boxed_identity(get_identity(pem)),
-        None => builder,
+    match auth {
+        AuthInfo::NoAuth => builder,
+        _ => builder.with_boxed_identity(get_identity(auth)),
     }
     .build()
     .map_err(|err| anyhow!(err))
 }
 
 /// Returns an identity derived from the private key.
-pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
-    match Secp256k1Identity::from_pem(pem.as_bytes()) {
-        Ok(identity) => Box::new(identity),
-        Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
+    match auth {
+        AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
             Ok(identity) => Box::new(identity),
-            Err(_) => {
-                eprintln!("Couldn't load identity from PEM file");
-                std::process::exit(1);
-            }
+            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+                Ok(identity) => Box::new(identity),
+                Err(_) => {
+                    eprintln!("Couldn't load identity from PEM file");
+                    std::process::exit(1);
+                }
+            },
         },
+        AuthInfo::NitroHsm(info) => Box::new(
+            hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
+                std::env::var("NITROHSM_PIN").map_err(|_| {
+                    eprintln!("NITROHSM_PIN not set");
+                    std::process::exit(1);
+                })
+            })
+            .unwrap(),
+        ),
+        AuthInfo::NoAuth => panic!("AuthInfo::NoAuth has no identity"),
     }
 }

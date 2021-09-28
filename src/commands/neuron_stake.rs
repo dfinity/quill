@@ -1,6 +1,8 @@
 use crate::{
     commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
-    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
+    lib::{
+        governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult, AuthInfo,
+    },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
@@ -35,11 +37,8 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(
-    pem: &Option<String>,
-    opts: StakeOpts,
-) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (controller, _) = crate::commands::public::get_ids(pem)?;
+pub async fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    let (controller, _) = crate::commands::public::get_ids(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
         (_, Some(name)) => convert_name_to_nonce(name),
@@ -50,7 +49,7 @@ pub async fn exec(
     let mut messages = match opts.amount {
         Some(amount) => {
             transfer::exec(
-                pem,
+                auth,
                 transfer::TransferOpts {
                     to: account.to_hex(),
                     amount,
@@ -69,7 +68,7 @@ pub async fn exec(
 
     messages.push(
         sign_ingress_with_request_status_query(
-            pem,
+            auth,
             governance_canister_id(),
             "claim_or_refresh_neuron_from_account",
             args,

@@ -1,6 +1,5 @@
 #![warn(unused_extern_crates)]
 use clap::{crate_version, AppSettings, Clap};
-use ic_identity_hsm::{HardwareIdentity, HardwareIdentityError};
 mod commands;
 mod lib;
 
@@ -35,7 +34,18 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    if let Err(err) = commands::exec(&pem, command) {
+    let auth = match std::env::var("NITROHSM_PIN") {
+        Ok(_) => lib::AuthInfo::NitroHsm(lib::HSMInfo {
+            libpath: std::path::PathBuf::from(std::env::var("NITROHSM_LIBPATH").unwrap()),
+            slot: std::env::var("NITROHSM_SLOT").unwrap().parse().unwrap(),
+            ident: std::env::var("NITROHSM_ID").unwrap(),
+        }),
+        Err(_) => match pem {
+            Some(path) => lib::AuthInfo::PemFile(path),
+            None => lib::AuthInfo::NoAuth,
+        },
+    };
+    if let Err(err) = commands::exec(&auth, command) {
         eprintln!("{}", err);
         std::process::exit(1);
     }

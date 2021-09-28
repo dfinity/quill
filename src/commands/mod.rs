@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::AnyhowResult;
+use crate::lib::{AnyhowResult, AuthInfo};
 use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -31,25 +31,25 @@ pub enum Command {
     AccountBalance(account_balance::AccountBalanceOpts),
 }
 
-pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
+pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::PublicIds(opts) => public::exec(pem, opts),
+        Command::PublicIds(opts) => public::exec(auth, opts),
         Command::Transfer(opts) => {
-            runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
+            runtime.block_on(async { transfer::exec(auth, opts).await.and_then(|out| print(&out)) })
         }
         Command::NeuronStake(opts) => runtime.block_on(async {
-            neuron_stake::exec(pem, opts)
+            neuron_stake::exec(auth, opts)
                 .await
                 .and_then(|out| print(&out))
         }),
         Command::NeuronManage(opts) => runtime.block_on(async {
-            neuron_manage::exec(pem, opts)
+            neuron_manage::exec(auth, opts)
                 .await
                 .and_then(|out| print(&out))
         }),
         Command::ListNeurons(opts) => runtime.block_on(async {
-            list_neurons::exec(pem, opts)
+            list_neurons::exec(auth, opts)
                 .await
                 .and_then(|out| print(&out))
         }),

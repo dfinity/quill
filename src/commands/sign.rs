@@ -3,7 +3,7 @@ use crate::lib::{
     get_agent, get_candid_type, get_local_candid,
     sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId},
     sign::signed_message::{Ingress, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, AuthInfo,
 };
 use anyhow::anyhow;
 use ic_agent::AgentError;
@@ -12,7 +12,7 @@ use std::convert::TryInto;
 use std::time::SystemTime;
 
 async fn sign(
-    pem: &Option<String>,
+    auth: &AuthInfo,
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
@@ -24,7 +24,7 @@ async fn sign(
         _ => false,
     };
 
-    let mut sign_agent = get_agent(pem)?;
+    let mut sign_agent = get_agent(auth)?;
 
     let timeout = std::time::Duration::from_secs(5 * 60);
     let expiration_system_time = SystemTime::now()
@@ -65,16 +65,16 @@ async fn sign(
 
 /// Generates a bundle of signed messages (ingress + request status query).
 pub async fn sign_ingress_with_request_status_query(
-    pem: &Option<String>,
+    auth: &AuthInfo,
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(pem, canister_id, method_name, args).await?;
+    let msg_with_req_id = sign(auth, canister_id, method_name, args).await?;
     let request_id = msg_with_req_id
         .request_id
         .expect("No request id for transfer call found");
-    let request_status = request_status::sign(pem, request_id, canister_id).await?;
+    let request_status = request_status::sign(auth, request_id, canister_id).await?;
     let message = IngressWithRequestId {
         ingress: msg_with_req_id.message.try_into()?,
         request_status,
@@ -84,11 +84,11 @@ pub async fn sign_ingress_with_request_status_query(
 
 /// Generates a signed ingress message.
 pub async fn sign_ingress(
-    pem: &Option<String>,
+    auth: &AuthInfo,
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<Ingress> {
-    let msg = sign(pem, canister_id, method_name, args).await?;
+    let msg = sign(auth, canister_id, method_name, args).await?;
     Ok(msg.message.try_into()?)
 }

@@ -1,6 +1,6 @@
 use crate::{
     commands::sign::sign_ingress,
-    lib::{governance_canister_id, sign::signed_message::Ingress, AnyhowResult},
+    lib::{governance_canister_id, sign::signed_message::Ingress, AnyhowResult, AuthInfo},
 };
 use candid::{CandidType, Encode};
 use clap::Clap;
@@ -23,12 +23,12 @@ pub struct ListNeuronsOpts {
 }
 
 // We currently only support a subset of the functionality.
-pub async fn exec(pem: &Option<String>, opts: ListNeuronsOpts) -> AnyhowResult<Vec<Ingress>> {
+pub async fn exec(auth: &AuthInfo, opts: ListNeuronsOpts) -> AnyhowResult<Vec<Ingress>> {
     let args = Encode!(&ListNeurons {
         neuron_ids: opts.neuron_id.clone(),
         include_neurons_readable_by_caller: opts.neuron_id.is_empty(),
     })?;
     Ok(vec![
-        sign_ingress(pem, governance_canister_id(), "list_neurons", args).await?,
+        sign_ingress(auth, governance_canister_id(), "list_neurons", args).await?,
     ])
 }

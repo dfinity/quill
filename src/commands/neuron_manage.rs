@@ -1,6 +1,8 @@
 use crate::{
     commands::sign::sign_ingress_with_request_status_query,
-    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
+    lib::{
+        governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult, AuthInfo,
+    },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
@@ -122,15 +124,13 @@ pub struct ManageOpts {
     #[clap(long)]
     split: Option<u64>,
 
-    /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
+    /// Merge the percentage (between 1 and 100) of the maturity of a neuron
+    /// into the current stake.
     #[clap(long)]
     merge_maturity: Option<u32>,
 }
 
-pub async fn exec(
-    pem: &Option<String>,
-    opts: ManageOpts,
-) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
@@ -244,7 +244,7 @@ pub async fn exec(
     for args in msgs {
         generated.push(
             sign_ingress_with_request_status_query(
-                pem,
+                auth,
                 governance_canister_id(),
                 "manage_neuron",
                 args,

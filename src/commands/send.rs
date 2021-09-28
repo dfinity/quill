@@ -4,7 +4,7 @@ use crate::lib::{
     get_agent, get_candid_type, get_local_candid, read_from_file,
     sign::sign_transport::SignReplicaV2Transport,
     sign::signed_message::{parse_query_response, Ingress, IngressWithRequestId},
-    AnyhowResult, IC_URL,
+    AnyhowResult, AuthInfo, IC_URL,
 };
 use anyhow::anyhow;
 use candid::CandidType;
@@ -90,7 +90,7 @@ pub async fn submit_unsigned_ingress(
         _ => false,
     };
 
-    let mut sign_agent = get_agent(&None)?;
+    let mut sign_agent = get_agent(&AuthInfo::NoAuth)?;
     let transport = SignReplicaV2Transport::new(None);
     let data = transport.data.clone();
     sign_agent.set_transport(transport);

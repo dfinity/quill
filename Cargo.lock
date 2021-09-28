@@ -924,36 +924,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-agent"
-version = "0.8.0"
-source = "git+https://github.com/dfinity/agent-rs?rev=0cdb7e9cbd44afb368506cd6fd0febee1686316d#0cdb7e9cbd44afb368506cd6fd0febee1686316d"
-dependencies = [
- "async-trait",
- "base32",
- "base64 0.13.0",
- "byteorder",
- "garcon",
- "hex",
- "http",
- "ic-types 0.2.2",
- "leb128",
- "mime",
- "openssl",
- "pem",
- "rand 0.8.4",
- "reqwest",
- "ring",
- "rustls",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "simple_asn1",
- "thiserror",
- "url",
- "webpki-roots 0.21.1",
-]
-
-[[package]]
 name = "ic-base-types"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f#779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f"
@@ -1042,20 +1012,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-identity-hsm"
-version = "0.3.5"
-source = "git+https://github.com/dfinity/agent-rs?rev=0cdb7e9cbd44afb368506cd6fd0febee1686316d#0cdb7e9cbd44afb368506cd6fd0febee1686316d"
-dependencies = [
- "hex",
- "ic-agent 0.8.0",
- "num-bigint 0.4.2",
- "openssl",
- "pkcs11",
- "simple_asn1",
- "thiserror",
-]
-
-[[package]]
 name = "ic-nns-constants"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f#779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f"
@@ -1100,21 +1056,6 @@ dependencies = [
 name = "ic-types"
 version = "0.1.3"
 source = "git+https://github.com/dfinity/agent-rs.git?rev=ca9c672f235f27cbbfc6bd4d39afe96228191e8b#ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
-dependencies = [
- "base32",
- "crc32fast",
- "hex",
- "serde",
- "serde_bytes",
- "sha2",
- "thiserror",
-]
-
-[[package]]
-name = "ic-types"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2c021c11ae1d716f45d783f5764f418a11f12aea1fdc4fc8a2b2242e0dae708"
 dependencies = [
  "base32",
  "crc32fast",
@@ -1882,9 +1823,8 @@ dependencies = [
  "clap",
  "crc32fast",
  "hex",
- "ic-agent 0.5.0",
+ "ic-agent",
  "ic-base-types",
- "ic-identity-hsm",
  "ic-nns-constants",
  "ic-types 0.1.3",
  "ledger-canister",
