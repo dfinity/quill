@@ -25,12 +25,35 @@ pub mod sign;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
+#[derive(Debug)]
 pub struct HSMInfo {
     pub libpath: PathBuf,
     pub slot: usize,
     pub ident: String,
+    pin: std::cell::RefCell<Option<String>>,
 }
 
+#[cfg(target_os = "macos")]
+const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
+#[cfg(target_os = "linux")]
+const PKCS11_LIBPATH: &str = "/usr/local/lib/opensc-pkcs11.so";
+#[cfg(target_os = "windows")]
+const PKCS11_LIBPATH: &str = "who-knows?";
+
+impl HSMInfo {
+    pub fn new() -> Self {
+        HSMInfo {
+            libpath: std::path::PathBuf::from(
+                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
+            ),
+            slot: std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap()),
+            ident: std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string()),
+            pin: std::cell::RefCell::new(None),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum AuthInfo {
     NoAuth, // No authentication details were provided;
     // only unsigned queries are allowed.
@@ -144,13 +167,18 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
         },
         AuthInfo::NitroHsm(info) => Box::new(
             hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
-                Ok(std::env::var("NITROHSM_PIN").unwrap_or_else(|_| {
-                    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
-                        .map_err(|_| {
-                            eprintln!("NITROHSM_PIN not set");
-                            std::process::exit(1);
-                        })
-                        .unwrap()
+                let pin = info.pin.borrow().clone();
+                Ok(pin.unwrap_or_else(|| {
+                    std::env::var("NITROHSM_PIN").unwrap_or_else(|_| {
+                        let pin = rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+                            .map_err(|_| {
+                                eprintln!("NITROHSM_PIN not set");
+                                std::process::exit(1);
+                            })
+                            .unwrap();
+                        *info.pin.borrow_mut() = Some(pin.clone());
+                        pin
+                    })
                 }))
             })
             .unwrap(),

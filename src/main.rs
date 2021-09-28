@@ -3,13 +3,6 @@ use clap::{crate_version, AppSettings, Clap};
 mod commands;
 mod lib;
 
-#[cfg(target_os = "macos")]
-const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
-#[cfg(target_os = "linux")]
-const PKCS11_LIBPATH: &str = "/usr/local/lib/opensc-pkcs11.so";
-#[cfg(target_os = "windows")]
-const PKCS11_LIBPATH: &str = "who-knows?";
-
 /// Ledger & Governance ToolKit for cold wallets.
 #[derive(Clap)]
 #[clap(name("quill"), version = crate_version!(), global_setting = AppSettings::ColoredHelp)]
@@ -54,17 +47,17 @@ fn main() {
         }),
     });
     let auth = if opts.hsm {
-        lib::AuthInfo::NitroHsm(lib::HSMInfo {
-            libpath: std::path::PathBuf::from(opts.hsm_libpath.unwrap_or_else(|| {
-                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string())
-            })),
-            slot: opts.hsm_slot.unwrap_or_else(|| {
-                std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap())
-            }),
-            ident: opts.hsm_id.unwrap_or_else(|| {
-                std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string())
-            }),
-        })
+        let mut hsm = lib::HSMInfo::new();
+        if let Some(path) = opts.hsm_libpath {
+            hsm.libpath = std::path::PathBuf::from(path);
+        }
+        if let Some(slot) = opts.hsm_slot {
+            hsm.slot = slot;
+        }
+        if let Some(id) = opts.hsm_id {
+            hsm.ident = id;
+        }
+        lib::AuthInfo::NitroHsm(hsm)
     } else {
         match pem {
             Some(path) => lib::AuthInfo::PemFile(path),
