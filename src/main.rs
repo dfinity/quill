@@ -1,5 +1,6 @@
 #![warn(unused_extern_crates)]
 use clap::{crate_version, AppSettings, Clap};
+use ic_identity_hsm::{HardwareIdentity, HardwareIdentityError};
 mod commands;
 mod lib;
 
