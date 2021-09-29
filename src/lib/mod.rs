@@ -36,9 +36,9 @@ pub struct HSMInfo {
 #[cfg(target_os = "macos")]
 const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
 #[cfg(target_os = "linux")]
-const PKCS11_LIBPATH: &str = "/usr/local/lib/opensc-pkcs11.so";
+const PKCS11_LIBPATH: &str = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
 #[cfg(target_os = "windows")]
-const PKCS11_LIBPATH: &str = "who-knows?";
+const PKCS11_LIBPATH: &str = "C:/Program Files/OpenSC Project/OpenSC/opensc-pkcs11.dll";
 
 impl HSMInfo {
     pub fn new() -> Self {
