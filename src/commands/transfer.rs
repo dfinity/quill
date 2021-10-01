@@ -32,6 +32,11 @@ pub async fn exec(
     pem: &Option<String>,
     opts: TransferOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    if pem.is_none() {
+        return Err(anyhow!(
+            "Cannot transfer from anonymous principal, did your forget --pem-file <pem-file> ?"
+        ));
+    }
     let amount =
         parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
