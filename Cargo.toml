@@ -10,7 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.34"
-candid = "0.6.20"
+candid = "0.6.21"
 chrono = "0.4.9"
 clap = "3.0.0-beta.2"
 crc32fast = "1.2.0"
@@ -22,7 +22,7 @@ openssl = "0.10.32"
 serde = "1.0"
 serde_cbor = "0.11.1"
 serde_json = "1.0.57"
-serde_bytes = "0.11.2"
+serde_bytes = "0.11"
 tokio = { version = "1.2.0", features = [ "fs" ] }
 
 [features]
@@ -30,18 +30,17 @@ static-ssl = ["openssl/vendored"]
 
 [dependencies.ic-agent]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
 features = ["reqwest"]
 
 [dependencies.ic-types]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
 
 [patch.crates-io.ic-agent]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
 
 [patch.crates-io.ic-types]
 git = "https://github.com/dfinity/agent-rs.git"
-rev = "ca9c672f235f27cbbfc6bd4d39afe96228191e8b"
-
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
