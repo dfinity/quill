@@ -34,7 +34,7 @@ pub async fn exec(
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     if pem.is_none() {
         return Err(anyhow!(
-            "Cannot transfer from anonymous principal, did your forget --pem-file <pem-file> ?"
+            "Cannot transfer from anonymous principal, did you forget --pem-file <pem-file> ?"
         ));
     }
     let amount =
