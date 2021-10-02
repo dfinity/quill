@@ -1,7 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::AnyhowResult;
-use anyhow::anyhow;
+use crate::lib::{require_pem, AnyhowResult};
 use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -78,15 +77,6 @@ where
             eprintln!("{}", e);
             std::process::exit(1);
         }
-    }
-    Ok(())
-}
-
-fn require_pem(pem: &Option<String>) -> AnyhowResult<()> {
-    if pem.is_none() {
-        return Err(anyhow!(
-            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
-        ));
     }
     Ok(())
 }
