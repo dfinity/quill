@@ -1,16 +1,21 @@
 use crate::commands::request_status;
+use crate::lib::sign::sign_transport::{Message, SignedMessageWithRequestId};
 use crate::lib::{
-    read_from_file,
+    get_agent, get_candid_type, get_ic_url, get_local_candid, read_from_file,
+    sign::sign_transport::SignReplicaV2Transport,
     sign::signed_message::{parse_query_response, Ingress, IngressWithRequestId},
-    AnyhowResult, IC_URL,
+    AnyhowResult,
 };
 use anyhow::anyhow;
 use candid::CandidType;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
+use ic_agent::AgentError;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
+use ic_types::principal::Principal;
 use ledger_canister::{AccountIdentifier, ICPTs, Subaccount};
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 #[derive(
@@ -54,7 +59,7 @@ pub struct SendOpts {
     yes: bool,
 }
 
-pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
+pub async fn exec(opts: SendOpts) -> AnyhowResult {
     let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
@@ -64,7 +69,7 @@ pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
         }
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
-            submit_ingress_and_check_status(pem, &tx, &opts).await?;
+            submit_ingress_and_check_status(&tx, &opts).await?;
         }
     } else {
         return Err(anyhow!("Invalid JSON content"));
@@ -72,8 +77,60 @@ pub async fn exec(pem: &Option<String>, opts: SendOpts) -> AnyhowResult {
     Ok(())
 }
 
+pub async fn submit_unsigned_ingress(
+    canister_id: Principal,
+    method_name: &str,
+    args: Vec<u8>,
+    dry_run: bool,
+) -> AnyhowResult {
+    let spec = get_local_candid(canister_id)?;
+    let method_type = get_candid_type(spec, method_name);
+    let is_query = match &method_type {
+        Some((_, f)) => f.is_query(),
+        _ => false,
+    };
+
+    let mut sign_agent = get_agent(&None)?;
+    let transport = SignReplicaV2Transport::new(None);
+    let data = transport.data.clone();
+    sign_agent.set_transport(transport);
+
+    if !is_query {
+        return Err(anyhow!("Unsigned ingress messages are not supported!"));
+    }
+    match sign_agent
+        .query(&canister_id, method_name)
+        .with_effective_canister_id(canister_id)
+        .with_arg(&args)
+        .call()
+        .await
+    {
+        Err(AgentError::MissingReplicaTransport()) => {}
+        val => {
+            return Err(anyhow!(
+                "Unexpected return value from query execution: {:?}",
+                val
+            ))
+        }
+    };
+
+    let msg = SignedMessageWithRequestId::try_from(data.read().unwrap().clone())?;
+    if let Message::Ingress(ingress) = msg.message {
+        send(
+            &ingress,
+            &SendOpts {
+                file_name: Default::default(),
+                yes: false,
+                dry_run,
+            },
+        )
+        .await
+    } else {
+        Err(anyhow!("Unexpected ingress message generated"))
+    }
+}
+
 async fn submit_ingress_and_check_status(
-    pem: &Option<String>,
     message: &IngressWithRequestId,
     opts: &SendOpts,
 ) -> AnyhowResult {
@@ -82,8 +139,7 @@ async fn submit_ingress_and_check_status(
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status::submit(pem, &message.request_status, Some(method_name.to_string())).await
-    {
+    match request_status::submit(&message.request_status, Some(method_name.to_string())).await {
         Ok(result) => println!("{}\n", result),
         Err(err) => println!("{}\n", err),
     };
@@ -113,7 +169,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestHttpReplicaV2Transport::create(IC_URL.to_string())?;
+    let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

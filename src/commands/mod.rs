@@ -5,6 +5,7 @@ use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
+mod account_balance;
 mod list_neurons;
 mod neuron_manage;
 mod neuron_stake;
@@ -19,19 +20,21 @@ pub use public::get_ids;
 #[derive(Clap)]
 pub enum Command {
     /// Prints the principal id and the account id.
-    PublicIds,
+    PublicIds(public::PublicOpts),
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
-    ListNeurons,
+    ListNeurons(list_neurons::ListNeuronsOpts),
+    /// Queries a ledger account balance
+    AccountBalance(account_balance::AccountBalanceOpts),
 }
 
 pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::PublicIds => public::exec(pem),
+        Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
             runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
         }
@@ -45,10 +48,15 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .await
                 .and_then(|out| print(&out))
         }),
-        Command::Send(opts) => runtime.block_on(async { send::exec(pem, opts).await }),
-        Command::ListNeurons => {
-            runtime.block_on(async { list_neurons::exec(pem).await.and_then(|out| print(&out)) })
+        Command::ListNeurons(opts) => runtime.block_on(async {
+            list_neurons::exec(pem, opts)
+                .await
+                .and_then(|out| print(&out))
+        }),
+        Command::AccountBalance(opts) => {
+            runtime.block_on(async { account_balance::exec(opts).await })
         }
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
     }
 }
 
