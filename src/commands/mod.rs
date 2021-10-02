@@ -86,7 +86,7 @@ where
 fn require_pem(pem: &Option<String>) -> AnyhowResult<()> {
     if pem.is_none() {
         return Err(anyhow!(
-            "Cannot transfer from anonymous principal, did you forget --pem-file <pem-file> ?"
+            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
         ));
     }
     Ok(())
