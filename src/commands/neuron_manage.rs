@@ -221,7 +221,7 @@ pub async fn exec(
                         "SEVEN_YEARS" => ONE_YEAR_SECONDS * 12 * 7,
                         "EIGHT_YEARS" => ONE_YEAR_SECONDS * 12 * 8,
 
-                        s => s.parse::<u32>().unwrap(),
+                        s => s.parse::<u32>().expect("Couldn't parse the dissolve delay"),
                     }
                 }))
             }))
