@@ -1,0 +1,38 @@
+[package]
+name = "quill"
+version = "0.2.8"
+authors = ["DFINITY Team"]
+edition = "2018"
+
+[[bin]]
+name = "quill"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.34"
+candid = "0.6.21"
+chrono = "0.4.9"
+clap = "3.0.0-beta.2"
+crc32fast = "1.2.0"
+hex = {version = "0.4.2", features = ["serde"] }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+openssl = "0.10.32"
+serde = "1.0"
+serde_cbor = "0.11.1"
+serde_json = "1.0.57"
+serde_bytes = "0.11"
+tokio = { version = "1.2.0", features = [ "fs" ] }
+
+[features]
+static-ssl = ["openssl/vendored"]
+
+[dependencies.ic-agent]
+git = "https://github.com/dfinity/agent-rs.git"
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
+features = ["reqwest"]
+
+[dependencies.ic-types]
+git = "https://github.com/dfinity/agent-rs.git"
+rev = "2e871f7cabc32a7b93a39197eaee6992a426d383"
