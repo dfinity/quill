@@ -1,6 +1,7 @@
 //! This module implements the command-line API.
 
 use crate::lib::AnyhowResult;
+use anyhow::anyhow;
 use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -36,24 +37,29 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
+            require_pem(pem)?;
             runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
         }
         Command::NeuronStake(opts) => runtime.block_on(async {
+            require_pem(pem)?;
             neuron_stake::exec(pem, opts)
                 .await
                 .and_then(|out| print(&out))
         }),
         Command::NeuronManage(opts) => runtime.block_on(async {
+            require_pem(pem)?;
             neuron_manage::exec(pem, opts)
                 .await
                 .and_then(|out| print(&out))
         }),
         Command::ListNeurons(opts) => runtime.block_on(async {
+            require_pem(pem)?;
             list_neurons::exec(pem, opts)
                 .await
                 .and_then(|out| print(&out))
         }),
         Command::AccountBalance(opts) => {
+            require_pem(pem)?;
             runtime.block_on(async { account_balance::exec(opts).await })
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
@@ -73,6 +79,15 @@ where
             eprintln!("{}", e);
             std::process::exit(1);
         }
+    }
+    Ok(())
+}
+
+fn require_pem(pem: &Option<String>) -> AnyhowResult<()> {
+    if pem.is_none() {
+        return Err(anyhow!(
+            "Cannot transfer from anonymous principal, did you forget --pem-file <pem-file> ?"
+        ));
     }
     Ok(())
 }
