@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use candid::{CandidType, Encode};
 use clap::Clap;
 use ic_types::Principal;
-use ledger_canister::{AccountIdentifier, ICPTs};
+use ledger_canister::ICPTs;
 
 #[derive(CandidType)]
 pub struct IncreaseDissolveDelay {
@@ -16,6 +16,12 @@ pub struct IncreaseDissolveDelay {
 #[derive(CandidType, Copy, Clone)]
 pub struct NeuronId {
     pub id: u64,
+}
+#[allow(dead_code)]
+#[derive(CandidType)]
+pub enum NeuronIdOrSubaccount {
+    Subaccount(Vec<u8>),
+    NeuronId(NeuronId),
 }
 
 #[derive(CandidType)]
@@ -48,6 +54,10 @@ pub struct Configure {
     pub operation: Option<Operation>,
 }
 
+#[derive(CandidType)]
+pub struct AccountIdentifier {
+    hash: Vec<u8>,
+}
 #[derive(CandidType)]
 pub struct Disburse {
     pub to_account: Option<AccountIdentifier>,
@@ -82,6 +92,7 @@ pub enum Command {
 struct ManageNeuron {
     id: Option<NeuronId>,
     command: Option<Command>,
+    neuron_id_or_subaccount: Option<NeuronIdOrSubaccount>,
 }
 
 /// Signs a neuron configuration change.
@@ -143,7 +154,8 @@ pub async fn exec(
                 operation: Some(Operation::AddHotKey(AddHotKey {
                     new_hot_key: opts.add_hot_key
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -155,7 +167,8 @@ pub async fn exec(
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
                     hot_key_to_remove: opts.remove_hot_key
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -165,7 +178,8 @@ pub async fn exec(
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     }
@@ -175,7 +189,8 @@ pub async fn exec(
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     }
@@ -187,7 +202,8 @@ pub async fn exec(
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -198,7 +214,8 @@ pub async fn exec(
             command: Some(Command::Disburse(Disburse {
                 to_account: None,
                 amount: None
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -206,7 +223,8 @@ pub async fn exec(
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
             id,
-            command: Some(Command::Spawn(Default::default()))
+            command: Some(Command::Spawn(Default::default())),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -216,7 +234,8 @@ pub async fn exec(
             id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -231,7 +250,8 @@ pub async fn exec(
             id,
             command: Some(Command::MergeMaturity(MergeMaturity {
                 percentage_to_merge
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };

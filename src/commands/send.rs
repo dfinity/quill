@@ -13,7 +13,7 @@ use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::AgentError;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use ic_types::principal::Principal;
-use ledger_canister::{AccountIdentifier, ICPTs, Subaccount};
+use ledger_canister::{ICPTs, Subaccount};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -40,7 +40,7 @@ pub struct SendArgs {
     pub amount: ICPTs,
     pub fee: ICPTs,
     pub from_subaccount: Option<Subaccount>,
-    pub to: AccountIdentifier,
+    pub to: String,
     pub created_at_time: Option<TimeStamp>,
 }
 
