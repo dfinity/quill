@@ -38,7 +38,7 @@ const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
 #[cfg(target_os = "linux")]
 const PKCS11_LIBPATH: &str = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
 #[cfg(target_os = "windows")]
-const PKCS11_LIBPATH: &str = "C:/Program Files/OpenSC Project/OpenSC/opensc-pkcs11.dll";
+const PKCS11_LIBPATH: &str = "C:/Program Files/OpenSC Project/OpenSC/pkcs11/opensc-pkcs11.dll";
 
 impl HSMInfo {
     pub fn new() -> Self {
