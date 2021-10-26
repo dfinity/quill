@@ -1012,6 +1012,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-nns-common"
+version = "0.8.0"
+source = "git+https://github.com/dfinity/ic?rev=779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f#779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f"
+dependencies = [
+ "candid",
+ "dfn_core",
+ "ic-base-types",
+ "ic-crypto-sha256",
+ "ic-nns-constants",
+ "ic-protobuf",
+ "ic-registry-keys",
+ "ic-registry-transport",
+ "ic-types 0.8.0",
+ "lazy_static",
+ "on_wire",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "serde",
+ "sha2",
+]
+
+[[package]]
 name = "ic-nns-constants"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f#779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f"
@@ -1036,6 +1059,15 @@ dependencies = [
  "serde",
  "serde_json",
  "slog",
+]
+
+[[package]]
+name = "ic-registry-keys"
+version = "0.8.0"
+source = "git+https://github.com/dfinity/ic?rev=779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f#779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f"
+dependencies = [
+ "ic-base-types",
+ "ic-types 0.8.0",
 ]
 
 [[package]]
@@ -1784,7 +1816,7 @@ checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "quill"
-version = "0.2.8"
+version = "0.2.9"
 dependencies = [
  "anyhow",
  "candid",
@@ -1794,6 +1826,7 @@ dependencies = [
  "hex",
  "ic-agent",
  "ic-base-types",
+ "ic-nns-common",
  "ic-nns-constants",
  "ic-types 0.1.3",
  "ledger-canister",
