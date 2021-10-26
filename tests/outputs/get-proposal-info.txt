@@ -5,4 +5,3 @@ Sending message with
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
   Method name: get_proposal_info
   Arguments:   (22_174)
-null

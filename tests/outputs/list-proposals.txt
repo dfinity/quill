@@ -13,4 +13,3 @@ Sending message with
     include_status = vec {};
   },
 )
-null

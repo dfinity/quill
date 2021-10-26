@@ -62,13 +62,11 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .and_then(|out| print(&out))
         }),
         Command::ListProposals(opts) => {
-            runtime.block_on(async { list_proposals::exec(opts).await.and_then(|out| print(&out)) })
+            runtime.block_on(async { list_proposals::exec(opts).await })
         }
-        Command::GetProposalInfo(opts) => runtime.block_on(async {
-            get_proposal_info::exec(opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
+        Command::GetProposalInfo(opts) => {
+            runtime.block_on(async { get_proposal_info::exec(opts).await })
+        }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
         }
