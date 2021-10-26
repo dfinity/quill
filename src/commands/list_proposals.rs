@@ -30,7 +30,7 @@ pub async fn exec(opts: ListProposalsOpts) -> AnyhowResult {
     let args = Encode!(&ListProposalInfo {
         limit: opts.limit.unwrap_or(100),
         before_proposal: None,
-        exclude_topic: Vec::new(),
+        exclude_topic: vec![2 /*TOPIC_EXCHANGE_RATE*/, 9 /*TOPIC_KYC*/],
         include_reward_status: Vec::new(),
         include_status: Vec::new(),
     })?;

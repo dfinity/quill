@@ -9,7 +9,7 @@ Sending message with
     include_reward_status = vec {};
     before_proposal = null;
     limit = 100;
-    exclude_topic = vec {};
+    exclude_topic = vec { 2; 9 };
     include_status = vec {};
   },
 )
