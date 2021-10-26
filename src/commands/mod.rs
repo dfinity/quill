@@ -7,6 +7,7 @@ use tokio::runtime::Runtime;
 
 mod account_balance;
 mod list_neurons;
+mod list_proposals;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
@@ -27,6 +28,7 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
     ListNeurons(list_neurons::ListNeuronsOpts),
+    ListProposals(list_proposals::ListProposalsOpts),
     /// Queries a ledger account balance
     AccountBalance(account_balance::AccountBalanceOpts),
 }
@@ -57,6 +59,9 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
                 .await
                 .and_then(|out| print(&out))
         }),
+        Command::ListProposals(opts) => {
+            runtime.block_on(async { list_proposals::exec(opts).await.and_then(|out| print(&out)) })
+        }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
         }

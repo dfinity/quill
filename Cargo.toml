@@ -16,6 +16,7 @@ clap = "3.0.0-beta.2"
 crc32fast = "1.2.0"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
 ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }
 openssl = "0.10.32"
