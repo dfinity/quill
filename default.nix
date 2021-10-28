@@ -1,5 +1,5 @@
-{ rev    ? "a3a23d9599b0a82e333ad91db2cdc479313ce154"
-, sha256 ? "05xmgrrnw6j39lh3d48kg064z510i0w5vvrm1s5cdwhdc2fkspjq"
+{ rev    ? "8e1eab9eae4278c9bb1dcae426848a581943db5a"
+, sha256 ? "0jf4rccc0z9in1iahw13i5wl93gbp1x6mkjd3qivjg97ms9qw3l0"
 , pkgs   ? import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256; }) {
@@ -10,7 +10,7 @@
 
 with pkgs; rustPlatform.buildRustPackage rec {
   pname = "quill";
-  version = "0.2.8";
+  version = "0.2.9";
 
   src = ./.;
 
