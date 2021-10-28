@@ -1,4 +1,4 @@
-use crate::lib::{get_identity, AnyhowResult};
+use crate::lib::{get_identity, require_pem, AnyhowResult};
 use anyhow::anyhow;
 use clap::Clap;
 use ic_base_types::PrincipalId;
@@ -37,12 +37,10 @@ fn get_public_ids(
 
 /// Returns the account id and the principal id if the private key was provided.
 pub fn get_ids(pem: &Option<String>) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    let principal_id = get_identity(
-        pem.as_ref()
-            .ok_or_else(|| anyhow!("No PEM file provided"))?,
-    )
-    .sender()
-    .map_err(|e| anyhow!(e))?;
+    require_pem(pem)?;
+    let principal_id = get_identity(pem.as_ref().unwrap())
+        .sender()
+        .map_err(|e| anyhow!(e))?;
     Ok((principal_id, get_account_id(principal_id)?))
 }
 

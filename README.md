@@ -64,6 +64,15 @@ To compile `quill` run:
 
 After this, find the binary at `target/release/quill`.
 
+## Testnets
+
+If you have access to an Internet Computer testnet (for example, a version the
+replica binary and NNS running locally), you can target quill at this test
+network by setting the `IC_URL` environment variable to the full URL. For
+example:
+
+    IC_URL=https://nnsdapp.dfinity.network quill --pem-file <path> list-neurons
+
 ## Contribution
 
 `quill` is a very critical link in the workflow of the management of valuable assets.

@@ -125,3 +125,12 @@ pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
         },
     }
 }
+
+pub fn require_pem(pem: &Option<String>) -> AnyhowResult<()> {
+    if pem.is_none() {
+        return Err(anyhow!(
+            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
+        ));
+    }
+    Ok(())
+}
