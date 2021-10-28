@@ -52,6 +52,18 @@ To compile `quill` run:
 
 After this, find the binary at `target/release/quill`.
 
+### Building with Nix
+
+If you have Nix installed, you can use it to provide an environment for
+running `cargo`. Just replace the above build steps with the following:
+
+To compile `quill` run:
+
+1. `nix-shell`
+4. `make release`
+
+After this, find the binary at `target/release/quill`.
+
 ## Testnets
 
 If you have access to an Internet Computer testnet (for example, a version the
