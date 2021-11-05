@@ -40,12 +40,16 @@ pub struct AddHotKey {
 }
 
 #[derive(CandidType)]
+pub struct JoinCommunityFund {}
+
+#[derive(CandidType)]
 pub enum Operation {
     RemoveHotKey(RemoveHotKey),
     StartDissolving(StartDissolving),
     StopDissolving(StopDissolving),
     AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
+    JoinCommunityFund(JoinCommunityFund),
 }
 
 #[derive(CandidType)]
@@ -130,6 +134,10 @@ pub struct ManageOpts {
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
     #[clap(long)]
     merge_maturity: Option<u32>,
+
+    /// Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible.
+    #[clap(long)]
+    join_community_fund: bool,
 }
 
 pub async fn exec(
@@ -268,6 +276,16 @@ pub async fn exec(
             id,
             command: Some(Command::MergeMaturity(MergeMaturity {
                 percentage_to_merge
+            }))
+        })?;
+        msgs.push(args);
+    };
+
+    if opts.join_community_fund {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
             }))
         })?;
         msgs.push(args);
