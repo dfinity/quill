@@ -60,27 +60,22 @@ pub async fn exec(
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
-    let parts = amount.split('.').collect::<Vec<_>>();
-    if parts.len() < 1 || parts.len() > 2 {
-        return Err(format!("Can't parse amount {}", amount));
-    }
-    let icpts = parts[0]
-        .parse::<u64>()
-        .map_err(|err| format!("Couldn't parse icpts: {:?}", err))?;
-
-    let e8s = if parts.len() == 1 {
-        0
-    } else {
-        let mut e8s = parts[1].to_string();
-        while e8s.len() < 8 {
-            e8s.push_str("0");
-        }
-        e8s[..8]
-            .parse::<u64>()
-            .map_err(|err| format!("Couldn't parse e8s: {:?}", err))?
+    let parse = |s: &str| {
+        s.parse::<u64>()
+            .map_err(|err| format!("Couldn't parse as u64: {:?}", err))
     };
-
-    ICPTs::new(icpts, e8s)
+    match &amount.split('.').collect::<Vec<_>>().as_slice() {
+        [icpts] => ICPTs::new(parse(icpts)?, 0),
+        [icpts, e8s] => {
+            let mut e8s = e8s.to_string();
+            while e8s.len() < 8 {
+                e8s.push('0');
+            }
+            let e8s = &e8s[..8];
+            ICPTs::new(parse(icpts)?, parse(e8s)?)
+        }
+        _ => Err(format!("Can't parse amount {}", amount)),
+    }
 }
 
 fn icpts_amount_validator(icpts: &str) -> Result<(), String> {
