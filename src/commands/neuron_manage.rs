@@ -220,14 +220,14 @@ pub async fn exec(
                         "TEN_MONTHS" => ONE_MONTH_SECONDS * 10,
                         "ELEVEN_MONTHS" => ONE_MONTH_SECONDS * 11,
 
-                        "ONE_YEAR" => ONE_YEAR_SECONDS * 12,
-                        "TWO_YEARS" => ONE_YEAR_SECONDS * 12 * 2,
-                        "THREE_YEARS" => ONE_YEAR_SECONDS * 12 * 3,
-                        "FOUR_YEARS" => ONE_YEAR_SECONDS * 12 * 4,
-                        "FIVE_YEARS" => ONE_YEAR_SECONDS * 12 * 5,
-                        "SIX_YEARS" => ONE_YEAR_SECONDS * 12 * 6,
-                        "SEVEN_YEARS" => ONE_YEAR_SECONDS * 12 * 7,
-                        "EIGHT_YEARS" => ONE_YEAR_SECONDS * 12 * 8,
+                        "ONE_YEAR" => ONE_YEAR_SECONDS,
+                        "TWO_YEARS" => ONE_YEAR_SECONDS * 2,
+                        "THREE_YEARS" => ONE_YEAR_SECONDS * 3,
+                        "FOUR_YEARS" => ONE_YEAR_SECONDS * 4,
+                        "FIVE_YEARS" => ONE_YEAR_SECONDS * 5,
+                        "SIX_YEARS" => ONE_YEAR_SECONDS * 6,
+                        "SEVEN_YEARS" => ONE_YEAR_SECONDS * 7,
+                        "EIGHT_YEARS" => ONE_YEAR_SECONDS * 8,
 
                         s => s.parse::<u32>().expect("Couldn't parse the dissolve delay"),
                     }
