@@ -60,20 +60,25 @@ pub async fn exec(
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
-    let mut it = amount.split('.');
-    let icpts = it
-        .next()
-        .unwrap_or("0")
+    let parts = amount.split('.').collect::<Vec<_>>();
+    if parts.len() < 1 || parts.len() > 2 {
+        return Err(format!("Can't parse amount {}", amount));
+    }
+    let icpts = parts[0]
         .parse::<u64>()
         .map_err(|err| format!("Couldn't parse icpts: {:?}", err))?;
 
-    let mut e8s = it.next().unwrap_or("0").to_string();
-    while e8s.len() < 8 {
-        e8s.push('0');
-    }
-    let e8s = e8s
-        .parse::<u64>()
-        .map_err(|err| format!("Couldn't parse e8s: {:?}", err))?;
+    let e8s = if parts.len() == 1 {
+        0
+    } else {
+        let mut e8s = parts[1].to_string();
+        while e8s.len() < 8 {
+            e8s.push_str("0");
+        }
+        e8s[..8]
+            .parse::<u64>()
+            .map_err(|err| format!("Couldn't parse e8s: {:?}", err))?
+    };
 
     ICPTs::new(icpts, e8s)
 }
