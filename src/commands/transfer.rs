@@ -60,22 +60,22 @@ pub async fn exec(
 }
 
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
-    let mut it = amount.split('.');
-    let icpts = it
-        .next()
-        .unwrap_or("0")
-        .parse::<u64>()
-        .map_err(|err| format!("Couldn't parse icpts: {:?}", err))?;
-
-    let mut e8s = it.next().unwrap_or("0").to_string();
-    while e8s.len() < 8 {
-        e8s.push('0');
+    let parse = |s: &str| {
+        s.parse::<u64>()
+            .map_err(|err| format!("Couldn't parse as u64: {:?}", err))
+    };
+    match &amount.split('.').collect::<Vec<_>>().as_slice() {
+        [icpts] => ICPTs::new(parse(icpts)?, 0),
+        [icpts, e8s] => {
+            let mut e8s = e8s.to_string();
+            while e8s.len() < 8 {
+                e8s.push('0');
+            }
+            let e8s = &e8s[..8];
+            ICPTs::new(parse(icpts)?, parse(e8s)?)
+        }
+        _ => Err(format!("Can't parse amount {}", amount)),
     }
-    let e8s = e8s
-        .parse::<u64>()
-        .map_err(|err| format!("Couldn't parse e8s: {:?}", err))?;
-
-    ICPTs::new(icpts, e8s)
 }
 
 fn icpts_amount_validator(icpts: &str) -> Result<(), String> {
