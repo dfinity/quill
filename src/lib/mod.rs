@@ -95,7 +95,7 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
 
 /// Returns an agent with an identity derived from a private key if it was provided.
 pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
-    let timeout = std::time::Duration::from_secs(60 * 5);
+    let timeout = std::time::Duration::from_secs(60 * 4 + 30);
     let builder = Agent::builder()
         .with_transport(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create({
