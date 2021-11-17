@@ -8,8 +8,8 @@ Sending message with
   record {
     include_reward_status = vec {};
     before_proposal = null;
-    limit = 100;
-    exclude_topic = vec { 2; 9 };
+    limit = 100 : nat32;
+    exclude_topic = vec { 2 : int32; 9 : int32 };
     include_status = vec {};
   },
 )
