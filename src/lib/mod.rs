@@ -12,6 +12,7 @@ use ic_agent::{
 };
 use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
+use serde_cbor::Value;
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -19,7 +20,7 @@ pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
-pub mod sign;
+pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
@@ -136,4 +137,37 @@ pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
         )),
         Some(val) => Ok(val.clone()),
     }
+}
+
+pub fn parse_query_response(
+    response: Vec<u8>,
+    canister_id: Principal,
+    method_name: &str,
+) -> AnyhowResult<String> {
+    let cbor: Value = serde_cbor::from_slice(&response)
+        .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+    if let Value::Map(m) = cbor {
+        // Try to decode a rejected response.
+        if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reject_code".to_string())),
+            m.get(&Value::Text("reject_message".to_string())),
+        ) {
+            return Ok(format!(
+                "Rejected (code {}): {}",
+                reject_code, reject_message
+            ));
+        }
+
+        // Try to decode a successful response.
+        if let (_, Some(Value::Map(m))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reply".to_string())),
+        ) {
+            if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
+                return get_idl_string(reply, canister_id, method_name, "rets");
+            }
+        }
+    }
+    Err(anyhow!("Invalid cbor content"))
 }

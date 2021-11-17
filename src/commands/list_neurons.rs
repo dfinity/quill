@@ -1,6 +1,6 @@
 use crate::{
-    commands::sign::sign_ingress,
-    lib::{governance_canister_id, sign::signed_message::Ingress, AnyhowResult},
+    lib::signing::{sign_ingress, Ingress},
+    lib::{governance_canister_id, AnyhowResult},
 };
 use candid::{CandidType, Encode};
 use clap::Clap;

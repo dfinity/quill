@@ -14,7 +14,6 @@ mod neuron_stake;
 mod public;
 mod request_status;
 mod send;
-mod sign;
 mod transfer;
 
 pub use public::get_ids;

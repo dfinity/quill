@@ -1,6 +1,10 @@
 use crate::{
-    commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
-    lib::{governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult},
+    commands::{send::Memo, transfer},
+    lib::{
+        governance_canister_id,
+        signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
+        AnyhowResult,
+    },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
