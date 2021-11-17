@@ -1822,7 +1822,6 @@ dependencies = [
  "candid",
  "chrono",
  "clap",
- "crc32fast",
  "hex",
  "ic-agent",
  "ic-base-types",
