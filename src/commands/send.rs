@@ -1,8 +1,6 @@
 use crate::commands::request_status;
-use crate::lib::sign::sign_transport::{Message, SignedMessageWithRequestId};
 use crate::lib::{
-    get_agent, get_candid_type, get_ic_url, get_local_candid, read_from_file,
-    sign::sign_transport::SignReplicaV2Transport,
+    get_ic_url, read_from_file,
     sign::signed_message::{parse_query_response, Ingress, IngressWithRequestId},
     AnyhowResult,
 };
@@ -10,12 +8,10 @@ use anyhow::anyhow;
 use candid::CandidType;
 use clap::Clap;
 use ic_agent::agent::ReplicaV2Transport;
-use ic_agent::AgentError;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use ic_types::principal::Principal;
 use ledger_canister::{AccountIdentifier, ICPTs, Subaccount};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 use std::str::FromStr;
 
 #[derive(
@@ -83,51 +79,17 @@ pub async fn submit_unsigned_ingress(
     args: Vec<u8>,
     dry_run: bool,
 ) -> AnyhowResult {
-    let spec = get_local_candid(canister_id)?;
-    let method_type = get_candid_type(spec, method_name);
-    let is_query = match &method_type {
-        Some((_, f)) => f.is_query(),
-        _ => false,
-    };
-
-    let mut sign_agent = get_agent(&None)?;
-    let transport = SignReplicaV2Transport::new(None);
-    let data = transport.data.clone();
-    sign_agent.set_transport(transport);
-
-    if !is_query {
-        return Err(anyhow!("Unsigned ingress messages are not supported!"));
-    }
-    match sign_agent
-        .query(&canister_id, method_name)
-        .with_effective_canister_id(canister_id)
-        .with_arg(&args)
-        .call()
-        .await
-    {
-        Err(AgentError::MissingReplicaTransport()) => {}
-        val => {
-            return Err(anyhow!(
-                "Unexpected return value from query execution: {:?}",
-                val
-            ))
-        }
-    };
-
-    let msg = SignedMessageWithRequestId::try_from(data.read().unwrap().clone())?;
-    if let Message::Ingress(ingress) = msg.message {
-        send(
-            &ingress,
-            &SendOpts {
-                file_name: Default::default(),
-                yes: false,
-                dry_run,
-            },
-        )
-        .await
-    } else {
-        Err(anyhow!("Unexpected ingress message generated"))
-    }
+    let msg = crate::commands::sign::sign("", canister_id, method_name, args)?;
+    let ingress = msg.message;
+    send(
+        &ingress,
+        &SendOpts {
+            file_name: Default::default(),
+            yes: false,
+            dry_run,
+        },
+    )
+    .await
 }
 
 async fn submit_ingress_and_check_status(

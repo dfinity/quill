@@ -1820,7 +1820,6 @@ version = "0.2.11"
 dependencies = [
  "anyhow",
  "candid",
- "chrono",
  "clap",
  "hex",
  "ic-agent",

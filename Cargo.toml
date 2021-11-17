@@ -11,7 +11,6 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.34"
 candid = "0.6.20"
-chrono = "0.4.9"
 clap = "3.0.0-beta.2"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f" }

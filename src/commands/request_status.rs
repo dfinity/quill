@@ -1,32 +1,11 @@
 use crate::lib::get_ic_url;
-use crate::lib::sign::sign_transport::{SignReplicaV2Transport, SignedMessageWithRequestId};
 use crate::lib::{get_agent, get_idl_string, sign::signed_message::RequestStatus, AnyhowResult};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{Replied, RequestStatusResponse};
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
-use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
-
-pub async fn sign(
-    pem: &Option<String>,
-    request_id: RequestId,
-    canister_id: Principal,
-) -> AnyhowResult<RequestStatus> {
-    let mut agent = get_agent(pem)?;
-    let transport = SignReplicaV2Transport::new(Some(request_id));
-    let data = transport.data.clone();
-    agent.set_transport(transport);
-    match agent.request_status_raw(&request_id, canister_id).await {
-        Err(AgentError::MissingReplicaTransport()) => {
-            let message_with_id: SignedMessageWithRequestId =
-                data.read().unwrap().clone().try_into()?;
-            Ok(message_with_id.message.try_into()?)
-        }
-        val => panic!("Unexpected output from the signing agent: {:?}", val),
-    }
-}
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");

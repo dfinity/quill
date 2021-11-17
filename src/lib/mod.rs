@@ -7,7 +7,7 @@ use candid::{
     IDLProg,
 };
 use ic_agent::{
-    identity::{BasicIdentity, Secp256k1Identity},
+    identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
 use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
@@ -114,6 +114,9 @@ pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
 
 /// Returns an identity derived from the private key.
 pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
+    if pem.is_empty() {
+        return Box::new(AnonymousIdentity);
+    }
     match Secp256k1Identity::from_pem(pem.as_bytes()) {
         Ok(identity) => Box::new(identity),
         Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
@@ -126,11 +129,11 @@ pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
     }
 }
 
-pub fn require_pem(pem: &Option<String>) -> AnyhowResult<()> {
-    if pem.is_none() {
-        return Err(anyhow!(
+pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
+    match pem {
+        None => Err(anyhow!(
             "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
-        ));
+        )),
+        Some(val) => Ok(val.clone()),
     }
-    Ok(())
 }

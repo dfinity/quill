@@ -35,11 +35,8 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(
-    pem: &Option<String>,
-    opts: StakeOpts,
-) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (controller, _) = crate::commands::public::get_ids(pem)?;
+pub fn exec(pem: &str, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    let (controller, _) = crate::commands::public::get_ids(&Some(pem.to_string()))?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
         (_, Some(name)) => convert_name_to_nonce(name),
@@ -48,18 +45,15 @@ pub async fn exec(
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
     let mut messages = match opts.amount {
-        Some(amount) => {
-            transfer::exec(
-                pem,
-                transfer::TransferOpts {
-                    to: account.to_hex(),
-                    amount,
-                    fee: opts.fee,
-                    memo: Some(nonce.to_string()),
-                },
-            )
-            .await?
-        }
+        Some(amount) => transfer::exec(
+            pem,
+            transfer::TransferOpts {
+                to: account.to_hex(),
+                amount,
+                fee: opts.fee,
+                memo: Some(nonce.to_string()),
+            },
+        )?,
         _ => Vec::new(),
     };
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
@@ -67,15 +61,12 @@ pub async fn exec(
         controller: Some(controller),
     })?;
 
-    messages.push(
-        sign_ingress_with_request_status_query(
-            pem,
-            governance_canister_id(),
-            "claim_or_refresh_neuron_from_account",
-            args,
-        )
-        .await?,
-    );
+    messages.push(sign_ingress_with_request_status_query(
+        pem,
+        governance_canister_id(),
+        "claim_or_refresh_neuron_from_account",
+        args,
+    )?);
 
     Ok(messages)
 }

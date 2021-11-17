@@ -140,10 +140,7 @@ pub struct ManageOpts {
     join_community_fund: bool,
 }
 
-pub async fn exec(
-    pem: &Option<String>,
-    opts: ManageOpts,
-) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
@@ -297,15 +294,12 @@ pub async fn exec(
 
     let mut generated = Vec::new();
     for args in msgs {
-        generated.push(
-            sign_ingress_with_request_status_query(
-                pem,
-                governance_canister_id(),
-                "manage_neuron",
-                args,
-            )
-            .await?,
-        );
+        generated.push(sign_ingress_with_request_status_query(
+            pem,
+            governance_canister_id(),
+            "manage_neuron",
+            args,
+        )?);
     }
     Ok(generated)
 }
