@@ -95,7 +95,7 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
 }
 
 /// Returns an agent with an identity derived from a private key if it was provided.
-pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
+pub fn get_agent(pem: &str) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
@@ -105,12 +105,10 @@ pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
-    match pem {
-        Some(pem) => builder.with_boxed_identity(get_identity(pem)),
-        None => builder,
-    }
-    .build()
-    .map_err(|err| anyhow!(err))
+    builder
+        .with_boxed_identity(get_identity(pem))
+        .build()
+        .map_err(|err| anyhow!(err))
 }
 
 /// Returns an identity derived from the private key.

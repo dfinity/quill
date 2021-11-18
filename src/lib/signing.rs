@@ -2,12 +2,17 @@ use crate::lib::get_idl_string;
 use crate::lib::AnyhowResult;
 use crate::lib::{get_candid_type, get_identity, get_local_candid};
 use anyhow::anyhow;
+use ic_agent::agent::QueryBuilder;
+use ic_agent::agent::UpdateBuilder;
 use ic_agent::{to_request_id, AgentError, Identity, RequestId};
 use ic_types::{hash_tree::Label, principal::Principal};
 use serde::{Deserialize, Serialize};
 use serde_cbor::Value;
 use std::convert::TryFrom;
+use std::time::Duration;
 use std::time::SystemTime;
+
+use super::get_agent;
 
 const IC_REQUEST_DOMAIN_SEPARATOR: &[u8; 11] = b"\x0Aic-request";
 
@@ -180,29 +185,26 @@ pub fn sign(
         _ => false,
     };
 
-    let identity = get_identity(pem);
-    let ingress_expiry = get_expiry_timestamp()?;
+    let ingress_expiry = Duration::from_secs(5 * 60);
 
     let (content, request_id) = if is_query {
-        let req = QueryContent::QueryRequest {
-            sender: identity.sender().map_err(AgentError::SigningError)?,
-            canister_id,
-            method_name: method_name.to_string(),
-            arg: args,
-            ingress_expiry,
-        };
-        let (bytes, _) = sign_content(identity, req)?;
+        let bytes = QueryBuilder::new(&get_agent(pem)?, canister_id, method_name.to_string())
+            .with_arg(args)
+            .expire_after(ingress_expiry)
+            .sign()?
+            .signed_query;
         (hex::encode(bytes), None)
     } else {
-        let req = CallRequestContent::CallRequest {
-            canister_id,
-            method_name: method_name.into(),
-            arg: args,
-            sender: identity.sender().map_err(AgentError::SigningError)?,
-            ingress_expiry,
-        };
-        let (bytes, request_id) = sign_content(identity, req)?;
-        (hex::encode(bytes), Some(request_id))
+        let signed_update =
+            UpdateBuilder::new(&get_agent(pem)?, canister_id, method_name.to_string())
+                .with_arg(args)
+                .expire_after(ingress_expiry)
+                .sign()?;
+
+        (
+            hex::encode(signed_update.signed_update),
+            Some(signed_update.request_id),
+        )
     };
 
     Ok(SignedMessageWithRequestId {
