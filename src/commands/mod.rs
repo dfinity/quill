@@ -1,18 +1,19 @@
 //! This module implements the command-line API.
 
-use crate::lib::AnyhowResult;
+use crate::lib::{require_pem, AnyhowResult};
 use clap::Clap;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
 mod account_balance;
+mod get_proposal_info;
 mod list_neurons;
+mod list_proposals;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod request_status;
 mod send;
-mod sign;
 mod transfer;
 
 pub use public::get_ids;
@@ -27,6 +28,8 @@ pub enum Command {
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
     ListNeurons(list_neurons::ListNeuronsOpts),
+    ListProposals(list_proposals::ListProposalsOpts),
+    GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     /// Queries a ledger account balance
     AccountBalance(account_balance::AccountBalanceOpts),
 }
@@ -36,23 +39,27 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
-            runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
+            let pem = require_pem(pem)?;
+            transfer::exec(&pem, opts).and_then(|out| print(&out))
         }
-        Command::NeuronStake(opts) => runtime.block_on(async {
-            neuron_stake::exec(pem, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
-        Command::NeuronManage(opts) => runtime.block_on(async {
-            neuron_manage::exec(pem, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
-        Command::ListNeurons(opts) => runtime.block_on(async {
-            list_neurons::exec(pem, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
+        Command::NeuronStake(opts) => {
+            let pem = require_pem(pem)?;
+            neuron_stake::exec(&pem, opts).and_then(|out| print(&out))
+        }
+        Command::NeuronManage(opts) => {
+            let pem = require_pem(pem)?;
+            neuron_manage::exec(&pem, opts).and_then(|out| print(&out))
+        }
+        Command::ListNeurons(opts) => {
+            let pem = require_pem(pem)?;
+            list_neurons::exec(&pem, opts).and_then(|out| print(&out))
+        }
+        Command::ListProposals(opts) => {
+            runtime.block_on(async { list_proposals::exec(opts).await })
+        }
+        Command::GetProposalInfo(opts) => {
+            runtime.block_on(async { get_proposal_info::exec(opts).await })
+        }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
         }

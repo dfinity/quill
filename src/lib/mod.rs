@@ -7,11 +7,12 @@ use candid::{
     IDLProg,
 };
 use ic_agent::{
-    identity::{BasicIdentity, Secp256k1Identity},
+    identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
 use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
+use serde_cbor::Value;
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -19,7 +20,7 @@ pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
-pub mod sign;
+pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
@@ -94,7 +95,7 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
 }
 
 /// Returns an agent with an identity derived from a private key if it was provided.
-pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
+pub fn get_agent(pem: &str) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
@@ -104,16 +105,17 @@ pub fn get_agent(pem: &Option<String>) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
-    match pem {
-        Some(pem) => builder.with_boxed_identity(get_identity(pem)),
-        None => builder,
-    }
-    .build()
-    .map_err(|err| anyhow!(err))
+    builder
+        .with_boxed_identity(get_identity(pem))
+        .build()
+        .map_err(|err| anyhow!(err))
 }
 
 /// Returns an identity derived from the private key.
 pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
+    if pem.is_empty() {
+        return Box::new(AnonymousIdentity);
+    }
     match Secp256k1Identity::from_pem(pem.as_bytes()) {
         Ok(identity) => Box::new(identity),
         Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
@@ -124,4 +126,46 @@ pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
             }
         },
     }
+}
+
+pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
+    match pem {
+        None => Err(anyhow!(
+            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
+        )),
+        Some(val) => Ok(val.clone()),
+    }
+}
+
+pub fn parse_query_response(
+    response: Vec<u8>,
+    canister_id: Principal,
+    method_name: &str,
+) -> AnyhowResult<String> {
+    let cbor: Value = serde_cbor::from_slice(&response)
+        .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+    if let Value::Map(m) = cbor {
+        // Try to decode a rejected response.
+        if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reject_code".to_string())),
+            m.get(&Value::Text("reject_message".to_string())),
+        ) {
+            return Ok(format!(
+                "Rejected (code {}): {}",
+                reject_code, reject_message
+            ));
+        }
+
+        // Try to decode a successful response.
+        if let (_, Some(Value::Map(m))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reply".to_string())),
+        ) {
+            if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
+                return get_idl_string(reply, canister_id, method_name, "rets");
+            }
+        }
+    }
+    Err(anyhow!("Invalid cbor content"))
 }

@@ -1,1 +1,1 @@
-../target/debug/quill --pem-file - neuron-manage 2313380519530470538 -a 7200 --remove-hot-key fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --start-dissolving | ../target/debug/quill send --dry-run -
+${CARGO_TARGET_DIR:-../target}/debug/quill --pem-file - neuron-manage 2313380519530470538 -a 7200 --remove-hot-key fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --start-dissolving | ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -

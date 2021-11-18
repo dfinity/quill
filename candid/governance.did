@@ -99,6 +99,7 @@ type GovernanceError = record { error_message : text; error_type : int32 };
 type IncreaseDissolveDelay = record {
   additional_dissolve_delay_seconds : nat32;
 };
+type JoinCommunityFund = record {};
 type ListNeurons = record {
   neuron_ids : vec nat64;
   include_neurons_readable_by_caller : bool;
@@ -190,6 +191,7 @@ type Operation = variant {
   StartDissolving : record {};
   IncreaseDissolveDelay : IncreaseDissolveDelay;
   SetDissolveTimestamp : SetDissolveTimestamp;
+  JoinCommunityFund: JoinCommunityFund;
 };
 type Proposal = record { url : text; action : opt Action; summary : text };
 type ProposalData = record {
