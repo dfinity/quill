@@ -7,8 +7,7 @@ use crate::lib::{
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Clap;
-use ledger_canister::{AccountIdentifier, ICPTs, TRANSACTION_FEE};
-use std::str::FromStr;
+use ledger_canister::{ICPTs, TRANSACTION_FEE};
 
 /// Signs an ICP transfer transaction.
 #[derive(Default, Clap)]
@@ -41,7 +40,7 @@ pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithReques
             .parse::<u64>()
             .unwrap(),
     );
-    let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
+    let to = opts.to;
 
     let args = Encode!(&SendArgs {
         memo,
