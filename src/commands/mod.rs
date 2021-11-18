@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
 mod account_balance;
+mod claim_neurons;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;
@@ -25,6 +26,8 @@ pub enum Command {
     PublicIds(public::PublicOpts),
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
+    /// Claim seed neurons from the Genesis Token Canister.
+    ClaimNeurons,
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
@@ -43,6 +46,10 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
             require_pem(pem)?;
             runtime.block_on(async { transfer::exec(pem, opts).await.and_then(|out| print(&out)) })
         }
+        Command::ClaimNeurons => runtime.block_on(async {
+            require_pem(pem)?;
+            claim_neurons::exec(pem).await.and_then(|out| print(&out))
+        }),
         Command::NeuronStake(opts) => runtime.block_on(async {
             require_pem(pem)?;
             neuron_stake::exec(pem, opts)
