@@ -5,7 +5,7 @@ use crate::lib::{
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 use ic_types::Principal;
 use ledger_canister::ICPTs;
 
@@ -106,7 +106,7 @@ struct ManageNeuron {
 }
 
 /// Signs a neuron configuration change.
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct ManageOpts {
     /// The id of the neuron to manage.
     neuron_id: String,
@@ -304,7 +304,8 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };

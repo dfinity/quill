@@ -3,7 +3,7 @@ use crate::{
     lib::{governance_canister_id, AnyhowResult},
 };
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 use ic_nns_common::types::ProposalId;
 
 #[derive(CandidType)]
@@ -15,7 +15,7 @@ pub struct ListProposalInfo {
     pub include_status: Vec<i32>,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct ListProposalsOpts {
     #[clap(long)]
     pub limit: Option<u32>,

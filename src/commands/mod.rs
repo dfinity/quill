@@ -1,7 +1,7 @@
 //! This module implements the command-line API.
 
 use crate::lib::{require_pem, AnyhowResult};
-use clap::Clap;
+use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
@@ -18,7 +18,7 @@ mod transfer;
 
 pub use public::get_ids;
 
-#[derive(Clap)]
+#[derive(Parser)]
 pub enum Command {
     /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),

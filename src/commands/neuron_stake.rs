@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
 use ic_types::Principal;
 use ledger_canister::{AccountIdentifier, Subaccount};
@@ -20,7 +20,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 }
 
 /// Signs topping up of a neuron (new or existing).
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
     #[clap(long)]

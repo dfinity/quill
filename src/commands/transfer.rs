@@ -6,11 +6,11 @@ use crate::lib::{
 };
 use anyhow::anyhow;
 use candid::Encode;
-use clap::Clap;
+use clap::Parser;
 use ledger_canister::{ICPTs, TRANSACTION_FEE};
 
 /// Signs an ICP transfer transaction.
-#[derive(Default, Clap)]
+#[derive(Default, Parser)]
 pub struct TransferOpts {
     /// Destination account.
     pub to: String,

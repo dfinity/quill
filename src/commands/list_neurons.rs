@@ -3,7 +3,7 @@ use crate::{
     lib::{governance_canister_id, AnyhowResult},
 };
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 
 #[derive(CandidType)]
 pub struct ListNeurons {
@@ -12,7 +12,7 @@ pub struct ListNeurons {
 }
 
 /// Signs a neuron configuration change.
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct ListNeuronsOpts {
     /// The optional ids of the specific neuron to query. Note that these ids
     /// may only be those that occur in the usual output from `list-neurons`,

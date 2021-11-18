@@ -3,7 +3,7 @@ use crate::{
     lib::{ledger_canister_id, AnyhowResult},
 };
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 
 #[derive(CandidType)]
 pub struct AccountBalanceArgs {
@@ -11,7 +11,7 @@ pub struct AccountBalanceArgs {
 }
 
 /// Signs a neuron configuration change.
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct AccountBalanceOpts {
     /// The id of the account to query.
     account_id: String,

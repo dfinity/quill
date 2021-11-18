@@ -6,7 +6,7 @@ use crate::lib::{
 };
 use anyhow::anyhow;
 use candid::CandidType;
-use clap::Clap;
+use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use ic_types::principal::Principal;
@@ -41,7 +41,7 @@ pub struct SendArgs {
 }
 
 /// Sends a signed message or a set of messages.
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct SendOpts {
     /// Path to the signed message
     file_name: String,
