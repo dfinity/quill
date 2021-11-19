@@ -19,12 +19,10 @@ pub fn exec(pem: &str) -> AnyhowResult<Vec<IngressWithRequestId>> {
     )?;
     let sig = Encode!(&hex::encode(&bytes))?;
 
-    let mut messages = Vec::new();
-    messages.push(sign_ingress_with_request_status_query(
+    Ok(vec![sign_ingress_with_request_status_query(
         pem,
         genesis_token_canister_id(),
         "claim_neurons",
         sig,
-    )?);
-    Ok(messages)
+    )?])
 }
