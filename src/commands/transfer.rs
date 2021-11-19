@@ -1,16 +1,16 @@
-use crate::commands::{
-    send::{Memo, SendArgs},
-    sign::sign_ingress_with_request_status_query,
+use crate::commands::send::{Memo, SendArgs};
+use crate::lib::{
+    ledger_canister_id,
+    signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
+    AnyhowResult,
 };
-use crate::lib::{ledger_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult};
 use anyhow::anyhow;
 use candid::Encode;
-use clap::Clap;
-use ledger_canister::{AccountIdentifier, ICPTs, TRANSACTION_FEE};
-use std::str::FromStr;
+use clap::Parser;
+use ledger_canister::{ICPTs, TRANSACTION_FEE};
 
 /// Signs an ICP transfer transaction.
-#[derive(Default, Clap)]
+#[derive(Default, Parser)]
 pub struct TransferOpts {
     /// Destination account.
     pub to: String,
@@ -28,10 +28,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub async fn exec(
-    pem: &Option<String>,
-    opts: TransferOpts,
-) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let amount =
         parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
@@ -43,7 +40,7 @@ pub async fn exec(
             .parse::<u64>()
             .unwrap(),
     );
-    let to = AccountIdentifier::from_str(&opts.to).map_err(|err| anyhow!(err))?;
+    let to = opts.to;
 
     let args = Encode!(&SendArgs {
         memo,
@@ -54,8 +51,7 @@ pub async fn exec(
         created_at_time: None,
     })?;
 
-    let msg =
-        sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args).await?;
+    let msg = sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args)?;
     Ok(vec![msg])
 }
 

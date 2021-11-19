@@ -6,7 +6,7 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 };
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant {
       Configure = record {
         operation = opt variant {
@@ -27,7 +27,7 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 };
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant {
       Configure = record {
         operation = opt variant { StartDissolving = record {} };
@@ -44,12 +44,12 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 };
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant {
       Configure = record {
         operation = opt variant {
           IncreaseDissolveDelay = record {
-            additional_dissolve_delay_seconds = 7_200;
+            additional_dissolve_delay_seconds = 7_200 : nat32;
           }
         };
       }

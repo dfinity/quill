@@ -6,7 +6,7 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 };
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant { Spawn = record { new_controller = null } };
     neuron_id_or_subaccount = null;
   },

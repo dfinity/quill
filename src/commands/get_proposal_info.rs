@@ -3,9 +3,9 @@ use crate::{
     lib::{governance_canister_id, AnyhowResult},
 };
 use candid::Encode;
-use clap::Clap;
+use clap::Parser;
 
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct GetProposalInfoOpts {
     pub ident: u64,
 

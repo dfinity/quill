@@ -6,9 +6,9 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 65 };
+    id = opt record { id = 65 : nat64 };
     command = opt variant {
-      MergeMaturity = record { percentage_to_merge = 100 }
+      MergeMaturity = record { percentage_to_merge = 100 : nat32 }
     };
     neuron_id_or_subaccount = null;
   },
