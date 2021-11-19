@@ -6,8 +6,10 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 };
-    command = opt variant { Split = record { amount_e8s = 10_000_000_000 } };
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    command = opt variant {
+      Split = record { amount_e8s = 10_000_000_000 : nat64 }
+    };
     neuron_id_or_subaccount = null;
   },
 )
