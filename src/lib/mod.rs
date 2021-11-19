@@ -10,7 +10,7 @@ use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
-use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
+use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
 use serde_cbor::Value;
 
@@ -32,6 +32,10 @@ pub fn governance_canister_id() -> Principal {
     Principal::from_slice(GOVERNANCE_CANISTER_ID.as_ref())
 }
 
+pub fn genesis_token_canister_id() -> Principal {
+    Principal::from_slice(GENESIS_TOKEN_CANISTER_ID.as_ref())
+}
+
 // Returns the candid for the specified canister id, if there is one.
 pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     if canister_id == governance_canister_id() {
@@ -40,6 +44,8 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     } else if canister_id == ledger_canister_id() {
         String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
             .map_err(|e| anyhow!(e))
+    } else if canister_id == genesis_token_canister_id() {
+        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec()).map_err(|e| anyhow!(e))
     } else {
         unreachable!()
     }
