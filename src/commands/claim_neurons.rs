@@ -8,7 +8,7 @@ use openssl::ec::{EcKey, PointConversionForm};
 
 pub async fn exec(pem: &Option<String>) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let private_key = EcKey::private_key_from_pem(
-        &pem.as_ref()
+        pem.as_ref()
             .expect("claim-neurons requires a PEM private key")
             .as_bytes(),
     )?;
