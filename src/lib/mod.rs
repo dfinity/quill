@@ -151,35 +151,29 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
-    match auth {
-        AuthInfo::NoAuth => builder,
-        _ => builder.with_boxed_identity(get_identity(auth)),
-    }
-    .build()
-    .map_err(|err| anyhow!(err))
+    builder
+        .with_boxed_identity(get_identity(auth))
+        .build()
+        .map_err(|err| anyhow!(err))
 }
 
 /// Returns an identity derived from the private key.
 pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
     match auth {
-        AuthInfo::PemFile(pem) => {
-            if pem.is_empty() {
-                return Box::new(AnonymousIdentity);
-            }
-            match Secp256k1Identity::from_pem(pem.as_bytes()) {
+        AuthInfo::NoAuth => Box::new(AnonymousIdentity),
+        AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
+            Ok(identity) => Box::new(identity),
+            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
                 Ok(identity) => Box::new(identity),
                 Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
                     Ok(identity) => Box::new(identity),
-                    Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-                        Ok(identity) => Box::new(identity),
-                        Err(_) => {
-                            eprintln!("Couldn't load identity from PEM file");
-                            std::process::exit(1);
-                        }
-                    },
+                    Err(_) => {
+                        eprintln!("Couldn't load identity from PEM file");
+                        std::process::exit(1);
+                    }
                 },
-            }
-        }
+            },
+        },
         AuthInfo::NitroHsm(info) => Box::new(
             hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
                 let pin = info.pin.borrow().clone();
@@ -198,16 +192,6 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
             })
             .unwrap(),
         ),
-        AuthInfo::NoAuth => panic!("AuthInfo::NoAuth has no identity"),
-    }
-}
-
-pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
-    match pem {
-        None => Err(anyhow!(
-            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
-        )),
-        Some(val) => Ok(val.clone()),
     }
 }
 

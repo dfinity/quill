@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::{require_pem, AnyhowResult, AuthInfo};
+use crate::lib::{AnyhowResult, AuthInfo};
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -41,11 +41,11 @@ pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(auth, opts),
-        Command::Transfer(opts) => transfer::exec(&auth, opts).and_then(|out| print(&out)),
-        Command::NeuronStake(opts) => neuron_stake::exec(&auth, opts).and_then(|out| print(&out)),
-        Command::NeuronManage(opts) => neuron_manage::exec(&auth, opts).and_then(|out| print(&out)),
-        Command::ListNeurons(opts) => list_neurons::exec(&auth, opts).and_then(|out| print(&out)),
-        Command::ClaimNeurons => claim_neurons::exec(&auth).and_then(|out| print(&out)),
+        Command::Transfer(opts) => transfer::exec(auth, opts).and_then(|out| print(&out)),
+        Command::NeuronStake(opts) => neuron_stake::exec(auth, opts).and_then(|out| print(&out)),
+        Command::NeuronManage(opts) => neuron_manage::exec(auth, opts).and_then(|out| print(&out)),
+        Command::ListNeurons(opts) => list_neurons::exec(auth, opts).and_then(|out| print(&out)),
+        Command::ClaimNeurons => claim_neurons::exec(auth).and_then(|out| print(&out)),
         Command::ListProposals(opts) => {
             runtime.block_on(async { list_proposals::exec(opts).await })
         }

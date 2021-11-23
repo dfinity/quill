@@ -79,7 +79,7 @@ pub async fn submit_unsigned_ingress(
     args: Vec<u8>,
     dry_run: bool,
 ) -> AnyhowResult {
-    let msg = crate::lib::signing::sign("", canister_id, method_name, args)?;
+    let msg = crate::lib::signing::sign(&AuthInfo::NoAuth, canister_id, method_name, args)?;
     let ingress = msg.message;
     send(
         &ingress,
