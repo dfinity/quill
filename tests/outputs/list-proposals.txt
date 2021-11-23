@@ -1,0 +1,15 @@
+Sending message with
+
+  Call type:   query
+  Sender:      2vxsx-fae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: list_proposals
+  Arguments:   (
+  record {
+    include_reward_status = vec {};
+    before_proposal = null;
+    limit = 100 : nat32;
+    exclude_topic = vec { 2 : int32; 9 : int32 };
+    include_status = vec {};
+  },
+)

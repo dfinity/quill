@@ -1,12 +1,14 @@
 use crate::{
-    commands::{send::Memo, sign::sign_ingress_with_request_status_query, transfer},
+    commands::{send::Memo, transfer},
     lib::{
-        governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult, AuthInfo,
+        governance_canister_id,
+        signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
+        AnyhowResult, AuthInfo,
     },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
 use ic_types::Principal;
 use ledger_canister::{AccountIdentifier, Subaccount};
@@ -18,7 +20,7 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 }
 
 /// Signs topping up of a neuron (new or existing).
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
     #[clap(long)]
@@ -37,7 +39,7 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub async fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (controller, _) = crate::commands::public::get_ids(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
@@ -47,18 +49,15 @@ pub async fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressW
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
     let mut messages = match opts.amount {
-        Some(amount) => {
-            transfer::exec(
-                auth,
-                transfer::TransferOpts {
-                    to: account.to_hex(),
-                    amount,
-                    fee: opts.fee,
-                    memo: Some(nonce.to_string()),
-                },
-            )
-            .await?
-        }
+        Some(amount) => transfer::exec(
+            auth,
+            transfer::TransferOpts {
+                to: account.to_hex(),
+                amount,
+                fee: opts.fee,
+                memo: Some(nonce.to_string()),
+            },
+        )?,
         _ => Vec::new(),
     };
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
@@ -66,15 +65,12 @@ pub async fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressW
         controller: Some(controller),
     })?;
 
-    messages.push(
-        sign_ingress_with_request_status_query(
-            auth,
-            governance_canister_id(),
-            "claim_or_refresh_neuron_from_account",
-            args,
-        )
-        .await?,
-    );
+    messages.push(sign_ingress_with_request_status_query(
+        auth,
+        governance_canister_id(),
+        "claim_or_refresh_neuron_from_account",
+        args,
+    )?);
 
     Ok(messages)
 }

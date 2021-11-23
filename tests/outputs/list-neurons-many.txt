@@ -6,7 +6,7 @@ Sending message with
   Method name: list_neurons
   Arguments:   (
   record {
-    neuron_ids = vec { 123; 456; 789 };
+    neuron_ids = vec { 123 : nat64; 456 : nat64; 789 : nat64 };
     include_neurons_readable_by_caller = false;
   },
 )

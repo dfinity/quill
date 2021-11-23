@@ -1,32 +1,38 @@
 //! This module implements the command-line API.
 
-use crate::lib::{AnyhowResult, AuthInfo};
-use clap::Clap;
+use crate::lib::{require_pem, AnyhowResult, AuthInfo};
+use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
 mod account_balance;
+mod claim_neurons;
+mod get_proposal_info;
 mod list_neurons;
+mod list_proposals;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod request_status;
 mod send;
-mod sign;
 mod transfer;
 
 pub use public::get_ids;
 
-#[derive(Clap)]
+#[derive(Parser)]
 pub enum Command {
     /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
+    /// Claim seed neurons from the Genesis Token Canister.
+    ClaimNeurons,
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
     /// Signs the query for all neurons belonging to the signin principal.
     ListNeurons(list_neurons::ListNeuronsOpts),
+    ListProposals(list_proposals::ListProposalsOpts),
+    GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     /// Queries a ledger account balance
     AccountBalance(account_balance::AccountBalanceOpts),
 }
@@ -35,24 +41,17 @@ pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(auth, opts),
-        Command::Transfer(opts) => {
-            runtime.block_on(async { transfer::exec(auth, opts).await.and_then(|out| print(&out)) })
+        Command::Transfer(opts) => transfer::exec(&auth, opts).and_then(|out| print(&out)),
+        Command::NeuronStake(opts) => neuron_stake::exec(&auth, opts).and_then(|out| print(&out)),
+        Command::NeuronManage(opts) => neuron_manage::exec(&auth, opts).and_then(|out| print(&out)),
+        Command::ListNeurons(opts) => list_neurons::exec(&auth, opts).and_then(|out| print(&out)),
+        Command::ClaimNeurons => claim_neurons::exec(&auth).and_then(|out| print(&out)),
+        Command::ListProposals(opts) => {
+            runtime.block_on(async { list_proposals::exec(opts).await })
         }
-        Command::NeuronStake(opts) => runtime.block_on(async {
-            neuron_stake::exec(auth, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
-        Command::NeuronManage(opts) => runtime.block_on(async {
-            neuron_manage::exec(auth, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
-        Command::ListNeurons(opts) => runtime.block_on(async {
-            list_neurons::exec(auth, opts)
-                .await
-                .and_then(|out| print(&out))
-        }),
+        Command::GetProposalInfo(opts) => {
+            runtime.block_on(async { get_proposal_info::exec(opts).await })
+        }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
         }

@@ -1,14 +1,18 @@
-use crate::{
-    commands::sign::sign_ingress_with_request_status_query,
-    lib::{
-        governance_canister_id, sign::signed_message::IngressWithRequestId, AnyhowResult, AuthInfo,
-    },
+use crate::lib::{
+    governance_canister_id,
+    signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
+    AnyhowResult, AuthInfo,
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode};
-use clap::Clap;
+use clap::Parser;
 use ic_types::Principal;
-use ledger_canister::{AccountIdentifier, ICPTs};
+use ledger_canister::ICPTs;
+
+// These constants are copied from src/governance.rs
+pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
+pub const ONE_YEAR_SECONDS: u32 = (4 * 365 + 1) * ONE_DAY_SECONDS / 4;
+pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
 
 #[derive(CandidType)]
 pub struct IncreaseDissolveDelay {
@@ -18,6 +22,12 @@ pub struct IncreaseDissolveDelay {
 #[derive(CandidType, Copy, Clone)]
 pub struct NeuronId {
     pub id: u64,
+}
+#[allow(dead_code)]
+#[derive(CandidType)]
+pub enum NeuronIdOrSubaccount {
+    Subaccount(Vec<u8>),
+    NeuronId(NeuronId),
 }
 
 #[derive(CandidType)]
@@ -37,12 +47,16 @@ pub struct AddHotKey {
 }
 
 #[derive(CandidType)]
+pub struct JoinCommunityFund {}
+
+#[derive(CandidType)]
 pub enum Operation {
     RemoveHotKey(RemoveHotKey),
     StartDissolving(StartDissolving),
     StopDissolving(StopDissolving),
     AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
+    JoinCommunityFund(JoinCommunityFund),
 }
 
 #[derive(CandidType)]
@@ -50,6 +64,10 @@ pub struct Configure {
     pub operation: Option<Operation>,
 }
 
+#[derive(CandidType)]
+pub struct AccountIdentifier {
+    hash: Vec<u8>,
+}
 #[derive(CandidType)]
 pub struct Disburse {
     pub to_account: Option<AccountIdentifier>,
@@ -84,10 +102,11 @@ pub enum Command {
 struct ManageNeuron {
     id: Option<NeuronId>,
     command: Option<Command>,
+    neuron_id_or_subaccount: Option<NeuronIdOrSubaccount>,
 }
 
 /// Signs a neuron configuration change.
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct ManageOpts {
     /// The id of the neuron to manage.
     neuron_id: String,
@@ -102,7 +121,7 @@ pub struct ManageOpts {
 
     /// Number of dissolve seconds to add.
     #[clap(short, long)]
-    additional_dissolve_delay_seconds: Option<u32>,
+    additional_dissolve_delay_seconds: Option<String>,
 
     /// Start dissolving.
     #[clap(long)]
@@ -128,9 +147,13 @@ pub struct ManageOpts {
     /// into the current stake.
     #[clap(long)]
     merge_maturity: Option<u32>,
+
+    /// Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible.
+    #[clap(long)]
+    join_community_fund: bool,
 }
 
-pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
@@ -143,7 +166,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
                 operation: Some(Operation::AddHotKey(AddHotKey {
                     new_hot_key: opts.add_hot_key
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -155,7 +179,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
                     hot_key_to_remove: opts.remove_hot_key
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -165,7 +190,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     }
@@ -175,7 +201,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     }
@@ -185,9 +212,42 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
-                    additional_dissolve_delay_seconds
+                    additional_dissolve_delay_seconds: match additional_dissolve_delay_seconds
+                        .as_ref()
+                    {
+                        "ONE_DAY" => ONE_DAY_SECONDS,
+
+                        "ONE_WEEK" => ONE_DAY_SECONDS * 7,
+                        "TWO_WEEKS" => ONE_DAY_SECONDS * 7 * 2,
+                        "THREE_WEEKS" => ONE_DAY_SECONDS * 7 * 3,
+                        "FOUR_WEEKS" => ONE_DAY_SECONDS * 7 * 4,
+
+                        "ONE_MONTH" => ONE_MONTH_SECONDS,
+                        "TWO_MONTHS" => ONE_MONTH_SECONDS * 2,
+                        "THREE_MONTHS" => ONE_MONTH_SECONDS * 3,
+                        "FOUR_MONTHS" => ONE_MONTH_SECONDS * 4,
+                        "FIVE_MONTHS" => ONE_MONTH_SECONDS * 5,
+                        "SIX_MONTHS" => ONE_MONTH_SECONDS * 6,
+                        "SEVEN_MONTHS" => ONE_MONTH_SECONDS * 7,
+                        "EIGHT_MONTHS" => ONE_MONTH_SECONDS * 8,
+                        "NINE_MONTHS" => ONE_MONTH_SECONDS * 9,
+                        "TEN_MONTHS" => ONE_MONTH_SECONDS * 10,
+                        "ELEVEN_MONTHS" => ONE_MONTH_SECONDS * 11,
+
+                        "ONE_YEAR" => ONE_YEAR_SECONDS,
+                        "TWO_YEARS" => ONE_YEAR_SECONDS * 2,
+                        "THREE_YEARS" => ONE_YEAR_SECONDS * 3,
+                        "FOUR_YEARS" => ONE_YEAR_SECONDS * 4,
+                        "FIVE_YEARS" => ONE_YEAR_SECONDS * 5,
+                        "SIX_YEARS" => ONE_YEAR_SECONDS * 6,
+                        "SEVEN_YEARS" => ONE_YEAR_SECONDS * 7,
+                        "EIGHT_YEARS" => ONE_YEAR_SECONDS * 8,
+
+                        s => s.parse::<u32>().expect("Couldn't parse the dissolve delay"),
+                    }
                 }))
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -198,7 +258,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             command: Some(Command::Disburse(Disburse {
                 to_account: None,
                 amount: None
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -206,7 +267,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
             id,
-            command: Some(Command::Spawn(Default::default()))
+            command: Some(Command::Spawn(Default::default())),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -216,7 +278,8 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
-            }))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -231,7 +294,19 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
             id,
             command: Some(Command::MergeMaturity(MergeMaturity {
                 percentage_to_merge
-            }))
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    };
+
+    if opts.join_community_fund {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
+            })),
+            neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
@@ -242,15 +317,12 @@ pub async fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<Ingress
 
     let mut generated = Vec::new();
     for args in msgs {
-        generated.push(
-            sign_ingress_with_request_status_query(
-                auth,
-                governance_canister_id(),
-                "manage_neuron",
-                args,
-            )
-            .await?,
-        );
+        generated.push(sign_ingress_with_request_status_query(
+            auth,
+            governance_canister_id(),
+            "manage_neuron",
+            args,
+        )?);
     }
     Ok(generated)
 }

@@ -7,11 +7,12 @@ use candid::{
     IDLProg,
 };
 use ic_agent::{
-    identity::{BasicIdentity, Secp256k1Identity},
+    identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
-use ic_nns_constants::{GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
+use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
+use serde_cbor::Value;
 use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
@@ -21,7 +22,7 @@ pub fn get_ic_url() -> String {
 }
 
 pub mod hsm;
-pub mod sign;
+pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
@@ -69,6 +70,10 @@ pub fn governance_canister_id() -> Principal {
     Principal::from_slice(GOVERNANCE_CANISTER_ID.as_ref())
 }
 
+pub fn genesis_token_canister_id() -> Principal {
+    Principal::from_slice(GENESIS_TOKEN_CANISTER_ID.as_ref())
+}
+
 // Returns the candid for the specified canister id, if there is one.
 pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     if canister_id == governance_canister_id() {
@@ -77,6 +82,8 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     } else if canister_id == ledger_canister_id() {
         String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
             .map_err(|e| anyhow!(e))
+    } else if canister_id == genesis_token_canister_id() {
+        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec()).map_err(|e| anyhow!(e))
     } else {
         unreachable!()
     }
@@ -155,16 +162,24 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
 /// Returns an identity derived from the private key.
 pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
     match auth {
-        AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
-            Ok(identity) => Box::new(identity),
-            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+        AuthInfo::PemFile(pem) => {
+            if pem.is_empty() {
+                return Box::new(AnonymousIdentity);
+            }
+            match Secp256k1Identity::from_pem(pem.as_bytes()) {
                 Ok(identity) => Box::new(identity),
-                Err(_) => {
-                    eprintln!("Couldn't load identity from PEM file");
-                    std::process::exit(1);
-                }
-            },
-        },
+                Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+                    Ok(identity) => Box::new(identity),
+                    Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+                        Ok(identity) => Box::new(identity),
+                        Err(_) => {
+                            eprintln!("Couldn't load identity from PEM file");
+                            std::process::exit(1);
+                        }
+                    },
+                },
+            }
+        }
         AuthInfo::NitroHsm(info) => Box::new(
             hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
                 let pin = info.pin.borrow().clone();
@@ -185,4 +200,46 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
         ),
         AuthInfo::NoAuth => panic!("AuthInfo::NoAuth has no identity"),
     }
+}
+
+pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
+    match pem {
+        None => Err(anyhow!(
+            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
+        )),
+        Some(val) => Ok(val.clone()),
+    }
+}
+
+pub fn parse_query_response(
+    response: Vec<u8>,
+    canister_id: Principal,
+    method_name: &str,
+) -> AnyhowResult<String> {
+    let cbor: Value = serde_cbor::from_slice(&response)
+        .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+    if let Value::Map(m) = cbor {
+        // Try to decode a rejected response.
+        if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reject_code".to_string())),
+            m.get(&Value::Text("reject_message".to_string())),
+        ) {
+            return Ok(format!(
+                "Rejected (code {}): {}",
+                reject_code, reject_message
+            ));
+        }
+
+        // Try to decode a successful response.
+        if let (_, Some(Value::Map(m))) = (
+            m.get(&Value::Text("status".to_string())),
+            m.get(&Value::Text("reply".to_string())),
+        ) {
+            if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
+                return get_idl_string(reply, canister_id, method_name, "rets");
+            }
+        }
+    }
+    Err(anyhow!("Invalid cbor content"))
 }

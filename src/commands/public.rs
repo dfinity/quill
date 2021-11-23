@@ -1,12 +1,12 @@
 use crate::lib::{get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
-use clap::Clap;
+use clap::Parser;
 use ic_base_types::PrincipalId;
 use ic_types::principal::Principal;
 use ledger_canister::AccountIdentifier;
 use std::convert::TryFrom;
 
-#[derive(Clap)]
+#[derive(Parser)]
 pub struct PublicOpts {
     // Principal for which to get the account_id.
     #[clap(long)]

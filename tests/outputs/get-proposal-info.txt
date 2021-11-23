@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   query
+  Sender:      2vxsx-fae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: get_proposal_info
+  Arguments:   (22_174 : nat64)

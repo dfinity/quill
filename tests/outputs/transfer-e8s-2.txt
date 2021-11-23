@@ -11,6 +11,6 @@ Sending message with
     memo = 0 : nat64;
     from_subaccount = null;
     created_at_time = null;
-    amount = record { e8s = 123_456_000 : nat64 };
+    amount = record { e8s = 9 : nat64 };
   },
 )

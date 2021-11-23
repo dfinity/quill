@@ -1,0 +1,9 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: renrk-eyaaa-aaaaa-aaada-cai
+  Method name: claim_neurons
+  Arguments:   (
+  "04cbb34e3b863720ac396e16aa61b58951d6fc8d01482a14bfda0cafb592cd1080014814004efa5b077fddbc805775d11a88cad004b1c027d68e6765ae990172ab",
+)
