@@ -4,7 +4,11 @@ use crate::{
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
-use ledger_canister::AccountIdentifier;
+
+#[derive(CandidType, Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct AccountIdentifier {
+    pub hash: [u8; 28],
+}
 
 #[derive(CandidType)]
 pub struct UpdateNodeProvider {
@@ -28,7 +32,9 @@ pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<I
             ))
         })?;
     let args = Encode!(&UpdateNodeProvider {
-        reward_account: Some(reward_account)
+        reward_account: Some(AccountIdentifier {
+            hash: reward_account.hash
+        })
     })?;
     Ok(vec![sign_ingress(
         auth,
