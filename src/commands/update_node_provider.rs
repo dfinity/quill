@@ -5,11 +5,10 @@ use crate::{
 use candid::{CandidType, Encode};
 use clap::Parser;
 
-#[derive(CandidType, Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(CandidType)]
 pub struct AccountIdentifier {
-    pub hash: [u8; 28],
+    hash: Vec<u8>,
 }
-
 #[derive(CandidType)]
 pub struct UpdateNodeProvider {
     pub reward_account: Option<AccountIdentifier>,
@@ -33,7 +32,7 @@ pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<I
         })?;
     let args = Encode!(&UpdateNodeProvider {
         reward_account: Some(AccountIdentifier {
-            hash: reward_account.hash
+            hash: reward_account.hash.to_vec()
         })
     })?;
     Ok(vec![sign_ingress(

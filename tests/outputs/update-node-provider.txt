@@ -6,7 +6,8 @@ Sending message with
   Method name: update_node_provider
   Arguments:   (
   record {
-    reward_account =
-  "ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693";
-   }
+    reward_account = opt record {
+      hash = blob "\fb\9f\f6\c8\0f\1dG[0\1d\9b*\b8sa/\96\e7\fdt\e7\c0\c0\b2\d5\8ef\93";
+    };
+  },
 )
