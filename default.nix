@@ -10,7 +10,7 @@
 
 with pkgs; rustPlatform.buildRustPackage rec {
   pname = "quill";
-  version = "0.2.9";
+  version = "0.2.12";
 
   src = ./.;
 
