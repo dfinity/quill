@@ -84,6 +84,11 @@ pub struct Split {
     pub amount_e8s: u64,
 }
 
+#[derive(CandidType)]
+pub struct Merge {
+    pub source_neuron_id: NeuronId,
+}
+
 #[derive(candid::CandidType)]
 pub struct MergeMaturity {
     pub percentage_to_merge: u32,
@@ -95,6 +100,7 @@ pub enum Command {
     Disburse(Disburse),
     Spawn(Spawn),
     Split(Split),
+    Merge(Merge),
     MergeMaturity(MergeMaturity),
 }
 
@@ -142,6 +148,10 @@ pub struct ManageOpts {
     /// Split off the given number of ICP from a neuron.
     #[clap(long)]
     split: Option<u64>,
+
+    /// Split off the given number of ICP from a neuron.
+    #[clap(long)]
+    merge_neuron: Option<String>,
 
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
     #[clap(long)]
@@ -277,6 +287,19 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
             id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    };
+
+    if let Some(neuron_id) = opts.merge_neuron {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Merge(Merge {
+                source_neuron_id: NeuronId {
+                    id: parse_neuron_id(neuron_id)
+                },
             })),
             neuron_id_or_subaccount: None,
         })?;
