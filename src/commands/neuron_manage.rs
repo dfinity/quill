@@ -149,9 +149,9 @@ pub struct ManageOpts {
     #[clap(long)]
     split: Option<u64>,
 
-    /// Split off the given number of ICP from a neuron.
+    /// Merge stake, maturity and age from the neuron specified by this option into the neuron being managed.
     #[clap(long)]
-    merge_neuron: Option<String>,
+    merge_from_neuron: Option<String>,
 
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
     #[clap(long)]
@@ -293,7 +293,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
         msgs.push(args);
     };
 
-    if let Some(neuron_id) = opts.merge_neuron {
+    if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
             id,
             command: Some(Command::Merge(Merge {
