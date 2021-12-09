@@ -9,9 +9,7 @@ Sending message with
     id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant {
       Merge = record {
-        source_neuron_id = opt record {
-          id = 2_313_380_519_530_470_538 : nat64;
-        };
+        source_neuron_id = opt record { id = 380_519_530_470_538 : nat64 };
       }
     };
     neuron_id_or_subaccount = null;
