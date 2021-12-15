@@ -6,7 +6,7 @@ use ledger_canister::AccountIdentifier;
 
 #[derive(Parser)]
 pub struct PublicOpts {
-    // Principal for which to get the account_id.
+    /// Principal for which to get the account_id.
     #[clap(long)]
     principal_id: Option<String>,
 }
