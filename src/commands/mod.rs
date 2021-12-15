@@ -74,7 +74,7 @@ pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
             runtime.block_on(async { account_balance::exec(opts).await })
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
-        Command::Generate(opts) => generate::exec(opts).and_then(|out| print(&out)),
+        Command::Generate(opts) => generate::exec(opts),
     }
 }
 
