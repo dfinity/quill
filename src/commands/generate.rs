@@ -31,11 +31,11 @@ pub struct GenerateOpts {
     #[clap(long)]
     pem_file: Option<String>,
 
-    /// Forcibly overwrite any existing seed file.
+    /// Overwrite any existing seed file.
     #[clap(long)]
     overwrite_seed_file: bool,
 
-    /// Forcibly overwrite any existing PEM file.
+    /// Overwrite any existing PEM file.
     #[clap(long)]
     overwrite_pem_file: bool,
 }
