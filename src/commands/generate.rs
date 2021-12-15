@@ -12,29 +12,30 @@ use simple_asn1::ASN1Block::{
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
 use std::path::Path;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
+#[clap(about, version, author)]
 pub struct GenerateOpts {
-    // Number of words: 12 or 24 (12 is the default).
+    /// Number of words: 12 or 24 (12 is the default).
     #[clap(long)]
     words: Option<u32>,
 
-    // A seed phrase in quotes to use to generate the PEM file.
+    /// A seed phrase in quotes to use to generate the PEM file.
     #[clap(long)]
     phrase: Option<String>,
 
-    // File to write the seed phrase to, defaults to 'seed.txt'.
+    /// File to write the seed phrase to, defaults to 'seed.txt'.
     #[clap(long)]
     seed_file: Option<String>,
 
-    // File to write the PEM to, defaults to 'identity.pem'.
+    /// File to write the PEM to, defaults to 'identity.pem'.
     #[clap(long)]
     pem_file: Option<String>,
 
-    // Forcablely overwrite any existing seed file.
+    /// Forcablely overwrite any existing seed file.
     #[clap(long)]
     overwrite_seed_file: bool,
 
-    // Forcablely overwrite any existing PEM file.
+    /// Forcablely overwrite any existing PEM file.
     #[clap(long)]
     overwrite_pem_file: bool,
 }

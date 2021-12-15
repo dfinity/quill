@@ -36,7 +36,7 @@ pub enum Command {
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
-    /// Generate a mnemonic seed phrase.
+    /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
 }
 
