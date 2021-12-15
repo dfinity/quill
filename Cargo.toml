@@ -13,8 +13,6 @@ anyhow = "1.0.34"
 bip39 = "1.0.1"
 candid = "0.7.8"
 clap = "3.0.0-beta.5"
-# elliptic-curve = "0.11.5"
-k256 = "0.9.6"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.10.0"
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
