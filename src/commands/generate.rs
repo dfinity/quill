@@ -15,21 +15,21 @@ use std::path::Path;
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
 pub struct GenerateOpts {
-    /// Number of words: 12 or 24 (12 is the default).
-    #[clap(long)]
-    words: Option<u32>,
+    /// Number of words: 12 or 24.
+    #[clap(long, default_value = "12")]
+    words: u32,
+
+    /// File to write the seed phrase to.
+    #[clap(long, default_value = "seed.txt")]
+    seed_file: String,
+
+    /// File to write the PEM to.
+    #[clap(long, default_value = "identity.pem")]
+    pem_file: String,
 
     /// A seed phrase in quotes to use to generate the PEM file.
     #[clap(long)]
     phrase: Option<String>,
-
-    /// File to write the seed phrase to, defaults to 'seed.txt'.
-    #[clap(long)]
-    seed_file: Option<String>,
-
-    /// File to write the PEM to, defaults to 'identity.pem'.
-    #[clap(long)]
-    pem_file: Option<String>,
 
     /// Overwrite any existing seed file.
     #[clap(long)]
@@ -74,34 +74,18 @@ pub fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
     to_der(&data).expect("Cannot encode secret key.")
 }
 
-/// Prints the account and the principal ids.
+/// Generate or recover mnemonic seed phrase and/or PEM file.
 pub fn exec(opts: GenerateOpts) -> AnyhowResult {
-    let seed_file = match opts.seed_file {
-        Some(f) => f,
-        None => String::from("seed.txt"),
-    };
-    if Path::exists(Path::new(&seed_file)) && !opts.overwrite_seed_file {
+    if Path::new(&opts.seed_file).exists() && !opts.overwrite_seed_file {
         return Err(anyhow!("Seed file exists and overwrite is not set."));
     }
-    let pem_file = match opts.pem_file {
-        Some(f) => f,
-        None => String::from("identity.pem"),
-    };
-    if Path::exists(Path::new(&pem_file)) && !opts.overwrite_pem_file {
+    if Path::new(&opts.pem_file).exists() && !opts.overwrite_pem_file {
         return Err(anyhow!("PEM file exists and overwrite is not set."));
     }
     let bytes = match opts.words {
-        Some(words) => {
-            if words != 12 && words != 24 {
-                return Err(anyhow!("Words must be 12 or 24."));
-            }
-            if words > 12 {
-                32
-            } else {
-                16
-            }
-        }
-        None => 16,
+        12 => 16,
+        24 => 32,
+        _ => return Err(anyhow!("Words must be 12 or 24.")),
     };
     let m = match opts.phrase {
         Some(phrase) => Mnemonic::parse(phrase).unwrap(),
@@ -126,8 +110,8 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     let pem = encode(&pem).replace("\r", "").replace("\n\n", "\n");
     let mut phrase = m.word_iter().collect::<Vec<&'static str>>().join(" ");
     phrase.push('\n');
-    std::fs::write(seed_file, phrase)?;
-    std::fs::write(pem_file, pem)?;
+    std::fs::write(opts.seed_file, phrase)?;
+    std::fs::write(opts.pem_file, pem)?;
     println!("Principal id: {}", principal_id);
     println!("Account id: {}", get_account_id(principal_id.0)?);
     Ok(())
