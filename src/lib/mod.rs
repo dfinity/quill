@@ -10,9 +10,11 @@ use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
+use ic_base_types::PrincipalId;
 use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
 use serde_cbor::Value;
+use std::convert::TryFrom;
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -174,4 +176,13 @@ pub fn parse_query_response(
         }
     }
     Err(anyhow!("Invalid cbor content"))
+}
+
+pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::AccountIdentifier> {
+    let base_types_principal =
+        PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
+    Ok(ledger_canister::AccountIdentifier::new(
+        base_types_principal,
+        None,
+    ))
 }
