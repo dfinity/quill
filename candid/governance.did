@@ -262,6 +262,7 @@ type Tally = record {
   total : nat64;
   timestamp_seconds : nat64;
 };
+type UpdateNodeProvider = record { reward_account : opt AccountIdentifier };
 service : (Governance) -> {
   claim_gtc_neurons : (principal, vec NeuronId) -> (Result);
   claim_or_refresh_neuron_from_account : (ClaimOrRefreshNeuronFromAccount) -> (
@@ -276,4 +277,5 @@ service : (Governance) -> {
   list_proposals : (ListProposalInfo) -> (ListProposalInfoResponse) query;
   manage_neuron : (ManageNeuron) -> (ManageNeuronResponse);
   transfer_gtc_neuron : (NeuronId, NeuronId) -> (Result);
+  update_node_provider : (UpdateNodeProvider) -> (Result) query;
 }

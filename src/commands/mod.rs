@@ -16,6 +16,7 @@ mod public;
 mod request_status;
 mod send;
 mod transfer;
+mod update_node_provider;
 
 pub use public::get_ids;
 
@@ -35,6 +36,8 @@ pub enum Command {
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     /// Queries a ledger account balance
     AccountBalance(account_balance::AccountBalanceOpts),
+    /// Update node provider details
+    UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
 }
 
 pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
@@ -54,6 +57,9 @@ pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
         }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
+        }
+        Command::UpdateNodeProvider(opts) => {
+            update_node_provider::exec(auth, opts).and_then(|out| print(&out))
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
     }
