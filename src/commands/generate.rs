@@ -1,8 +1,7 @@
-use crate::lib::{get_account_id, AnyhowResult};
+use crate::lib::AnyhowResult;
 use anyhow::anyhow;
 use bip39::{Language, Mnemonic};
 use clap::Parser;
-use ic_base_types::PrincipalId;
 use libsecp256k1::{PublicKey, SecretKey};
 use pem::{encode, Pem};
 use rand::{rngs::OsRng, RngCore};
@@ -38,16 +37,6 @@ pub struct GenerateOpts {
     /// Overwrite any existing PEM file.
     #[clap(long)]
     overwrite_pem_file: bool,
-}
-
-pub fn der_encode_public_key(public_key: &PublicKey) -> Vec<u8> {
-    let public_key_bytes = public_key.serialize().to_vec();
-    let ec_key_id = ObjectIdentifier(0, oid!(1, 2, 840, 10045, 2, 1));
-    let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));
-    let metadata = Sequence(0, vec![ec_key_id, secp256k1_id]);
-    let data = BitString(0, public_key_bytes.len() * 8, public_key_bytes);
-    let envelope = Sequence(0, vec![metadata, data]);
-    to_der(&envelope).expect("Cannot encode secret key.")
 }
 
 pub fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
@@ -95,35 +84,31 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
             Mnemonic::from_entropy_in(Language::English, &key).unwrap()
         }
     };
-    let (principal_id, pem) = mnemonic_to_pem(&mnemonic);
+    let pem = mnemonic_to_pem(&mnemonic);
     let mut phrase = mnemonic
         .word_iter()
         .collect::<Vec<&'static str>>()
         .join(" ");
     phrase.push('\n');
     std::fs::write(opts.seed_file, phrase)?;
-    std::fs::write(opts.pem_file, pem)?;
+    std::fs::write(opts.pem_file, pem.clone())?;
+    let (principal_id, account_id) = crate::commands::public::get_ids(&Some(pem))?;
     println!("Principal id: {}", principal_id);
-    println!("Account id: {}", get_account_id(principal_id.0)?);
+    println!("Account id: {}", account_id);
     Ok(())
 }
 
 /// Converts menmonic to PEM format
-pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> (PrincipalId, String) {
+pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
     let seed = mnemonic.to_seed("");
     let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0").unwrap();
     let secret = ext.secret();
     let secret_key = SecretKey::parse(&secret).unwrap();
     let public_key = PublicKey::from_secret_key(&secret_key);
-    let der = der_encode_public_key(&public_key);
-    let principal_id = PrincipalId::new_self_authenticating(der.as_slice());
     let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec());
     let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
-    (
-        principal_id,
-        encode(&pem).replace("\r", "").replace("\n\n", "\n"),
-    )
+    encode(&pem).replace("\r", "").replace("\n\n", "\n")
 }

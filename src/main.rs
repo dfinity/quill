@@ -28,11 +28,10 @@ fn main() {
         Some(path) => Some(read_file(path)),
         None => opts.seed_file.map(|path| {
             let phrase = read_file(path);
-            let (_, pem) = commands::generate::mnemonic_to_pem(
+            commands::generate::mnemonic_to_pem(
                 &Mnemonic::parse(phrase)
                     .expect("Couldn't parse the seed phrase as a valid mnemonic"),
-            );
-            pem
+            )
         }),
     };
     if let Err(err) = commands::exec(&pem, command) {
