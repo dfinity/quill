@@ -7,7 +7,7 @@ use tokio::runtime::Runtime;
 
 mod account_balance;
 mod claim_neurons;
-mod generate;
+pub mod generate;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;

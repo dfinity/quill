@@ -87,7 +87,7 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         24 => 32,
         _ => return Err(anyhow!("Words must be 12 or 24.")),
     };
-    let m = match opts.phrase {
+    let mnemonic = match opts.phrase {
         Some(phrase) => Mnemonic::parse(phrase).unwrap(),
         None => {
             let mut key = vec![0u8; bytes];
@@ -95,7 +95,22 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
             Mnemonic::from_entropy_in(Language::English, &key).unwrap()
         }
     };
-    let seed = m.to_seed("");
+    let (principal_id, pem) = mnemonic_to_pem(&mnemonic);
+    let mut phrase = mnemonic
+        .word_iter()
+        .collect::<Vec<&'static str>>()
+        .join(" ");
+    phrase.push('\n');
+    std::fs::write(opts.seed_file, phrase)?;
+    std::fs::write(opts.pem_file, pem)?;
+    println!("Principal id: {}", principal_id);
+    println!("Account id: {}", get_account_id(principal_id.0)?);
+    Ok(())
+}
+
+/// Converts menmonic to PEM format
+pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> (PrincipalId, String) {
+    let seed = mnemonic.to_seed("");
     let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0").unwrap();
     let secret = ext.secret();
     let secret_key = SecretKey::parse(&secret).unwrap();
@@ -107,12 +122,8 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
-    let pem = encode(&pem).replace("\r", "").replace("\n\n", "\n");
-    let mut phrase = m.word_iter().collect::<Vec<&'static str>>().join(" ");
-    phrase.push('\n');
-    std::fs::write(opts.seed_file, phrase)?;
-    std::fs::write(opts.pem_file, pem)?;
-    println!("Principal id: {}", principal_id);
-    println!("Account id: {}", get_account_id(principal_id.0)?);
-    Ok(())
+    (
+        principal_id,
+        encode(&pem).replace("\r", "").replace("\n\n", "\n"),
+    )
 }
