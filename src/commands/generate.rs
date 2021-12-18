@@ -17,8 +17,8 @@ pub struct GenerateOpts {
     seed_file: String,
 
     /// File to write the PEM to.
-    #[clap(long, default_value = "identity.pem")]
-    pem_file: String,
+    #[clap(long)]
+    pem_file: Option<String>,
 
     /// A seed phrase in quotes to use to generate the PEM file.
     #[clap(long)]
@@ -38,8 +38,10 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     if Path::new(&opts.seed_file).exists() && !opts.overwrite_seed_file {
         return Err(anyhow!("Seed file exists and overwrite is not set."));
     }
-    if Path::new(&opts.pem_file).exists() && !opts.overwrite_pem_file {
-        return Err(anyhow!("PEM file exists and overwrite is not set."));
+    if let Some(path) = &opts.pem_file {
+        if Path::new(path).exists() && !opts.overwrite_pem_file {
+            return Err(anyhow!("PEM file exists and overwrite is not set."));
+        }
     }
     let bytes = match opts.words {
         12 => 16,
@@ -61,7 +63,9 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         .join(" ");
     phrase.push('\n');
     std::fs::write(opts.seed_file, phrase)?;
-    std::fs::write(opts.pem_file, pem.clone())?;
+    if let Some(path) = opts.pem_file {
+        std::fs::write(path, pem.clone())?;
+    }
     let (principal_id, account_id) = crate::commands::public::get_ids(&Some(pem))?;
     println!("Principal id: {}", principal_id);
     println!("Account id: {}", account_id);
