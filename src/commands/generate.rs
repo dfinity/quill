@@ -1,14 +1,8 @@
-use crate::lib::AnyhowResult;
+use crate::lib::{mnemonic_to_pem, AnyhowResult};
 use anyhow::anyhow;
 use bip39::{Language, Mnemonic};
 use clap::Parser;
-use libsecp256k1::{PublicKey, SecretKey};
-use pem::{encode, Pem};
 use rand::{rngs::OsRng, RngCore};
-use simple_asn1::ASN1Block::{
-    BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
-};
-use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
 use std::path::Path;
 
 #[derive(Parser, Debug)]
@@ -37,30 +31,6 @@ pub struct GenerateOpts {
     /// Overwrite any existing PEM file.
     #[clap(long)]
     overwrite_pem_file: bool,
-}
-
-pub fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
-    let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));
-    let data = Sequence(
-        0,
-        vec![
-            Integer(0, BigInt::from(1)),
-            OctetString(32, secret.to_vec()),
-            Explicit(
-                ASN1Class::ContextSpecific,
-                0,
-                BigUint::from(0u32),
-                Box::new(secp256k1_id),
-            ),
-            Explicit(
-                ASN1Class::ContextSpecific,
-                0,
-                BigUint::from(1u32),
-                Box::new(BitString(0, public_key.len() * 8, public_key)),
-            ),
-        ],
-    );
-    to_der(&data).expect("Cannot encode secret key.")
 }
 
 /// Generate or recover mnemonic seed phrase and/or PEM file.
@@ -96,19 +66,4 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     println!("Principal id: {}", principal_id);
     println!("Account id: {}", account_id);
     Ok(())
-}
-
-/// Converts menmonic to PEM format
-pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
-    let seed = mnemonic.to_seed("");
-    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0").unwrap();
-    let secret = ext.secret();
-    let secret_key = SecretKey::parse(&secret).unwrap();
-    let public_key = PublicKey::from_secret_key(&secret_key);
-    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec());
-    let pem = Pem {
-        tag: String::from("EC PRIVATE KEY"),
-        contents: der,
-    };
-    encode(&pem).replace("\r", "").replace("\n\n", "\n")
 }

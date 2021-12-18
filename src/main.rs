@@ -28,7 +28,7 @@ fn main() {
         Some(path) => Some(read_file(path)),
         None => opts.seed_file.map(|path| {
             let phrase = read_file(path);
-            commands::generate::mnemonic_to_pem(
+            lib::mnemonic_to_pem(
                 &Mnemonic::parse(phrase)
                     .expect("Couldn't parse the seed phrase as a valid mnemonic"),
             )
