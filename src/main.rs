@@ -11,7 +11,7 @@ pub struct CliOpts {
     #[clap(long)]
     pem_file: Option<String>,
 
-    /// Output the result as an ASCII QR code.
+    /// Output the result as ASCII QR codes.
     #[clap(long)]
     qr: bool,
 
