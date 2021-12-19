@@ -46,68 +46,23 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
         Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
             let pem = require_pem(pem)?;
-            transfer::exec(&pem, opts).and_then(|out| {
-                if !qr {
-                    print(&out)
-                } else {
-                    for (i, a) in out.iter().enumerate() {
-                        print_qr(&a, i != out.len() - 1).expect("print_qr");
-                    }
-                    Ok(())
-                }
-            })
+            transfer::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::NeuronStake(opts) => {
             let pem = require_pem(pem)?;
-            neuron_stake::exec(&pem, opts).and_then(|out| {
-                if !qr {
-                    print(&out)
-                } else {
-                    for (i, a) in out.iter().enumerate() {
-                        print_qr(&a, i != out.len() - 1).expect("print_qr");
-                    }
-                    Ok(())
-                }
-            })
+            neuron_stake::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::NeuronManage(opts) => {
             let pem = require_pem(pem)?;
-            neuron_manage::exec(&pem, opts).and_then(|out| {
-                if !qr {
-                    print(&out)
-                } else {
-                    for (i, a) in out.iter().enumerate() {
-                        print_qr(&a, i != out.len() - 1).expect("print_qr");
-                    }
-                    Ok(())
-                }
-            })
+            neuron_manage::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::ListNeurons(opts) => {
             let pem = require_pem(pem)?;
-            list_neurons::exec(&pem, opts).and_then(|out| {
-                if !qr {
-                    print(&out)
-                } else {
-                    for (i, a) in out.iter().enumerate() {
-                        print_qr(&a, i != out.len() - 1).expect("print_qr");
-                    }
-                    Ok(())
-                }
-            })
+            list_neurons::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::ClaimNeurons => {
             let pem = require_pem(pem)?;
-            claim_neurons::exec(&pem).and_then(|out| {
-                if !qr {
-                    print(&out)
-                } else {
-                    for (i, a) in out.iter().enumerate() {
-                        print_qr(&a, i != out.len() - 1).expect("print_qr");
-                    }
-                    Ok(())
-                }
-            })
+            claim_neurons::exec(&pem).and_then(|out| print_vec(qr, &out))
         }
         Command::ListProposals(opts) => {
             runtime.block_on(async { list_proposals::exec(opts).await })
@@ -157,4 +112,18 @@ where
             .expect("Failed to read line");
     }
     Ok(())
+}
+
+fn print_vec<T>(qr: bool, arg: &[T]) -> AnyhowResult
+where
+    T: serde::ser::Serialize,
+{
+    if !qr {
+        print(arg)
+    } else {
+        for (i, a) in arg.iter().enumerate() {
+            print_qr(&a, i != arg.len() - 1).expect("print_qr");
+        }
+        Ok(())
+    }
 }
