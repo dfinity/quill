@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::{require_pem, AnyhowResult};
+use crate::lib::{qr, require_pem, AnyhowResult};
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -40,29 +40,74 @@ pub enum Command {
     Generate(generate::GenerateOpts),
 }
 
-pub fn exec(pem: &Option<String>, cmd: Command) -> AnyhowResult {
+pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
         Command::Transfer(opts) => {
             let pem = require_pem(pem)?;
-            transfer::exec(&pem, opts).and_then(|out| print(&out))
+            transfer::exec(&pem, opts).and_then(|out| {
+                if !qr {
+                    print(&out)
+                } else {
+                    for (i, a) in out.iter().enumerate() {
+                        print_qr(&a, i != out.len() - 1).expect("print_qr");
+                    }
+                    Ok(())
+                }
+            })
         }
         Command::NeuronStake(opts) => {
             let pem = require_pem(pem)?;
-            neuron_stake::exec(&pem, opts).and_then(|out| print(&out))
+            neuron_stake::exec(&pem, opts).and_then(|out| {
+                if !qr {
+                    print(&out)
+                } else {
+                    for (i, a) in out.iter().enumerate() {
+                        print_qr(&a, i != out.len() - 1).expect("print_qr");
+                    }
+                    Ok(())
+                }
+            })
         }
         Command::NeuronManage(opts) => {
             let pem = require_pem(pem)?;
-            neuron_manage::exec(&pem, opts).and_then(|out| print(&out))
+            neuron_manage::exec(&pem, opts).and_then(|out| {
+                if !qr {
+                    print(&out)
+                } else {
+                    for (i, a) in out.iter().enumerate() {
+                        print_qr(&a, i != out.len() - 1).expect("print_qr");
+                    }
+                    Ok(())
+                }
+            })
         }
         Command::ListNeurons(opts) => {
             let pem = require_pem(pem)?;
-            list_neurons::exec(&pem, opts).and_then(|out| print(&out))
+            list_neurons::exec(&pem, opts).and_then(|out| {
+                if !qr {
+                    print(&out)
+                } else {
+                    for (i, a) in out.iter().enumerate() {
+                        print_qr(&a, i != out.len() - 1).expect("print_qr");
+                    }
+                    Ok(())
+                }
+            })
         }
         Command::ClaimNeurons => {
             let pem = require_pem(pem)?;
-            claim_neurons::exec(&pem).and_then(|out| print(&out))
+            claim_neurons::exec(&pem).and_then(|out| {
+                if !qr {
+                    print(&out)
+                } else {
+                    for (i, a) in out.iter().enumerate() {
+                        print_qr(&a, i != out.len() - 1).expect("print_qr");
+                    }
+                    Ok(())
+                }
+            })
         }
         Command::ListProposals(opts) => {
             runtime.block_on(async { list_proposals::exec(opts).await })
@@ -91,6 +136,25 @@ where
             eprintln!("{}", e);
             std::process::exit(1);
         }
+    }
+    Ok(())
+}
+
+fn print_qr<T>(arg: &T, pause: bool) -> AnyhowResult
+where
+    T: serde::ser::Serialize,
+{
+    let json = serde_json::to_string(&arg)?;
+    let mut e = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    e.write_all(json.as_bytes()).unwrap();
+    let json = e.finish().unwrap();
+    let json = base64::encode(json);
+    qr::print_qr(json.as_str());
+    if pause {
+        let mut input_string = String::new();
+        std::io::stdin()
+            .read_line(&mut input_string)
+            .expect("Failed to read line");
     }
     Ok(())
 }

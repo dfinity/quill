@@ -11,6 +11,10 @@ pub struct CliOpts {
     #[clap(long)]
     pem_file: Option<String>,
 
+    /// Output the result as an ASCII QR code.
+    #[clap(long)]
+    qr: bool,
+
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -34,7 +38,7 @@ fn main() {
             std::process::exit(1);
         }),
     });
-    if let Err(err) = commands::exec(&pem, command) {
+    if let Err(err) = commands::exec(&pem, opts.qr, command) {
         eprintln!("{}", err);
         std::process::exit(1);
     }
