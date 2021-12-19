@@ -1301,7 +1301,7 @@ fn get_bit(x: u32, i: i32) -> bool {
 
 // Prints the given QrCode object to the console.
 pub fn print_qr(text: &str) {
-    let errcorlvl: QrCodeEcc = QrCodeEcc::Low; // Error correction level
+    let errcorlvl: QrCodeEcc = QrCodeEcc::Medium; // Error correction level
 
     // Make and print the QR Code symbol
     let qr: QrCode = QrCode::encode_text(text, errcorlvl).unwrap();
