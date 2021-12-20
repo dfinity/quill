@@ -1309,16 +1309,11 @@ pub fn print_qr(text: &str) {
     let border: i32 = 4;
     for y in -border / 2..qr.size() / 2 + border / 2 + 1 {
         for x in -border..qr.size() + border {
-            let c: char = if !qr.get_module(x, y * 2) {
-                if !qr.get_module(x, y * 2 + 1) {
-                    '█'
-                } else {
-                    '▀'
-                }
-            } else if !qr.get_module(x, y * 2 + 1) {
-                '▄'
-            } else {
-                ' '
+            let c = match (!qr.get_module(x, y * 2), !qr.get_module(x, y * 2 + 1)) {
+                (true, true) => '█',
+                (true, false) => '▀',
+                (false, true) => '▄',
+                (false, false) => ' ',
             };
             print!("{0}", c);
         }
