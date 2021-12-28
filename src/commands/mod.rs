@@ -38,6 +38,8 @@ pub enum Command {
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
+    /// Print QR Scanner Dapp QR code: scan to start Dapp to submit QR results.
+    ScannerQRCode,
 }
 
 pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
@@ -75,6 +77,30 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),
+        Command::ScannerQRCode => {
+            println!(
+                "█████████████████████████████████████
+█████████████████████████████████████
+████ ▄▄▄▄▄ █▀█ █▄▀▄▀▄█ ▄ █ ▄▄▄▄▄ ████
+████ █   █ █▀▀▀█ ▀▀█▄▀████ █   █ ████
+████ █▄▄▄█ █▀ █▀▀██▀▀█ ▄ █ █▄▄▄█ ████
+████▄▄▄▄▄▄▄█▄▀ ▀▄█ ▀▄█▄█▄█▄▄▄▄▄▄▄████
+████▄▄▄▄ ▀▄  ▄▀▄ ▄ █▀▄▀▀▀ ▀ ▀▄█▄▀████
+████▄█  █ ▄█▀█▄▀█▄  ▄▄ █ █   ▀█▀█████
+████▄▀ ▀ █▄▄▄ ▄   █▄▀   █ ▀▀▀▄▄█▀████
+████▄██▀▄▀▄▄ █▀█ ▄▄▄▄███▄█▄▀ ▄▄▀█████
+████ ▀▄▀▄█▄▀▄▄▄▀█ ▄▄▀▄▀▀▀▄▀▀▀▄ █▀████
+████ █▀██▀▄██▀▄█ █▀  █▄█▄▀▀  █▄▀█████
+████▄████▄▄▄  ▀▀█▄▄██▄▀█ ▄▄▄ ▀   ████
+████ ▄▄▄▄▄ █▄▄██▀▄▀ ▄█▄  █▄█ ▄▄▀█████
+████ █   █ █  █▀▄▄▀▄ ▄▀▀▄▄▄ ▄▀ ▄▀████
+████ █▄▄▄█ █ █▄▀▄██ ██▄█▀ ▄█  ▄ █████
+████▄▄▄▄▄▄▄█▄▄▄▄▄▄██▄▄█▄████▄▄▄██████
+█████████████████████████████████████
+█████████████████████████████████████"
+            );
+            Ok(())
+        }
     }
 }
 
