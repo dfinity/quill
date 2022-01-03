@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+use bip39::Mnemonic;
 use clap::{crate_version, Parser};
 mod commands;
 mod lib;
@@ -11,6 +12,10 @@ pub struct CliOpts {
     #[clap(long)]
     pem_file: Option<String>,
 
+    /// Path to your seed file (use "-" for STDIN)
+    #[clap(long)]
+    seed_file: Option<String>,
+
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -18,7 +23,25 @@ pub struct CliOpts {
 fn main() {
     let opts = CliOpts::parse();
     let command = opts.command;
-    let pem = opts.pem_file.map(|path| match path.as_str() {
+    // Get PEM from the file if provided, or try to convert from the seed file
+    let pem = match opts.pem_file {
+        Some(path) => Some(read_file(path)),
+        None => opts.seed_file.map(|path| {
+            let phrase = read_file(path);
+            lib::mnemonic_to_pem(
+                &Mnemonic::parse(phrase)
+                    .expect("Couldn't parse the seed phrase as a valid mnemonic"),
+            )
+        }),
+    };
+    if let Err(err) = commands::exec(&pem, command) {
+        eprintln!("{}", err);
+        std::process::exit(1);
+    }
+}
+
+fn read_file(path: String) -> String {
+    match path.as_str() {
         // read from STDIN
         "-" => {
             let mut buffer = String::new();
@@ -33,9 +56,5 @@ fn main() {
             eprintln!("Couldn't read PEM file: {:?}", err);
             std::process::exit(1);
         }),
-    });
-    if let Err(err) = commands::exec(&pem, command) {
-        eprintln!("{}", err);
-        std::process::exit(1);
     }
 }
