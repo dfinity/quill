@@ -29,7 +29,13 @@ fn get_public_ids(
             let principal_id = ic_types::Principal::from_text(principal_id)?;
             Ok((principal_id, get_account_id(principal_id)?))
         }
-        None => get_ids(auth),
+        None => {
+            if let AuthInfo::NoAuth = auth {
+                panic!("public-ids cannot be used without specifying a private key")
+            } else {
+                get_ids(auth)
+            }
+        }
     }
 }
 
