@@ -1,14 +1,12 @@
-use crate::lib::{get_identity, AnyhowResult, AuthInfo};
+use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
 use clap::Parser;
-use ic_base_types::PrincipalId;
 use ic_types::principal::Principal;
 use ledger_canister::AccountIdentifier;
-use std::convert::TryFrom;
 
 #[derive(Parser)]
 pub struct PublicOpts {
-    // Principal for which to get the account_id.
+    /// Principal for which to get the account_id.
     #[clap(long)]
     principal_id: Option<String>,
 }
@@ -39,10 +37,4 @@ fn get_public_ids(
 pub fn get_ids(auth: &AuthInfo) -> AnyhowResult<(Principal, AccountIdentifier)> {
     let principal_id = get_identity(auth).sender().map_err(|e| anyhow!(e))?;
     Ok((principal_id, get_account_id(principal_id)?))
-}
-
-fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
-    let base_types_principal =
-        PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
-    Ok(AccountIdentifier::new(base_types_principal, None))
 }

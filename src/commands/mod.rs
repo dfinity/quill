@@ -7,6 +7,7 @@ use tokio::runtime::Runtime;
 
 mod account_balance;
 mod claim_neurons;
+mod generate;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;
@@ -30,14 +31,16 @@ pub enum Command {
     ClaimNeurons,
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
-    /// Signs the query for all neurons belonging to the signin principal.
+    /// Signs the query for all neurons belonging to the signing principal.
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
-    /// Queries a ledger account balance
+    /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Update node provider details
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
+    /// Generate a mnemonic seed phrase and generate or recover PEM.
+    Generate(generate::GenerateOpts),
 }
 
 pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
@@ -62,6 +65,7 @@ pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
             update_node_provider::exec(auth, opts).and_then(|out| print(&out))
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
+        Command::Generate(opts) => generate::exec(opts),
     }
 }
 
