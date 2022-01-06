@@ -22,11 +22,11 @@ use std::str::FromStr;
     Copy,
     Hash,
     Debug,
+    Default,
     PartialEq,
     Eq,
     PartialOrd,
     Ord,
-    Default,
 )]
 pub struct Memo(pub u64);
 
