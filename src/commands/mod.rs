@@ -14,6 +14,7 @@ mod list_proposals;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
+mod qrcode;
 mod request_status;
 mod send;
 mod transfer;
@@ -38,8 +39,10 @@ pub enum Command {
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
-    /// Print QR Scanner Dapp QR code: scan to start Dapp to submit QR results.
+    /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
+    /// Print QR code for data e.g. principal id.
+    QRCode(qrcode::QRCodeOpts),
 }
 
 pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
@@ -77,6 +80,8 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),
+        // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
+        // Source code: https://github.com/ninegua/ic-qr-scanner
         Command::ScannerQRCode => {
             println!(
                 "█████████████████████████████████████
@@ -101,6 +106,7 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
             );
             Ok(())
         }
+        Command::QRCode(opts) => qrcode::exec(opts),
     }
 }
 
