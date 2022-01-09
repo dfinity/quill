@@ -16,6 +16,10 @@ pub struct CliOpts {
     #[clap(long)]
     seed_file: Option<String>,
 
+    /// Output the result(s) as UTF-8 QR codes.
+    #[clap(long)]
+    qr: bool,
+
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -34,7 +38,7 @@ fn main() {
             )
         }),
     };
-    if let Err(err) = commands::exec(&pem, command) {
+    if let Err(err) = commands::exec(&pem, opts.qr, command) {
         eprintln!("{}", err);
         std::process::exit(1);
     }
