@@ -8,6 +8,7 @@ use tokio::runtime::Runtime;
 mod account_balance;
 mod claim_neurons;
 mod generate;
+mod get_neuron_info;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;
@@ -35,6 +36,7 @@ pub enum Command {
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
+    GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
@@ -74,6 +76,9 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
         }
         Command::GetProposalInfo(opts) => {
             runtime.block_on(async { get_proposal_info::exec(opts).await })
+        }
+        Command::GetNeuronInfo(opts) => {
+            runtime.block_on(async { get_neuron_info::exec(opts).await })
         }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
