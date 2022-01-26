@@ -3,6 +3,7 @@
 use crate::lib::{qr, require_pem, AnyhowResult};
 use clap::Parser;
 use std::io::{self, Write};
+use anyhow::anyhow;
 use tokio::runtime::Runtime;
 
 mod account_balance;
@@ -154,7 +155,8 @@ where
         print(arg)
     } else {
         for (i, a) in arg.iter().enumerate() {
-            print_qr(&a, i != arg.len() - 1).expect("print_qr");
+            print_qr(&a, i != arg.len() - 1)
+                .map_err(|err| anyhow!("Failed to print QR: {}", err))?;
         }
         Ok(())
     }
