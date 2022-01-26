@@ -46,7 +46,9 @@ fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> Result<Optio
         (_, Some(seed_file)) => {
             let seed = read_file(&seed_file, "seed")?;
             let mnemonic = parse_mnemonic(&seed)?;
-            Ok(Some(lib::mnemonic_to_pem(&mnemonic)))
+            let mnemonic = lib::mnemonic_to_pem(&mnemonic)
+                .map_err(|err| format!("{}", err))?;
+            Ok(Some(mnemonic))
         },
         _ => Ok(None)
     }
@@ -102,7 +104,7 @@ fn test_read_pem_from_seed_file() {
 
     let phrase = "ozone drill grab fiber curtain grace pudding thank cruise elder eight about";
     seed_file.write(phrase.as_bytes()).expect("Cannot write to temp file");
-    let mnemonic = lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap());
+    let mnemonic = lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
 
     let pem = read_pem(None, Some(seed_file.path().to_str().unwrap().to_string()))
         .expect("Unable to read seed_file")

@@ -38,7 +38,7 @@ pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithReques
         opts.memo
             .unwrap_or_else(|| "0".to_string())
             .parse::<u64>()
-            .unwrap(),
+            .map_err(|err| anyhow!("Unable to parse memo: {}", err))?,
     );
     let to = opts.to;
 

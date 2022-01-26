@@ -8,15 +8,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
-    let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
+    let canister_id = Principal::from_text(&req.canister_id)
+        .map_err(|err| anyhow!("Couldn't parse canister id: {}", err))?;
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
     let mut agent = get_agent("")?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
-                .unwrap(),
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())?,
         ),
     });
     let Replied::CallReplied(blob) = async {
@@ -60,6 +60,7 @@ pub(crate) struct ProxySignReplicaV2Transport {
 use ic_agent::agent::ReplicaV2Transport;
 use std::future::Future;
 use std::pin::Pin;
+use ic_agent::AgentError::MessageError;
 
 impl ReplicaV2Transport for ProxySignReplicaV2Transport {
     fn read_state<'a>(
@@ -67,10 +68,15 @@ impl ReplicaV2Transport for ProxySignReplicaV2Transport {
         _canister_id: Principal,
         _content: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
-        self.http_transport.read_state(
-            Principal::from_text(self.req.canister_id.clone()).unwrap(),
-            hex::decode(self.req.content.clone()).unwrap(),
-        )
+        async fn run(transport: &ProxySignReplicaV2Transport) -> Result<Vec<u8>, AgentError> {
+            let canister_id = Principal::from_text(transport.req.canister_id.clone())
+                .map_err(|err| MessageError(format!("Unable to parse canister_id: {}", err)))?;
+            let envelope = hex::decode(transport.req.content.clone())
+                .map_err(|err| MessageError(format!("Unable to decode request content (should be hexadecimal encoded): {}", err)))?;
+            transport.http_transport.read_state(canister_id, envelope).await
+        }
+
+        Box::pin(run(&self))
     }
 
     fn call<'a>(

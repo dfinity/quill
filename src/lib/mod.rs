@@ -196,8 +196,8 @@ pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::
 }
 
 /// Converts menmonic to PEM format
-pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
-    fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
+pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
+    fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> AnyhowResult<Vec<u8>> {
         let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));
         let data = Sequence(
             0,
@@ -218,18 +218,21 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
                 ),
             ],
         );
-        to_der(&data).expect("Cannot encode secret key.")
+        to_der(&data)
+            .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the secret key cannot be encoded. The cause is: {}", err))
     }
 
     let seed = mnemonic.to_seed("");
-    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0").unwrap();
+    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0")
+        .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the extended private key cannot be derived. The cause is: {:?}", err))?;
     let secret = ext.secret();
-    let secret_key = SecretKey::parse(&secret).unwrap();
+    let secret_key = SecretKey::parse(&secret)
+        .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the secret key cannot be parsed. The cause is: {}", err))?;
     let public_key = PublicKey::from_secret_key(&secret_key);
-    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec());
+    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec())?;
     let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
-    encode(&pem).replace("\r", "").replace("\n\n", "\n")
+    Ok(encode(&pem).replace("\r", "").replace("\n\n", "\n"))
 }
