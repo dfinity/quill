@@ -38,7 +38,7 @@ pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithReques
         opts.memo
             .unwrap_or_else(|| "0".to_string())
             .parse::<u64>()
-            .map_err(|err| anyhow!("Unable to parse memo: {}", err))?,
+            .map_err(|err| anyhow!("Couldn't parse memo as unsigned integer: {}", err))?,
     );
     let to = opts.to;
 
@@ -58,7 +58,7 @@ pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithReques
 fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
     let parse = |s: &str| {
         s.parse::<u64>()
-            .map_err(|err| format!("Couldn't parse as u64: {:?}", err))
+            .map_err(|err| format!("Couldn't parse ICPTs as unsigned integer: {:?}", err))
     };
     match &amount.split('.').collect::<Vec<_>>().as_slice() {
         [icpts] => ICPTs::new(parse(icpts)?, 0),
