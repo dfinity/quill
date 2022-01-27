@@ -58,9 +58,9 @@ pub(crate) struct ProxySignReplicaV2Transport {
 }
 
 use ic_agent::agent::ReplicaV2Transport;
+use ic_agent::AgentError::MessageError;
 use std::future::Future;
 use std::pin::Pin;
-use ic_agent::AgentError::MessageError;
 
 impl ReplicaV2Transport for ProxySignReplicaV2Transport {
     fn read_state<'a>(
@@ -71,12 +71,19 @@ impl ReplicaV2Transport for ProxySignReplicaV2Transport {
         async fn run(transport: &ProxySignReplicaV2Transport) -> Result<Vec<u8>, AgentError> {
             let canister_id = Principal::from_text(transport.req.canister_id.clone())
                 .map_err(|err| MessageError(format!("Unable to parse canister_id: {}", err)))?;
-            let envelope = hex::decode(transport.req.content.clone())
-                .map_err(|err| MessageError(format!("Unable to decode request content (should be hexadecimal encoded): {}", err)))?;
-            transport.http_transport.read_state(canister_id, envelope).await
+            let envelope = hex::decode(transport.req.content.clone()).map_err(|err| {
+                MessageError(format!(
+                    "Unable to decode request content (should be hexadecimal encoded): {}",
+                    err
+                ))
+            })?;
+            transport
+                .http_transport
+                .read_state(canister_id, envelope)
+                .await
         }
 
-        Box::pin(run(&self))
+        Box::pin(run(self))
     }
 
     fn call<'a>(

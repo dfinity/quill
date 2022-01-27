@@ -35,8 +35,7 @@ fn main() {
 
 fn run(opts: CliOpts) -> Result<(), String> {
     let pem = read_pem(opts.pem_file, opts.seed_file)?;
-    commands::exec(&pem, opts.qr, opts.command)
-        .map_err(|err| format!("{}", err))
+    commands::exec(&pem, opts.qr, opts.command).map_err(|err| format!("{}", err))
 }
 
 // Get PEM from the file if provided, or try to convert from the seed file
@@ -46,18 +45,20 @@ fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> Result<Optio
         (_, Some(seed_file)) => {
             let seed = read_file(&seed_file, "seed")?;
             let mnemonic = parse_mnemonic(&seed)?;
-            let mnemonic = lib::mnemonic_to_pem(&mnemonic)
-                .map_err(|err| format!("{}", err))?;
+            let mnemonic = lib::mnemonic_to_pem(&mnemonic).map_err(|err| format!("{}", err))?;
             Ok(Some(mnemonic))
-        },
-        _ => Ok(None)
+        }
+        _ => Ok(None),
     }
 }
 
 fn parse_mnemonic(phrase: &str) -> Result<Mnemonic, String> {
-    Mnemonic::parse(phrase)
-        .map_err(|err|
-            format!("Couldn't parse the seed phrase as a valid mnemonic. {:?}", err))
+    Mnemonic::parse(phrase).map_err(|err| {
+        format!(
+            "Couldn't parse the seed phrase as a valid mnemonic. {:?}",
+            err
+        )
+    })
 }
 
 fn read_file(path: &str, name: &str) -> Result<String, String> {
@@ -68,12 +69,11 @@ fn read_file(path: &str, name: &str) -> Result<String, String> {
             use std::io::Read;
             match std::io::stdin().read_to_string(&mut buffer) {
                 Ok(_) => Ok(buffer),
-                Err(err) => Err(format!("Couldn't read {} from STDIN: {:?}", name, err))
+                Err(err) => Err(format!("Couldn't read {} from STDIN: {:?}", name, err)),
             }
         }
-        path => std::fs::read_to_string(path).map_err(|err|
-            format!("Couldn't read {} file: {:?}", name, err)
-        ),
+        path => std::fs::read_to_string(path)
+            .map_err(|err| format!("Couldn't read {} file: {:?}", name, err)),
     }
 }
 
@@ -89,7 +89,9 @@ fn test_read_pem_from_pem_file() {
     let mut pem_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
 
     let content = "pem".to_string();
-    pem_file.write(content.as_bytes()).expect("Cannot write to temp file");
+    pem_file
+        .write_all(content.as_bytes())
+        .expect("Cannot write to temp file");
 
     let res = read_pem(Some(pem_file.path().to_str().unwrap().to_string()), None);
 
@@ -103,7 +105,9 @@ fn test_read_pem_from_seed_file() {
     let mut seed_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
 
     let phrase = "ozone drill grab fiber curtain grace pudding thank cruise elder eight about";
-    seed_file.write(phrase.as_bytes()).expect("Cannot write to temp file");
+    seed_file
+        .write_all(phrase.as_bytes())
+        .expect("Cannot write to temp file");
     let mnemonic = lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
 
     let pem = read_pem(None, Some(seed_file.path().to_str().unwrap().to_string()))
@@ -116,12 +120,15 @@ fn test_read_pem_from_seed_file() {
 #[test]
 fn test_read_pem_from_non_existing_file() {
     let dir = tempfile::tempdir().expect("Cannot create temp dir");
-    let non_existing_file = dir.path().join("non_existing_pem_file")
-        .as_path().to_str().unwrap().to_string();
+    let non_existing_file = dir
+        .path()
+        .join("non_existing_pem_file")
+        .as_path()
+        .to_str()
+        .unwrap()
+        .to_string();
 
-    read_pem(Some(non_existing_file.clone()), None)
-        .unwrap_err();
+    read_pem(Some(non_existing_file.clone()), None).unwrap_err();
 
-    read_pem(None, Some(non_existing_file))
-        .unwrap_err();
+    read_pem(None, Some(non_existing_file)).unwrap_err();
 }

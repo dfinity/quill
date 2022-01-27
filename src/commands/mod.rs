@@ -1,9 +1,9 @@
 //! This module implements the command-line API.
 
 use crate::lib::{qr, require_pem, AnyhowResult};
+use anyhow::anyhow;
 use clap::Parser;
 use std::io::{self, Write};
-use anyhow::anyhow;
 use tokio::runtime::Runtime;
 
 mod account_balance;

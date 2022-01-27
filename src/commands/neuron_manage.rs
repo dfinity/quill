@@ -252,8 +252,9 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
                         "SEVEN_YEARS" => ONE_YEAR_SECONDS * 7,
                         "EIGHT_YEARS" => ONE_YEAR_SECONDS * 8,
 
-                        s => s.parse::<u32>()
-                              .map_err(|err| anyhow!("Couldn't parse the dissolve delay: {}", err))?,
+                        s => s
+                            .parse::<u32>()
+                            .map_err(|err| anyhow!("Couldn't parse the dissolve delay: {}", err))?,
                     }
                 }))
             })),
