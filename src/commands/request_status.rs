@@ -1,9 +1,12 @@
 use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult};
 use anyhow::{anyhow, Context};
-use ic_agent::agent::{Replied, RequestStatusResponse};
+use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
+use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
+use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -56,11 +59,6 @@ pub(crate) struct ProxySignReplicaV2Transport {
     req: RequestStatus,
     http_transport: Arc<dyn 'static + ReplicaV2Transport + Send + Sync>,
 }
-
-use ic_agent::agent::ReplicaV2Transport;
-use ic_agent::AgentError::MessageError;
-use std::future::Future;
-use std::pin::Pin;
 
 impl ReplicaV2Transport for ProxySignReplicaV2Transport {
     fn read_state<'a>(
