@@ -49,7 +49,7 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         _ => return Err(anyhow!("Words must be 12 or 24.")),
     };
     let mnemonic = match opts.phrase {
-        Some(phrase) => Mnemonic::parse(phrase)?,
+        Some(phrase) => Mnemonic::parse(phrase).context("Failed to parse mnemonic")?,
         None => {
             let mut key = vec![0u8; bytes];
             OsRng.fill_bytes(&mut key);
