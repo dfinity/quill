@@ -19,7 +19,7 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())?,
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url()).context("Failed to create an agent")?,
         ),
     });
     let Replied::CallReplied(blob) = async {
