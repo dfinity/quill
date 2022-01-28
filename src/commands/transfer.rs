@@ -29,10 +29,9 @@ pub struct TransferOpts {
 }
 
 pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let amount =
-        parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
+    let amount = parse_icpts(&opts.amount).context("Cannot parse amount")?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
-        parse_icpts(&v).map_err(|err| anyhow!(err))
+        parse_icpts(&v).context("Cannot parse fee")
     })?;
     let memo = Memo(
         opts.memo

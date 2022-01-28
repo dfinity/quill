@@ -11,15 +11,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
-    let canister_id = Principal::from_text(&req.canister_id)
-        .context("Failed to parse the canister id")?;
-    let request_id =
-        RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
+    let canister_id =
+        Principal::from_text(&req.canister_id).context("Cannot parse the canister id")?;
+    let request_id = RequestId::from_str(&req.request_id).context("Cannot parse the request_id")?;
     let mut agent = get_agent("")?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url()).context("Failed to create an agent")?,
+            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
+                .context("Failed to create an agent")?,
         ),
     });
     let Replied::CallReplied(blob) = async {
