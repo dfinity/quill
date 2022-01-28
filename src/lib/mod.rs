@@ -227,7 +227,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.secret();
     let secret_key = SecretKey::parse(&secret)
-        .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the secret key cannot be parsed. The cause is: {}", err))?;
+        .context("Failed to parse secret key")?;
     let public_key = PublicKey::from_secret_key(&secret_key);
     let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec())?;
     let pem = Pem {
