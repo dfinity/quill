@@ -156,7 +156,7 @@ where
     } else {
         for (i, a) in arg.iter().enumerate() {
             print_qr(&a, i != arg.len() - 1)
-                .map_err(|err| anyhow!("Failed to print QR: {}", err))?;
+                .context("Failed to print QR code")?;
         }
         Ok(())
     }
