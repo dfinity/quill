@@ -3,7 +3,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
 use clap::Parser;
 use ic_types::Principal;

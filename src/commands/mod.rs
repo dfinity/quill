@@ -1,7 +1,7 @@
 //! This module implements the command-line API.
 
 use crate::lib::{qr, require_pem, AnyhowResult};
-use anyhow::anyhow;
+use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -155,8 +155,7 @@ where
         print(arg)
     } else {
         for (i, a) in arg.iter().enumerate() {
-            print_qr(&a, i != arg.len() - 1)
-                .context("Failed to print QR code")?;
+            print_qr(&a, i != arg.len() - 1).context("Failed to print QR code")?;
         }
         Ok(())
     }

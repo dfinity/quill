@@ -1,5 +1,5 @@
 use crate::lib::{mnemonic_to_pem, AnyhowResult};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bip39::{Language, Mnemonic};
 use clap::Parser;
 use rand::{rngs::OsRng, RngCore};
