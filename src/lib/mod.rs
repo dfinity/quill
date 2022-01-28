@@ -49,12 +49,13 @@ pub fn genesis_token_canister_id() -> Principal {
 pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     if canister_id == governance_canister_id() {
         String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
-            .map_err(|e| anyhow!(e))
+            .context("Cannot load governance.did")
     } else if canister_id == ledger_canister_id() {
         String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
-            .map_err(|e| anyhow!(e))
+            .context("Cannot load ledger.did")
     } else if canister_id == genesis_token_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec()).map_err(|e| anyhow!(e))
+        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
+            .context("Cannot load gtc.did")
     } else {
         unreachable!()
     }
@@ -101,10 +102,9 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
         std::io::stdin().read_to_string(&mut content)?;
     } else {
         let path = std::path::Path::new(&path);
-        let mut file =
-            std::fs::File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
+        let mut file = std::fs::File::open(&path).context("Cannot open the message file.")?;
         file.read_to_string(&mut content)
-            .map_err(|_| anyhow!("Cannot read the message file."))?;
+            .context("Cannot read the message file.")?;
     }
     Ok(content)
 }
@@ -158,7 +158,7 @@ pub fn parse_query_response(
     method_name: &str,
 ) -> AnyhowResult<String> {
     let cbor: Value = serde_cbor::from_slice(&response)
-        .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+        .context("Invalid cbor data in the content of the message.")?;
     if let Value::Map(m) = cbor {
         // Try to decode a rejected response.
         if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
