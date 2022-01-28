@@ -224,7 +224,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
 
     let seed = mnemonic.to_seed("");
     let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0")
-        .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the extended private key cannot be derived. The cause is: {:?}", err))?;
+        .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.secret();
     let secret_key = SecretKey::parse(&secret)
         .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the secret key cannot be parsed. The cause is: {}", err))?;
