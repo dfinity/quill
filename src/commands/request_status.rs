@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id)
-        .map_err(|err| anyhow!("Couldn't parse canister id: {}", err))?;
+        .context("Failed to parse the canister id")?;
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
     let mut agent = get_agent("")?;
