@@ -219,7 +219,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
             ],
         );
         to_der(&data)
-            .map_err(|err| anyhow!("Cannot convert mnemonic to pem because the secret key cannot be encoded. The cause is: {}", err))
+            .context("Failed to encode secp256k1 secret key to DER")
     }
 
     let seed = mnemonic.to_seed("");
