@@ -254,7 +254,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
 
                         s => s
                             .parse::<u32>()
-                            .map_err(|err| anyhow!("Couldn't parse the dissolve delay: {}", err))?,
+                            .context("Failed to parse the dissolve delay")?,
                     }
                 }))
             })),
