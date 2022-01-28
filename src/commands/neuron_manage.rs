@@ -354,5 +354,5 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
 fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
     id.replace("_", "")
         .parse()
-        .map_err(|err| anyhow!("Couldn't parse the neuron id: {}", err))
+        .context("Failed to parse the neuron id")
 }
