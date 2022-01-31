@@ -1,7 +1,7 @@
 use crate::lib::get_idl_string;
 use crate::lib::AnyhowResult;
 use crate::lib::{get_candid_type, get_local_candid};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use ic_agent::agent::QueryBuilder;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
@@ -53,7 +53,7 @@ pub struct IngressWithRequestId {
 impl Ingress {
     pub fn parse(&self) -> AnyhowResult<(Principal, Principal, String, String)> {
         let cbor: Value = serde_cbor::from_slice(&hex::decode(&self.content)?)
-            .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+            .context("Invalid cbor data in the content of the message.")?;
         if let Value::Map(m) = cbor {
             let cbor_content = m
                 .get(&Value::Text("content".to_string()))
@@ -154,7 +154,7 @@ pub fn sign_ingress_with_request_status_query(
     let msg_with_req_id = sign(pem, canister_id, method_name, args)?;
     let request_id = msg_with_req_id
         .request_id
-        .expect("No request id for transfer call found");
+        .context("No request id for transfer call found")?;
     let request_status = request_status_sign(pem, request_id, canister_id)?;
     let message = IngressWithRequestId {
         ingress: msg_with_req_id.message,

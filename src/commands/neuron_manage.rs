@@ -3,7 +3,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
 use clap::Parser;
 use ic_types::Principal;
@@ -166,7 +166,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
-        id: parse_neuron_id(opts.neuron_id),
+        id: parse_neuron_id(opts.neuron_id)?,
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
@@ -252,7 +252,9 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
                         "SEVEN_YEARS" => ONE_YEAR_SECONDS * 7,
                         "EIGHT_YEARS" => ONE_YEAR_SECONDS * 8,
 
-                        s => s.parse::<u32>().expect("Couldn't parse the dissolve delay"),
+                        s => s
+                            .parse::<u32>()
+                            .context("Failed to parse the dissolve delay")?,
                     }
                 }))
             })),
@@ -298,7 +300,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
             id,
             command: Some(Command::Merge(Merge {
                 source_neuron_id: NeuronId {
-                    id: parse_neuron_id(neuron_id)
+                    id: parse_neuron_id(neuron_id)?
                 },
             })),
             neuron_id_or_subaccount: None,
@@ -349,8 +351,8 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
     Ok(generated)
 }
 
-fn parse_neuron_id(id: String) -> u64 {
+fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
     id.replace("_", "")
         .parse()
-        .expect("Couldn't parse the neuron id")
+        .context("Failed to parse the neuron id")
 }

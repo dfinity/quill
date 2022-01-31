@@ -1,22 +1,25 @@
 use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult};
 use anyhow::{anyhow, Context};
-use ic_agent::agent::{Replied, RequestStatusResponse};
+use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
+use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
 use ic_types::Principal;
+use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
-    let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
-    let request_id =
-        RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
+    let canister_id =
+        Principal::from_text(&req.canister_id).context("Cannot parse the canister id")?;
+    let request_id = RequestId::from_str(&req.request_id).context("Cannot parse the request_id")?;
     let mut agent = get_agent("")?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
-                .unwrap(),
+                .context("Failed to create an agent")?,
         ),
     });
     let Replied::CallReplied(blob) = async {
@@ -57,20 +60,28 @@ pub(crate) struct ProxySignReplicaV2Transport {
     http_transport: Arc<dyn 'static + ReplicaV2Transport + Send + Sync>,
 }
 
-use ic_agent::agent::ReplicaV2Transport;
-use std::future::Future;
-use std::pin::Pin;
-
 impl ReplicaV2Transport for ProxySignReplicaV2Transport {
     fn read_state<'a>(
         &'a self,
         _canister_id: Principal,
         _content: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
-        self.http_transport.read_state(
-            Principal::from_text(self.req.canister_id.clone()).unwrap(),
-            hex::decode(self.req.content.clone()).unwrap(),
-        )
+        async fn run(transport: &ProxySignReplicaV2Transport) -> Result<Vec<u8>, AgentError> {
+            let canister_id = Principal::from_text(transport.req.canister_id.clone())
+                .map_err(|err| MessageError(format!("Unable to parse canister_id: {}", err)))?;
+            let envelope = hex::decode(transport.req.content.clone()).map_err(|err| {
+                MessageError(format!(
+                    "Unable to decode request content (should be hexadecimal encoded): {}",
+                    err
+                ))
+            })?;
+            transport
+                .http_transport
+                .read_state(canister_id, envelope)
+                .await
+        }
+
+        Box::pin(run(self))
     }
 
     fn call<'a>(
