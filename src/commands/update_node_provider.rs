@@ -22,7 +22,10 @@ pub struct UpdateNodeProviderOpts {
     reward_account: String,
 }
 
-pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(
+    auth: &AuthInfo,
+    opts: UpdateNodeProviderOpts,
+) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let reward_account = ledger_canister::AccountIdentifier::from_hex(&opts.reward_account)
         .map_err(|e| {
             anyhow::Error::msg(format!(
