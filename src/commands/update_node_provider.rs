@@ -1,5 +1,5 @@
 use crate::{
-    lib::signing::{sign_ingress, Ingress},
+    lib::signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     lib::{governance_canister_id, AnyhowResult, AuthInfo},
 };
 use candid::{CandidType, Encode};
@@ -22,7 +22,7 @@ pub struct UpdateNodeProviderOpts {
     reward_account: String,
 }
 
-pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<Ingress>> {
+pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let reward_account = ledger_canister::AccountIdentifier::from_hex(&opts.reward_account)
         .map_err(|e| {
             anyhow::Error::msg(format!(
@@ -35,7 +35,7 @@ pub fn exec(auth: &AuthInfo, opts: UpdateNodeProviderOpts) -> AnyhowResult<Vec<I
             hash: reward_account.hash.to_vec()
         })
     })?;
-    Ok(vec![sign_ingress(
+    Ok(vec![sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
         "update_node_provider",
