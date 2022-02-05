@@ -10,11 +10,11 @@
 
 with pkgs; rustPlatform.buildRustPackage rec {
   pname = "quill";
-  version = "0.2.9";
+  version = "0.2.14";
 
   src = ./.;
 
-  cargoSha256 = "1x0gsg62nmf5l9avfd18qzdc9i9lm2y62qgkj9iwshgdfjqzavvy";
+  cargoSha256 = "sha256-t+N0UoVOJIxi1q0SBfCqxNIcmXVBo44hhKE0SllJ63M=";
 
   cargoBuildFlags = [];
 

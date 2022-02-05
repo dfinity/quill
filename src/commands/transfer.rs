@@ -4,7 +4,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
 use ledger_canister::{ICPTs, TRANSACTION_FEE};
@@ -29,16 +29,15 @@ pub struct TransferOpts {
 }
 
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let amount =
-        parse_icpts(&opts.amount).map_err(|err| anyhow!("Could not add ICPs and e8s: {}", err))?;
+    let amount = parse_icpts(&opts.amount).context("Cannot parse amount")?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
-        parse_icpts(&v).map_err(|err| anyhow!(err))
+        parse_icpts(&v).context("Cannot parse fee")
     })?;
     let memo = Memo(
         opts.memo
             .unwrap_or_else(|| "0".to_string())
             .parse::<u64>()
-            .unwrap(),
+            .context("Failed to parse memo as unsigned integer")?,
     );
     let to = opts.to;
 
@@ -55,26 +54,32 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     Ok(vec![msg])
 }
 
-fn parse_icpts(amount: &str) -> Result<ICPTs, String> {
+fn new_icps(icpt: u64, e8s: u64) -> AnyhowResult<ICPTs> {
+    ICPTs::new(icpt, e8s)
+        .map_err(|err| anyhow!(err))
+        .context("Cannot create new ICPs")
+}
+
+fn parse_icpts(amount: &str) -> AnyhowResult<ICPTs> {
     let parse = |s: &str| {
         s.parse::<u64>()
-            .map_err(|err| format!("Couldn't parse as u64: {:?}", err))
+            .context("Failed to parse ICPTs as unsigned integer")
     };
     match &amount.split('.').collect::<Vec<_>>().as_slice() {
-        [icpts] => ICPTs::new(parse(icpts)?, 0),
+        [icpts] => new_icps(parse(icpts)?, 0),
         [icpts, e8s] => {
             let mut e8s = e8s.to_string();
             while e8s.len() < 8 {
                 e8s.push('0');
             }
             let e8s = &e8s[..8];
-            ICPTs::new(parse(icpts)?, parse(e8s)?)
+            new_icps(parse(icpts)?, parse(e8s)?)
         }
-        _ => Err(format!("Can't parse amount {}", amount)),
+        _ => bail!("Cannot parse amount {}", amount),
     }
 }
 
-fn icpts_amount_validator(icpts: &str) -> Result<(), String> {
+fn icpts_amount_validator(icpts: &str) -> AnyhowResult<()> {
     parse_icpts(icpts).map(|_| ())
 }
 

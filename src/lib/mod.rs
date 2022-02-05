@@ -1,6 +1,6 @@
 //! All the common functionality.
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bip39::Mnemonic;
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -30,6 +30,7 @@ pub fn get_ic_url() -> String {
 }
 
 pub mod hsm;
+pub mod qr;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
@@ -86,12 +87,13 @@ pub fn genesis_token_canister_id() -> Principal {
 pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     if canister_id == governance_canister_id() {
         String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
-            .map_err(|e| anyhow!(e))
+            .context("Cannot load governance.did")
     } else if canister_id == ledger_canister_id() {
         String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
-            .map_err(|e| anyhow!(e))
+            .context("Cannot load ledger.did")
     } else if canister_id == genesis_token_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec()).map_err(|e| anyhow!(e))
+        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
+            .context("Cannot load gtc.did")
     } else {
         unreachable!()
     }
@@ -139,10 +141,9 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
         std::io::stdin().read_to_string(&mut content)?;
     } else {
         let path = std::path::Path::new(&path);
-        let mut file =
-            std::fs::File::open(&path).map_err(|_| anyhow!("Message file doesn't exist"))?;
+        let mut file = std::fs::File::open(&path).context("Cannot open the message file.")?;
         file.read_to_string(&mut content)
-            .map_err(|_| anyhow!("Cannot read the message file."))?;
+            .context("Cannot read the message file.")?;
     }
     Ok(content)
 }
@@ -209,7 +210,7 @@ pub fn parse_query_response(
     method_name: &str,
 ) -> AnyhowResult<String> {
     let cbor: Value = serde_cbor::from_slice(&response)
-        .map_err(|_| anyhow!("Invalid cbor data in the content of the message."))?;
+        .context("Invalid cbor data in the content of the message.")?;
     if let Value::Map(m) = cbor {
         // Try to decode a rejected response.
         if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
@@ -247,8 +248,8 @@ pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::
 }
 
 /// Converts menmonic to PEM format
-pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
-    fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
+pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
+    fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> AnyhowResult<Vec<u8>> {
         let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));
         let data = Sequence(
             0,
@@ -269,18 +270,20 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> String {
                 ),
             ],
         );
-        to_der(&data).expect("Cannot encode secret key.")
+        to_der(&data).context("Failed to encode secp256k1 secret key to DER")
     }
 
     let seed = mnemonic.to_seed("");
-    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0").unwrap();
+    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0")
+        .map_err(|err| anyhow!("{:?}", err))
+        .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.secret();
-    let secret_key = SecretKey::parse(&secret).unwrap();
+    let secret_key = SecretKey::parse(&secret).context("Failed to parse secret key")?;
     let public_key = PublicKey::from_secret_key(&secret_key);
-    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec());
+    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec())?;
     let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
-    encode(&pem).replace("\r", "").replace("\n\n", "\n")
+    Ok(encode(&pem).replace("\r", "").replace("\n\n", "\n"))
 }

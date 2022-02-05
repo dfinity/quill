@@ -4,7 +4,7 @@ use crate::lib::{
     signing::{Ingress, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use candid::CandidType;
 use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
@@ -153,7 +153,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                 &message
                     .clone()
                     .request_id
-                    .expect("Cannot get request_id from the update message"),
+                    .context("Cannot get request_id from the update message")?,
             )?;
             transport.call(canister_id, content, request_id).await?;
             let request_id = format!("0x{}", String::from(request_id));

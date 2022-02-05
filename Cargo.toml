@@ -1,6 +1,6 @@
 [package]
 name = "quill"
-version = "0.2.13"
+version = "0.2.14"
 authors = ["DFINITY Team"]
 edition = "2018"
 
@@ -10,9 +10,11 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.34"
+base64 = "0.13.0"
 bip39 = "1.0.1"
 candid = "0.7.8"
 clap = "3.0.0-beta.5"
+flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.10.0"
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
@@ -35,6 +37,9 @@ tokio = { version = "1.2.0", features = [ "fs" ] }
 pkcs11 = "0.5.0"
 thiserror = "1.0.20"
 rpassword = "4.0.0"
+
+[dev-dependencies]
+tempfile = "3.3.0"
 
 [features]
 static-ssl = ["openssl/vendored"]

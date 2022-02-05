@@ -1,6 +1,7 @@
 //! This module implements the command-line API.
 
-use crate::lib::{AnyhowResult, AuthInfo};
+use crate::lib::{qr, AnyhowResult, AuthInfo};
+use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
@@ -8,12 +9,14 @@ use tokio::runtime::Runtime;
 mod account_balance;
 mod claim_neurons;
 mod generate;
+mod get_neuron_info;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
+mod qrcode;
 mod request_status;
 mod send;
 mod transfer;
@@ -35,28 +38,42 @@ pub enum Command {
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
+    GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Update node provider details
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
+    /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
+    ScannerQRCode,
+    /// Print QR code for data e.g. principal id.
+    QRCode(qrcode::QRCodeOpts),
 }
 
-pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
+pub fn exec(auth: &AuthInfo, qr: bool, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(auth, opts),
-        Command::Transfer(opts) => transfer::exec(auth, opts).and_then(|out| print(&out)),
-        Command::NeuronStake(opts) => neuron_stake::exec(auth, opts).and_then(|out| print(&out)),
-        Command::NeuronManage(opts) => neuron_manage::exec(auth, opts).and_then(|out| print(&out)),
-        Command::ListNeurons(opts) => list_neurons::exec(auth, opts).and_then(|out| print(&out)),
-        Command::ClaimNeurons => claim_neurons::exec(auth).and_then(|out| print(&out)),
+        Command::Transfer(opts) => transfer::exec(auth, opts).and_then(|out| print_vec(qr, &out)),
+        Command::NeuronStake(opts) => {
+            neuron_stake::exec(auth, opts).and_then(|out| print_vec(qr, &out))
+        }
+        Command::NeuronManage(opts) => {
+            neuron_manage::exec(auth, opts).and_then(|out| print_vec(qr, &out))
+        }
+        Command::ListNeurons(opts) => {
+            list_neurons::exec(auth, opts).and_then(|out| print_vec(qr, &out))
+        }
+        Command::ClaimNeurons => claim_neurons::exec(auth).and_then(|out| print_vec(qr, &out)),
         Command::ListProposals(opts) => {
             runtime.block_on(async { list_proposals::exec(opts).await })
         }
         Command::GetProposalInfo(opts) => {
             runtime.block_on(async { get_proposal_info::exec(opts).await })
+        }
+        Command::GetNeuronInfo(opts) => {
+            runtime.block_on(async { get_neuron_info::exec(opts).await })
         }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
@@ -66,6 +83,33 @@ pub fn exec(auth: &AuthInfo, cmd: Command) -> AnyhowResult {
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),
+        // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
+        // Source code: https://github.com/ninegua/ic-qr-scanner
+        Command::ScannerQRCode => {
+            println!(
+                "█████████████████████████████████████
+█████████████████████████████████████
+████ ▄▄▄▄▄ █▀█ █▄▀▄▀▄█ ▄ █ ▄▄▄▄▄ ████
+████ █   █ █▀▀▀█ ▀▀█▄▀████ █   █ ████
+████ █▄▄▄█ █▀ █▀▀██▀▀█ ▄ █ █▄▄▄█ ████
+████▄▄▄▄▄▄▄█▄▀ ▀▄█ ▀▄█▄█▄█▄▄▄▄▄▄▄████
+████▄▄▄▄ ▀▄  ▄▀▄ ▄ █▀▄▀▀▀ ▀ ▀▄█▄▀████
+████▄█  █ ▄█▀█▄▀█▄  ▄▄ █ █   ▀█▀█████
+████▄▀ ▀ █▄▄▄ ▄   █▄▀   █ ▀▀▀▄▄█▀████
+████▄██▀▄▀▄▄ █▀█ ▄▄▄▄███▄█▄▀ ▄▄▀█████
+████ ▀▄▀▄█▄▀▄▄▄▀█ ▄▄▀▄▀▀▀▄▀▀▀▄ █▀████
+████ █▀██▀▄██▀▄█ █▀  █▄█▄▀▀  █▄▀█████
+████▄████▄▄▄  ▀▀█▄▄██▄▀█ ▄▄▄ ▀   ████
+████ ▄▄▄▄▄ █▄▄██▀▄▀ ▄█▄  █▄█ ▄▄▀█████
+████ █   █ █  █▀▄▄▀▄ ▄▀▀▄▄▄ ▄▀ ▄▀████
+████ █▄▄▄█ █ █▄▀▄██ ██▄█▀ ▄█  ▄ █████
+████▄▄▄▄▄▄▄█▄▄▄▄▄▄██▄▄█▄████▄▄▄██████
+█████████████████████████████████████
+█████████████████████████████████████"
+            );
+            Ok(())
+        }
+        Command::QRCode(opts) => qrcode::exec(opts),
     }
 }
 
@@ -84,4 +128,37 @@ where
         }
     }
     Ok(())
+}
+
+fn print_qr<T>(arg: &T, pause: bool) -> AnyhowResult
+where
+    T: serde::ser::Serialize,
+{
+    let json = serde_json::to_string(&arg)?;
+    let mut e = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    e.write_all(json.as_bytes()).unwrap();
+    let json = e.finish().unwrap();
+    let json = base64::encode(json);
+    qr::print_qr(json.as_str());
+    if pause {
+        let mut input_string = String::new();
+        std::io::stdin()
+            .read_line(&mut input_string)
+            .expect("Failed to read line");
+    }
+    Ok(())
+}
+
+fn print_vec<T>(qr: bool, arg: &[T]) -> AnyhowResult
+where
+    T: serde::ser::Serialize,
+{
+    if !qr {
+        print(arg)
+    } else {
+        for (i, a) in arg.iter().enumerate() {
+            print_qr(&a, i != arg.len() - 1).context("Failed to print QR code")?;
+        }
+        Ok(())
+    }
 }

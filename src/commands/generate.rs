@@ -1,5 +1,5 @@
 use crate::lib::{mnemonic_to_pem, AnyhowResult, AuthInfo};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bip39::{Language, Mnemonic};
 use clap::Parser;
 use rand::{rngs::OsRng, RngCore};
@@ -49,14 +49,14 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         _ => return Err(anyhow!("Words must be 12 or 24.")),
     };
     let mnemonic = match opts.phrase {
-        Some(phrase) => Mnemonic::parse(phrase).unwrap(),
+        Some(phrase) => Mnemonic::parse(phrase).context("Failed to parse mnemonic")?,
         None => {
             let mut key = vec![0u8; bytes];
             OsRng.fill_bytes(&mut key);
             Mnemonic::from_entropy_in(Language::English, &key).unwrap()
         }
     };
-    let pem = mnemonic_to_pem(&mnemonic);
+    let pem = mnemonic_to_pem(&mnemonic).context("Failed to convert mnemonic to PEM")?;
     let mut phrase = mnemonic
         .word_iter()
         .collect::<Vec<&'static str>>()

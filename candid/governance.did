@@ -36,6 +36,7 @@ type Command = variant {
   ClaimOrRefresh : ClaimOrRefresh;
   Configure : Configure;
   RegisterVote : RegisterVote;
+  Merge : Merge;
   DisburseToNeuron : DisburseToNeuron;
   MakeProposal : Proposal;
   MergeMaturity : MergeMaturity;
@@ -49,6 +50,7 @@ type Command_1 = variant {
   ClaimOrRefresh : ClaimOrRefreshResponse;
   Configure : record {};
   RegisterVote : record {};
+  Merge : record {};
   DisburseToNeuron : SpawnResponse;
   MakeProposal : MakeProposalResponse;
   MergeMaturity : MergeMaturityResponse;
@@ -57,6 +59,7 @@ type Command_1 = variant {
 type Command_2 = variant {
   Spawn : Spawn;
   Split : Split;
+  Merge : Merge;
   DisburseToNeuron : DisburseToNeuron;
   ClaimOrRefreshNeuron : ClaimOrRefresh;
   MergeMaturity : MergeMaturity;
@@ -123,6 +126,7 @@ type ManageNeuron = record {
   neuron_id_or_subaccount : opt NeuronIdOrSubaccount;
 };
 type ManageNeuronResponse = record { command : opt Command_1 };
+type Merge = record { source_neuron_id : opt NeuronId };
 type MergeMaturity = record { percentage_to_merge : nat32 };
 type MergeMaturityResponse = record {
   merged_maturity_e8s : nat64;
@@ -170,6 +174,7 @@ type NeuronInfo = record {
   recent_ballots : vec BallotInfo;
   created_timestamp_seconds : nat64;
   state : int32;
+  stake_e8s : nat64;
   retrieved_at_timestamp_seconds : nat64;
   voting_power : nat64;
   age_seconds : nat64;
