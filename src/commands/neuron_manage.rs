@@ -89,6 +89,12 @@ pub struct Merge {
     pub source_neuron_id: NeuronId,
 }
 
+#[derive(CandidType)]
+pub struct Follow {
+    pub topic: i32,
+    pub followees: Vec<NeuronId>,
+}
+
 #[derive(candid::CandidType)]
 pub struct MergeMaturity {
     pub percentage_to_merge: u32,
@@ -100,6 +106,7 @@ pub enum Command {
     Disburse(Disburse),
     Spawn(Spawn),
     Split(Split),
+    Follow(Follow),
     Merge(Merge),
     MergeMaturity(MergeMaturity),
 }
@@ -148,6 +155,10 @@ pub struct ManageOpts {
     /// Split off the given number of ICP from a neuron.
     #[clap(long)]
     split: Option<u64>,
+
+    /// Remove all followees for the NeuronManagement topic
+    #[clap(long)]
+    clear_manage_neuron_followees: bool,
 
     /// Merge stake, maturity and age from the neuron specified by this option into the neuron being managed.
     #[clap(long)]
@@ -294,6 +305,18 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
         })?;
         msgs.push(args);
     };
+
+    if opts.clear_manage_neuron_followees {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Follow(Follow {
+                topic: 1, // Topic::NeuronManagement as i32,
+                followees: Vec::new()
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    }
 
     if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
