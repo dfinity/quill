@@ -242,6 +242,6 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     };
     let key_pem = encode(&pem);
     Ok((parameters_pem + &key_pem)
-        .replace("\r", "")
+        .replace('\r', "")
         .replace("\n\n", "\n"))
 }
