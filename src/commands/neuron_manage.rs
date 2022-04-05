@@ -171,6 +171,14 @@ pub struct ManageOpts {
     /// Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible.
     #[clap(long)]
     join_community_fund: bool,
+
+    /// Defines the topic of a follow rule.
+    #[clap(long)]
+    follow_topic: Option<i32>,
+
+    /// Defines the neuron ids of a follow rule.
+    #[clap(long)]
+    follow_neurons: Option<Vec<u64>>,
 }
 
 pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -357,6 +365,21 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
         })?;
         msgs.push(args);
     };
+
+    if let Some(topic) = opts.follow_topic {
+        if let Some(neuron_ids) = opts.follow_neurons {
+            let followees = neuron_ids.iter().map(|x| NeuronId{ id: *x }).collect();
+            let args = Encode!(&ManageNeuron {
+                id,
+                command: Some(Command::Follow(Follow {
+                    topic, // Topic::NeuronManagement as i32,
+                    followees,
+                })),
+                neuron_id_or_subaccount: None,
+            })?;
+            msgs.push(args);
+        }
+    }
 
     if msgs.is_empty() {
         return Err(anyhow!("No instructions provided"));
