@@ -378,6 +378,8 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
                 neuron_id_or_subaccount: None,
             })?;
             msgs.push(args);
+        } else {
+            return Err(anyhow!("Follow topic specified without followees"));
         }
     }
 
