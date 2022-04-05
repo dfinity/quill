@@ -369,13 +369,13 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
     if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
         let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
         let args = Encode!(&ManageNeuron {
-                id,
-                command: Some(Command::Follow(Follow {
-                    topic, // Topic::NeuronManagement as i32,
-                    followees,
-                })),
-                neuron_id_or_subaccount: None,
-            })?;
+            id,
+            command: Some(Command::Follow(Follow {
+                topic, // Topic::NeuronManagement as i32,
+                followees,
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
         msgs.push(args);
     } else if let Some(_) = opts.follow_topic {
         return Err(anyhow!("Follow topic specified without followees."));
