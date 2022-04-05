@@ -377,9 +377,9 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
-    } else if let Some(_) = opts.follow_topic {
+    } else if opts.follow_topic.is_some() {
         return Err(anyhow!("Follow topic specified without followees."));
-    } else if let Some(_) = opts.follow_neurons {
+    } else if opts.follow_neurons.is_some() {
         return Err(anyhow!("Followees specified without topic."));
     }
 
