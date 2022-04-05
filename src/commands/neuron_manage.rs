@@ -368,7 +368,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
 
     if let Some(topic) = opts.follow_topic {
         if let Some(neuron_ids) = opts.follow_neurons {
-            let followees = neuron_ids.iter().map(|x| NeuronId{ id: *x }).collect();
+            let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
             let args = Encode!(&ManageNeuron {
                 id,
                 command: Some(Command::Follow(Follow {
