@@ -366,10 +366,9 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
         msgs.push(args);
     };
 
-    if let Some(topic) = opts.follow_topic {
-        if let Some(neuron_ids) = opts.follow_neurons {
-            let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
-            let args = Encode!(&ManageNeuron {
+    if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
+        let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
+        let args = Encode!(&ManageNeuron {
                 id,
                 command: Some(Command::Follow(Follow {
                     topic, // Topic::NeuronManagement as i32,
@@ -377,10 +376,11 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
                 })),
                 neuron_id_or_subaccount: None,
             })?;
-            msgs.push(args);
-        } else {
-            return Err(anyhow!("Follow topic specified without followees"));
-        }
+        msgs.push(args);
+    } else if let Some(_) = opts.follow_topic {
+        return Err(anyhow!("Follow topic specified without followees."));
+    } else if let Some(_) = opts.follow_neurons {
+        return Err(anyhow!("Followees specified without topic."));
     }
 
     if msgs.is_empty() {
