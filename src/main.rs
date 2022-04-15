@@ -4,13 +4,18 @@ use crate::lib::AnyhowResult;
 use anyhow::Context;
 use bip39::Mnemonic;
 use clap::{crate_version, Parser};
+use ic_base_types::CanisterId;
+use std::collections::HashMap;
+use std::fs::File;
+use std::path::PathBuf;
+use std::str::FromStr;
 
 mod commands;
 mod lib;
 
-/// Ledger & Governance ToolKit for cold wallets.
+/// Cold wallet toolkit for interacting with a Service Nervous System's Ledger & Governance canisters.
 #[derive(Parser)]
-#[clap(name("quill"), version = crate_version!())]
+#[clap(name("sns-quill"), version = crate_version!())]
 pub struct CliOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]
@@ -24,8 +29,19 @@ pub struct CliOpts {
     #[clap(long)]
     qr: bool,
 
+    /// Path to the SNS cluster's canister ids
+    #[clap(long)]
+    canister_ids_file: Option<String>,
+
     #[clap(subcommand)]
     command: commands::Command,
+}
+
+#[derive(Debug, Clone)]
+pub struct CanisterIds {
+    pub governance_canister_id: CanisterId,
+    pub ledger_canister_id: CanisterId,
+    pub root_canister_id: CanisterId,
 }
 
 fn main() {
@@ -47,7 +63,8 @@ fn main() {
 
 fn run(opts: CliOpts) -> AnyhowResult<()> {
     let pem = read_pem(opts.pem_file, opts.seed_file)?;
-    commands::exec(&pem, opts.qr, opts.command)
+    let canister_ids = read_sns_canister_ids(opts.canister_ids_file)?;
+    commands::exec(&pem, &canister_ids, opts.qr, opts.command)
 }
 
 // Get PEM from the file if provided, or try to convert from the seed file
@@ -59,6 +76,39 @@ fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> AnyhowResult
             let mnemonic = parse_mnemonic(&seed)?;
             let mnemonic = lib::mnemonic_to_pem(&mnemonic)?;
             Ok(Some(mnemonic))
+        }
+        _ => Ok(None),
+    }
+}
+
+fn read_sns_canister_ids(file_path: Option<String>) -> AnyhowResult<Option<CanisterIds>> {
+    match file_path {
+        Some(file_path) => {
+            let path = PathBuf::from(file_path);
+            let file = File::open(path).context("Could not open the SNS Canister Ids file")?;
+            let ids: HashMap<String, String> = serde_json::from_reader(file)
+                .context("Could not parse the SNS Canister Ids file")?;
+
+            let governance_canister_id = ids
+                .get("governance_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse governance_canister_id as CanisterId")?;
+
+            let ledger_canister_id = ids
+                .get("ledger_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse ledger_canister_id as CanisterId")?;
+
+            let root_canister_id = ids
+                .get("root_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse root_canister_id as CanisterId")?;
+
+            Ok(Some(CanisterIds {
+                governance_canister_id,
+                ledger_canister_id,
+                root_canister_id,
+            }))
         }
         _ => Ok(None),
     }

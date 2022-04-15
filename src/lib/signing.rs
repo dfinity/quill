@@ -1,6 +1,6 @@
-use crate::lib::get_idl_string;
 use crate::lib::AnyhowResult;
 use crate::lib::{get_candid_type, get_local_candid};
+use crate::lib::{get_idl_string, TargetCanister};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::QueryBuilder;
 use ic_agent::agent::UpdateBuilder;
@@ -37,14 +37,15 @@ pub struct RequestStatus {
     pub content: String,
 }
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Ingress {
     pub call_type: String,
     pub request_id: Option<String>,
     pub content: String,
+    pub target_canister: TargetCanister,
 }
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct IngressWithRequestId {
     pub ingress: Ingress,
     pub request_status: RequestStatus,
@@ -76,7 +77,7 @@ impl Ingress {
                         sender,
                         canister_id,
                         method_name.to_string(),
-                        get_idl_string(arg, canister_id, method_name, "args")?,
+                        get_idl_string(arg, self.target_canister, method_name, "args")?,
                     ));
                 }
             }
@@ -104,8 +105,9 @@ pub fn sign(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
+    target_canister: TargetCanister,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
-    let spec = get_local_candid(canister_id)?;
+    let spec = get_local_candid(target_canister)?;
     let method_type = get_candid_type(spec, method_name);
     let is_query = match &method_type {
         Some((_, f)) => f.is_query(),
@@ -139,6 +141,7 @@ pub fn sign(
             call_type: if is_query { "query" } else { "update" }.to_string(),
             request_id: request_id.map(|v| v.into()),
             content,
+            target_canister,
         },
         request_id,
     })
@@ -150,8 +153,9 @@ pub fn sign_ingress_with_request_status_query(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
+    target_canister: TargetCanister,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(pem, canister_id, method_name, args)?;
+    let msg_with_req_id = sign(pem, canister_id, method_name, args, target_canister)?;
     let request_id = msg_with_req_id
         .request_id
         .context("No request id for transfer call found")?;
@@ -161,15 +165,4 @@ pub fn sign_ingress_with_request_status_query(
         request_status,
     };
     Ok(message)
-}
-
-/// Generates a signed ingress message.
-pub fn sign_ingress(
-    pem: &str,
-    canister_id: Principal,
-    method_name: &str,
-    args: Vec<u8>,
-) -> AnyhowResult<Ingress> {
-    let msg = sign(pem, canister_id, method_name, args)?;
-    Ok(msg.message)
 }

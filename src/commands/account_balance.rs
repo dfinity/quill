@@ -1,19 +1,22 @@
-use crate::{
-    commands::send::submit_unsigned_ingress,
-    lib::{ledger_canister_id, AnyhowResult},
-};
-use candid::{CandidType, Encode};
+use crate::commands::send::submit_unsigned_ingress;
+use crate::lib::TargetCanister;
+use crate::{AnyhowResult, CanisterIds};
+use anyhow::Error;
+use candid::{CandidType, Deserialize, Encode};
 use clap::Parser;
+use ic_base_types::PrincipalId;
+use ledger_canister::AccountIdentifier;
 
-#[derive(CandidType)]
+/// Arguments for the `account_balance` call.
+#[derive(CandidType, Deserialize, Debug)]
 pub struct AccountBalanceArgs {
-    pub account: String,
+    pub account: Vec<u8>,
 }
 
-/// Signs a neuron configuration change.
+/// Signs a ledger account-balance query call.
 #[derive(Parser)]
 pub struct AccountBalanceOpts {
-    /// The id of the account to query.
+    /// The AccountIdentifier of the account to query
     account_id: String,
 
     /// Will display the query, but not send it.
@@ -21,16 +24,22 @@ pub struct AccountBalanceOpts {
     dry_run: bool,
 }
 
-// We currently only support a subset of the functionality.
-pub async fn exec(opts: AccountBalanceOpts) -> AnyhowResult {
+pub async fn exec(canister_ids: &CanisterIds, opts: AccountBalanceOpts) -> AnyhowResult {
+    let account_identifier = AccountIdentifier::from_hex(&opts.account_id).map_err(Error::msg)?;
+    let ledger_canister_id = PrincipalId::from(canister_ids.ledger_canister_id).0;
+
     let args = Encode!(&AccountBalanceArgs {
-        account: opts.account_id,
+        account: account_identifier.to_vec()
     })?;
+
     submit_unsigned_ingress(
-        ledger_canister_id(),
-        "account_balance_dfx",
+        ledger_canister_id,
+        "account_balance",
         args,
         opts.dry_run,
+        TargetCanister::Ledger,
     )
-    .await
+    .await?;
+
+    Ok(())
 }

@@ -2,48 +2,17 @@ use crate::commands::request_status;
 use crate::lib::{
     get_ic_url, parse_query_response, read_from_file,
     signing::{Ingress, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, TargetCanister,
 };
-use anyhow::{anyhow, Context};
-use candid::CandidType;
+use anyhow::{anyhow, Context, Error};
+use candid::Decode;
 use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
+use ic_sns_governance::pb::v1::ManageNeuronResponse;
 use ic_types::principal::Principal;
-use ledger_canister::{ICPTs, Subaccount};
-use serde::{Deserialize, Serialize};
+use ledger_canister::{BlockHeight, Tokens, TransferError};
 use std::str::FromStr;
-
-#[derive(
-    Serialize,
-    Deserialize,
-    CandidType,
-    Clone,
-    Copy,
-    Hash,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-)]
-pub struct Memo(pub u64);
-
-#[derive(CandidType)]
-pub struct TimeStamp {
-    pub timestamp_nanos: u64,
-}
-
-#[derive(CandidType)]
-pub struct SendArgs {
-    pub memo: Memo,
-    pub amount: ICPTs,
-    pub fee: ICPTs,
-    pub from_subaccount: Option<Subaccount>,
-    pub to: String,
-    pub created_at_time: Option<TimeStamp>,
-}
 
 /// Sends a signed message or a set of messages.
 #[derive(Parser)]
@@ -83,8 +52,9 @@ pub async fn submit_unsigned_ingress(
     method_name: &str,
     args: Vec<u8>,
     dry_run: bool,
+    target_canister: TargetCanister,
 ) -> AnyhowResult {
-    let msg = crate::lib::signing::sign("", canister_id, method_name, args)?;
+    let msg = crate::lib::signing::sign("", canister_id, method_name, args, target_canister)?;
     let ingress = msg.message;
     send(
         &ingress,
@@ -106,10 +76,8 @@ async fn submit_ingress_and_check_status(
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status::submit(&message.request_status, Some(method_name.to_string())).await {
-        Ok(result) => println!("{}\n", result),
-        Err(err) => println!("{}\n", err),
-    };
+    let result = request_status::submit(&message.request_status).await?;
+    print_response(result, &method_name)?;
     Ok(())
 }
 
@@ -141,12 +109,8 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
 
     match message.call_type.as_str() {
         "query" => {
-            let response = parse_query_response(
-                transport.query(canister_id, content).await?,
-                canister_id,
-                &method_name,
-            )?;
-            println!("Response: {}", response);
+            let response = parse_query_response(transport.query(canister_id, content).await?)?;
+            print_response(response, &method_name)?;
         }
         "update" => {
             let request_id = RequestId::from_str(
@@ -161,5 +125,47 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
         _ => unreachable!(),
     }
+    Ok(())
+}
+
+enum SupportedResponse {
+    ManageNeuronResponse,
+    TransferResponse,
+    AccountBalanceResponse,
+}
+
+impl FromStr for SupportedResponse {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<SupportedResponse, Self::Err> {
+        match input {
+            "account_balance" => Ok(SupportedResponse::AccountBalanceResponse),
+            "transfer" => Ok(SupportedResponse::TransferResponse),
+            "manage_neuron" => Ok(SupportedResponse::ManageNeuronResponse),
+            _ => Err(()),
+        }
+    }
+}
+
+fn print_response(blob: Vec<u8>, method_name: &String) -> AnyhowResult {
+    let response_type = SupportedResponse::from_str(method_name.as_str())
+        .map_err(|_| format!("{} is not a supported return type", method_name))
+        .map_err(Error::msg)?;
+
+    match response_type {
+        SupportedResponse::AccountBalanceResponse => {
+            let response = Decode!(blob.as_slice(), Tokens)?;
+            println!("Response: {:?\n}", response);
+        }
+        SupportedResponse::TransferResponse => {
+            let response = Decode!(blob.as_slice(), Result<BlockHeight, TransferError>)?;
+            println!("Response: {:?\n}", response);
+        }
+        SupportedResponse::ManageNeuronResponse => {
+            let response = Decode!(blob.as_slice(), ManageNeuronResponse)?;
+            println!("Response: {:?\n}", response);
+        }
+    }
+
     Ok(())
 }

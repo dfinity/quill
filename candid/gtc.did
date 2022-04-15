@@ -1,5 +1,0 @@
-type NeuronId = record { id : nat64 };
-type Result = variant { Ok : vec NeuronId; Err : text };
-service : {
-  claim_neurons : (text) -> (Result);
-}

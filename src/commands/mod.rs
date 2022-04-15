@@ -1,90 +1,91 @@
 //! This module implements the command-line API.
 
-use crate::lib::{qr, require_pem, AnyhowResult};
+use crate::lib::{qr, require_canister_ids, require_pem, AnyhowResult};
 use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
 mod account_balance;
-mod claim_neurons;
+mod configure_dissolve_delay;
 mod generate;
-mod get_neuron_info;
-mod get_proposal_info;
-mod list_neurons;
-mod list_proposals;
-mod neuron_manage;
+mod make_proposal;
 mod neuron_stake;
 mod public;
 mod qrcode;
+mod register_vote;
 mod request_status;
 mod send;
 mod transfer;
 
+use crate::CanisterIds;
 pub use public::get_ids;
 
 #[derive(Parser)]
 pub enum Command {
     /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),
-    Send(send::SendOpts),
-    Transfer(transfer::TransferOpts),
-    /// Claim seed neurons from the Genesis Token Canister.
-    ClaimNeurons,
-    NeuronStake(neuron_stake::StakeOpts),
-    NeuronManage(neuron_manage::ManageOpts),
-    /// Signs the query for all neurons belonging to the signing principal.
-    ListNeurons(list_neurons::ListNeuronsOpts),
-    ListProposals(list_proposals::ListProposalsOpts),
-    GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
-    GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
+    /// Signs a ledger transfer message to the provided 'to' account.
+    Transfer(transfer::TransferOpts),
+    /// Signs a ledger transfer message to governance and a ManageNeuron::ClaimOrRefresh message to claim a neuron.
+    NeuronStake(neuron_stake::NeuronStakeOpts),
+    /// Signs a ManageNeuron::Configure message to configure the dissolve delay of a neuron.
+    ConfigureDissolveDelay(configure_dissolve_delay::ConfigureDissolveDelayOpts),
+    /// Signs a ManageNeuron::MakeProposal message.
+    MakeProposal(make_proposal::MakeProposalOpts),
+    /// Signs a ManageNeuron::RegisterVote message.
+    RegisterVote(register_vote::RegisterVoteOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
     /// Print QR code for data e.g. principal id.
     QRCode(qrcode::QRCodeOpts),
+    /// Sends signed messages to the Internet computer.
+    Send(send::SendOpts),
 }
 
-pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
+pub fn exec(
+    pem: &Option<String>,
+    canister_ids: &Option<CanisterIds>,
+    qr: bool,
+    cmd: Command,
+) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
+        Command::AccountBalance(opts) => {
+            let canister_ids = require_canister_ids(canister_ids)?;
+            runtime.block_on(async { account_balance::exec(&canister_ids, opts).await })
+        }
         Command::Transfer(opts) => {
             let pem = require_pem(pem)?;
-            transfer::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            let canister_ids = require_canister_ids(canister_ids)?;
+            transfer::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::NeuronStake(opts) => {
             let pem = require_pem(pem)?;
-            neuron_stake::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            let canister_ids = require_canister_ids(canister_ids)?;
+            neuron_stake::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
         }
-        Command::NeuronManage(opts) => {
+        Command::ConfigureDissolveDelay(opts) => {
             let pem = require_pem(pem)?;
-            neuron_manage::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            let canister_ids = require_canister_ids(canister_ids)?;
+            configure_dissolve_delay::exec(&pem, &canister_ids, opts)
+                .and_then(|out| print_vec(qr, &out))
         }
-        Command::ListNeurons(opts) => {
+        Command::MakeProposal(opts) => {
             let pem = require_pem(pem)?;
-            list_neurons::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            let canister_ids = require_canister_ids(canister_ids)?;
+            make_proposal::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
         }
-        Command::ClaimNeurons => {
+        Command::RegisterVote(opts) => {
             let pem = require_pem(pem)?;
-            claim_neurons::exec(&pem).and_then(|out| print_vec(qr, &out))
+            let canister_ids = require_canister_ids(canister_ids)?;
+            register_vote::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
         }
-        Command::ListProposals(opts) => {
-            runtime.block_on(async { list_proposals::exec(opts).await })
-        }
-        Command::GetProposalInfo(opts) => {
-            runtime.block_on(async { get_proposal_info::exec(opts).await })
-        }
-        Command::GetNeuronInfo(opts) => {
-            runtime.block_on(async { get_neuron_info::exec(opts).await })
-        }
-        Command::AccountBalance(opts) => {
-            runtime.block_on(async { account_balance::exec(opts).await })
-        }
-        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner
@@ -113,6 +114,7 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
             Ok(())
         }
         Command::QRCode(opts) => qrcode::exec(opts),
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
     }
 }
 
