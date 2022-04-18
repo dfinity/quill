@@ -1,1 +1,0 @@
-${CARGO_TARGET_DIR:-../target}/debug/quill --pem-file - neuron-manage 2313380519530470538 --follow-topic 0 --follow-neurons 380519530470538 380519530470539 | ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -

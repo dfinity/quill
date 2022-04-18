@@ -1,21 +1,22 @@
 //! All the common functionality.
-
+use crate::CanisterIds;
 use anyhow::{anyhow, Context};
 use bip39::Mnemonic;
 use candid::{
     parser::typing::{check_prog, TypeEnv},
     types::Function,
-    IDLProg,
+    CandidType, IDLProg,
 };
 use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
-use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
+use ic_sns_governance::pb::v1::NeuronId;
 use ic_types::Principal;
 use libsecp256k1::{PublicKey, SecretKey};
 use pem::{encode, Pem};
+use serde::{Deserialize, Serialize};
 use serde_cbor::Value;
 use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
@@ -35,29 +36,22 @@ pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
-pub fn ledger_canister_id() -> Principal {
-    Principal::from_slice(LEDGER_CANISTER_ID.as_ref())
-}
-
-pub fn governance_canister_id() -> Principal {
-    Principal::from_slice(GOVERNANCE_CANISTER_ID.as_ref())
-}
-
-pub fn genesis_token_canister_id() -> Principal {
-    Principal::from_slice(GENESIS_TOKEN_CANISTER_ID.as_ref())
+#[derive(
+Serialize, Deserialize, CandidType, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord,
+)]
+pub enum TargetCanister {
+    Governance,
+    Ledger,
 }
 
 // Returns the candid for the specified canister id, if there is one.
-pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
-    if canister_id == governance_canister_id() {
+pub fn get_local_candid(target_canister: TargetCanister) -> AnyhowResult<String> {
+    if target_canister == TargetCanister::Governance {
         String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
             .context("Cannot load governance.did")
-    } else if canister_id == ledger_canister_id() {
+    } else if target_canister == TargetCanister::Ledger {
         String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
             .context("Cannot load ledger.did")
-    } else if canister_id == genesis_token_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
-            .context("Cannot load gtc.did")
     } else {
         unreachable!()
     }
@@ -66,11 +60,11 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
 /// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
     blob: &[u8],
-    canister_id: Principal,
+    target_canister: TargetCanister,
     method_name: &str,
     part: &str,
 ) -> AnyhowResult<String> {
-    let spec = get_local_candid(canister_id)?;
+    let spec = get_local_candid(target_canister)?;
     let method_type = get_candid_type(spec, method_name);
     let result = match method_type {
         None => candid::IDLArgs::from_bytes(blob),
@@ -87,7 +81,7 @@ pub fn get_idl_string(
     Ok(format!("{}", result?))
 }
 
-/// Returns the candid type of a specifed method and correspondig idl description.
+/// Returns the candid type of a specified method and corresponding idl description.
 pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
     let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
     let mut env = TypeEnv::new();
@@ -154,11 +148,16 @@ pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
     }
 }
 
-pub fn parse_query_response(
-    response: Vec<u8>,
-    canister_id: Principal,
-    method_name: &str,
-) -> AnyhowResult<String> {
+pub fn require_canister_ids(canister_ids: &Option<CanisterIds>) -> AnyhowResult<CanisterIds> {
+    match canister_ids {
+        None => Err(anyhow!(
+            "Cannot sign command without knowing the SNS canister ids, did you forget --canister-ids-file <json-file> ?"
+        )),
+        Some(ids) => Ok(ids.clone()),
+    }
+}
+
+pub fn parse_query_response(response: Vec<u8>) -> AnyhowResult<Vec<u8>> {
     let cbor: Value = serde_cbor::from_slice(&response)
         .context("Invalid cbor data in the content of the message.")?;
     if let Value::Map(m) = cbor {
@@ -168,9 +167,10 @@ pub fn parse_query_response(
             m.get(&Value::Text("reject_code".to_string())),
             m.get(&Value::Text("reject_message".to_string())),
         ) {
-            return Ok(format!(
+            return Err(anyhow!(
                 "Rejected (code {}): {}",
-                reject_code, reject_message
+                reject_code,
+                reject_message
             ));
         }
 
@@ -180,7 +180,7 @@ pub fn parse_query_response(
             m.get(&Value::Text("reply".to_string())),
         ) {
             if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
-                return get_idl_string(reply, canister_id, method_name, "rets");
+                return Ok(reply.clone());
             }
         }
     }
@@ -197,7 +197,13 @@ pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::
     ))
 }
 
-/// Converts menmonic to PEM format
+/// Parse a NeuronId from a hex encoded string.
+pub fn parse_neuron_id(hex_encoded_id: String) -> AnyhowResult<NeuronId> {
+    let id = hex::decode(hex_encoded_id)?;
+    Ok(NeuronId { id })
+}
+
+/// Converts mnemonic to PEM format
 pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> AnyhowResult<Vec<u8>> {
         let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));

@@ -1,45 +1,23 @@
 //! This module implements the command-line API.
 
-use crate::lib::{qr, require_pem, AnyhowResult};
+use crate::lib::{qr, AnyhowResult};
 use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
-mod account_balance;
-mod claim_neurons;
 mod generate;
-mod get_neuron_info;
-mod get_proposal_info;
-mod list_neurons;
-mod list_proposals;
-mod neuron_manage;
-mod neuron_stake;
 mod public;
 mod qrcode;
 mod request_status;
-mod send;
-mod transfer;
 
 pub use public::get_ids;
+use crate::CanisterIds;
 
 #[derive(Parser)]
 pub enum Command {
     /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),
-    Send(send::SendOpts),
-    Transfer(transfer::TransferOpts),
-    /// Claim seed neurons from the Genesis Token Canister.
-    ClaimNeurons,
-    NeuronStake(neuron_stake::StakeOpts),
-    NeuronManage(neuron_manage::ManageOpts),
-    /// Signs the query for all neurons belonging to the signing principal.
-    ListNeurons(list_neurons::ListNeuronsOpts),
-    ListProposals(list_proposals::ListProposalsOpts),
-    GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
-    GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
-    /// Queries a ledger account balance.
-    AccountBalance(account_balance::AccountBalanceOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
@@ -48,43 +26,15 @@ pub enum Command {
     QRCode(qrcode::QRCodeOpts),
 }
 
-pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
+pub fn exec(
+    pem: &Option<String>,
+    canister_ids: &Option<CanisterIds>,
+    qr: bool,
+    cmd: Command,
+) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
-        Command::Transfer(opts) => {
-            let pem = require_pem(pem)?;
-            transfer::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
-        }
-        Command::NeuronStake(opts) => {
-            let pem = require_pem(pem)?;
-            neuron_stake::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
-        }
-        Command::NeuronManage(opts) => {
-            let pem = require_pem(pem)?;
-            neuron_manage::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
-        }
-        Command::ListNeurons(opts) => {
-            let pem = require_pem(pem)?;
-            list_neurons::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
-        }
-        Command::ClaimNeurons => {
-            let pem = require_pem(pem)?;
-            claim_neurons::exec(&pem).and_then(|out| print_vec(qr, &out))
-        }
-        Command::ListProposals(opts) => {
-            runtime.block_on(async { list_proposals::exec(opts).await })
-        }
-        Command::GetProposalInfo(opts) => {
-            runtime.block_on(async { get_proposal_info::exec(opts).await })
-        }
-        Command::GetNeuronInfo(opts) => {
-            runtime.block_on(async { get_neuron_info::exec(opts).await })
-        }
-        Command::AccountBalance(opts) => {
-            runtime.block_on(async { account_balance::exec(opts).await })
-        }
-        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner

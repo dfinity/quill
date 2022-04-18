@@ -4,13 +4,19 @@ use crate::lib::AnyhowResult;
 use anyhow::Context;
 use bip39::Mnemonic;
 use clap::{crate_version, Parser};
+use ic_base_types::CanisterId;
+use std::collections::HashMap;
+use std::fs::File;
+use std::path::PathBuf;
+use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 mod commands;
 mod lib;
 
-/// Ledger & Governance ToolKit for cold wallets.
+/// Cold wallet toolkit for interacting with a Service Nervous System's Ledger & Governance canisters.
 #[derive(Parser)]
-#[clap(name("quill"), version = crate_version!())]
+#[clap(name("sns-quill"), version = crate_version!())]
 pub struct CliOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]
@@ -24,8 +30,19 @@ pub struct CliOpts {
     #[clap(long)]
     qr: bool,
 
+    /// Path to the SNS cluster's canister ids
+    #[clap(long)]
+    canister_ids_file: Option<String>,
+
     #[clap(subcommand)]
     command: commands::Command,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct CanisterIds {
+    pub governance_canister_id: CanisterId,
+    pub ledger_canister_id: CanisterId,
+    pub root_canister_id: CanisterId,
 }
 
 fn main() {
@@ -47,7 +64,8 @@ fn main() {
 
 fn run(opts: CliOpts) -> AnyhowResult<()> {
     let pem = read_pem(opts.pem_file, opts.seed_file)?;
-    commands::exec(&pem, opts.qr, opts.command)
+    let canister_ids = read_sns_canister_ids(opts.canister_ids_file)?;
+    commands::exec(&pem, &canister_ids, opts.qr, opts.command)
 }
 
 // Get PEM from the file if provided, or try to convert from the seed file
@@ -59,6 +77,39 @@ fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> AnyhowResult
             let mnemonic = parse_mnemonic(&seed)?;
             let mnemonic = lib::mnemonic_to_pem(&mnemonic)?;
             Ok(Some(mnemonic))
+        }
+        _ => Ok(None),
+    }
+}
+
+fn read_sns_canister_ids(file_path: Option<String>) -> AnyhowResult<Option<CanisterIds>> {
+    match file_path {
+        Some(file_path) => {
+            let path = PathBuf::from(file_path);
+            let file = File::open(path).context("Could not open the SNS Canister Ids file")?;
+            let ids: HashMap<String, String> = serde_json::from_reader(file)
+                .context("Could not parse the SNS Canister Ids file")?;
+
+            let governance_canister_id = ids
+                .get("governance_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse governance_canister_id as CanisterId")?;
+
+            let ledger_canister_id = ids
+                .get("ledger_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse ledger_canister_id as CanisterId")?;
+
+            let root_canister_id = ids
+                .get("root_canister_id")
+                .map(|id| CanisterId::from_str(id))
+                .expect("Could not parse root_canister_id as CanisterId")?;
+
+            Ok(Some(CanisterIds {
+                governance_canister_id,
+                ledger_canister_id,
+                root_canister_id,
+            }))
         }
         _ => Ok(None),
     }
@@ -138,4 +189,41 @@ fn test_read_pem_from_non_existing_file() {
     read_pem(Some(non_existing_file.clone()), None).unwrap_err();
 
     read_pem(None, Some(non_existing_file)).unwrap_err();
+}
+
+#[test]
+fn test_read_canister_ids_from_file() {
+    use std::io::Write;
+
+    let mut canister_ids_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
+
+    let expected_canister_ids = CanisterIds {
+        governance_canister_id: CanisterId::from_str("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap(),
+        ledger_canister_id: CanisterId::from_str("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(),
+        root_canister_id: CanisterId::from_str("r7inp-6aaaa-aaaaa-aaabq-cai").unwrap(),
+    };
+
+    let json_str =  serde_json::to_string(&expected_canister_ids).unwrap();
+
+    write!(canister_ids_file, "{}", json_str).expect("Cannot write to tmp file");
+
+    let actual_canister_ids = read_sns_canister_ids(Some(canister_ids_file.path().to_str().unwrap().to_string()))
+        .expect("Unable to read canister_ids_file")
+        .expect("None returned instead of Some");
+
+    assert_eq!(actual_canister_ids, expected_canister_ids);
+}
+
+#[test]
+fn test_canister_ids_from_non_existing_file() {
+    let dir = tempfile::tempdir().expect("Cannot create temp dir");
+    let non_existing_file = dir
+        .path()
+        .join("non_existing_pem_file")
+        .as_path()
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    read_sns_canister_ids(Some(non_existing_file.clone())).unwrap_err();
 }

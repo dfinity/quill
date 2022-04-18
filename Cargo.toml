@@ -1,32 +1,32 @@
 [package]
-name = "quill"
-version = "0.2.15"
+name = "sns-quill"
+version = "0.1.0"
 authors = ["DFINITY Team"]
 edition = "2018"
 
 [[bin]]
-name = "quill"
+name = "sns-quill"
 path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.34"
 base64 = "0.13.0"
 bip39 = "1.0.1"
-candid = "0.7.8"
+candid = "0.7.14"
 clap = "3.0.0-beta.5"
 flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
-ic-agent = "0.10.0"
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
-ic-types = "0.2.2"
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
+ic-agent = "0.15.0"
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
+ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
+ic-types = "0.3.0"
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
 libsecp256k1 = "0.7.0"
-num-bigint = "0.4.3"
+num-bigint = { version = "0.4.3", features = ["serde"] }
 openssl = "0.10.32"
 pem = "1.0.1"
 rand = { version = "0.8.4", features = ["getrandom"] }
+reqwest = "0.11.7"
 simple_asn1 = "0.6.1"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
