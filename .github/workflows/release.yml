@@ -52,7 +52,7 @@ jobs:
 
     - name: Install toolchain (Linux static)
       if: matrix.name == 'linux'
-      uses: gmiam/rust-musl-action@master
+      uses: jean-dfinity/rust-musl-action@master
       with:
         args: make ${{ matrix.make_target }}
     - name: Install toolchain (ARM)
