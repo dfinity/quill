@@ -62,7 +62,7 @@ pub fn exec(
         command: Some(manage_neuron::Command::ClaimOrRefresh(ClaimOrRefresh {
             by: Some(By::MemoAndController(MemoAndController {
                 memo: opts.memo,
-                controller: Some(PrincipalId::from(controller))
+                controller: Some(PrincipalId(controller)),
             }))
         }))
     })?;
