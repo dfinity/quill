@@ -1,40 +1,57 @@
 //! This module implements the command-line API.
 
-use crate::lib::{qr, AnyhowResult};
+use crate::lib::{qr, require_canister_ids, require_pem, AnyhowResult};
 use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
+mod account_balance;
 mod generate;
 mod public;
 mod qrcode;
 mod request_status;
+mod send;
+mod transfer;
 
-pub use public::get_ids;
-use crate::CanisterIds;
+use crate::SnsCanisterIds;
 
 #[derive(Parser)]
 pub enum Command {
     /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),
+    /// Queries a ledger account balance.
+    AccountBalance(account_balance::AccountBalanceOpts),
+    /// Signs a ledger transfer message to the provided 'to' account.
+    Transfer(transfer::TransferOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
     /// Print QR code for data e.g. principal id.
     QRCode(qrcode::QRCodeOpts),
+    /// Sends signed messages to the Internet computer.
+    Send(send::SendOpts),
 }
 
 pub fn exec(
     pem: &Option<String>,
-    canister_ids: &Option<CanisterIds>,
+    canister_ids: &Option<SnsCanisterIds>,
     qr: bool,
     cmd: Command,
 ) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(pem, opts),
+        Command::AccountBalance(opts) => {
+            let canister_ids = require_canister_ids(canister_ids)?;
+            runtime.block_on(async { account_balance::exec(&canister_ids, opts).await })
+        }
+        Command::Transfer(opts) => {
+            let pem = require_pem(pem)?;
+            let canister_ids = require_canister_ids(canister_ids)?;
+            transfer::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
+        }
         Command::Generate(opts) => generate::exec(opts),
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner
@@ -63,6 +80,7 @@ pub fn exec(
             Ok(())
         }
         Command::QRCode(opts) => qrcode::exec(opts),
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
     }
 }
 

@@ -1,15 +1,15 @@
 #![warn(unused_extern_crates)]
 
 use crate::lib::AnyhowResult;
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use bip39::Mnemonic;
 use clap::{crate_version, Parser};
 use ic_base_types::CanisterId;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
 
 mod commands;
 mod lib;
@@ -30,7 +30,15 @@ pub struct CliOpts {
     #[clap(long)]
     qr: bool,
 
-    /// Path to the SNS cluster's canister ids
+    /// Path to the JSON file containing the SNS cluster's canister ids. This is a JSON
+    /// file containing a JSON map of canister names to canister IDs.
+    ///
+    /// For example,
+    /// {
+    ///   "governance_canister_id": "rrkah-fqaaa-aaaaa-aaaaq-cai",
+    ///   "ledger_canister_id": "ryjl3-tyaaa-aaaaa-aaaba-cai",
+    ///   "root_canister_id": "r7inp-6aaaa-aaaaa-aaabq-cai"
+    /// }
     #[clap(long)]
     canister_ids_file: Option<String>,
 
@@ -39,7 +47,7 @@ pub struct CliOpts {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct CanisterIds {
+pub struct SnsCanisterIds {
     pub governance_canister_id: CanisterId,
     pub ledger_canister_id: CanisterId,
     pub root_canister_id: CanisterId,
@@ -68,7 +76,7 @@ fn run(opts: CliOpts) -> AnyhowResult<()> {
     commands::exec(&pem, &canister_ids, opts.qr, opts.command)
 }
 
-// Get PEM from the file if provided, or try to convert from the seed file
+/// Get PEM from the file if provided, or try to convert from the seed file
 fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> AnyhowResult<Option<String>> {
     match (pem_file, seed_file) {
         (Some(pem_file), _) => read_file(&pem_file, "PEM").map(Some),
@@ -82,37 +90,49 @@ fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> AnyhowResult
     }
 }
 
-fn read_sns_canister_ids(file_path: Option<String>) -> AnyhowResult<Option<CanisterIds>> {
-    match file_path {
-        Some(file_path) => {
-            let path = PathBuf::from(file_path);
-            let file = File::open(path).context("Could not open the SNS Canister Ids file")?;
-            let ids: HashMap<String, String> = serde_json::from_reader(file)
-                .context("Could not parse the SNS Canister Ids file")?;
+/// Tries to load canister IDs from file_path, which is a JSON formatted file containing a map
+/// from the following (string) keys to canister ID strings:
+///
+///   1. governance_canister_id
+///   2. ledger_canister_id
+///   3. root_canister_id
+///
+/// If no file_path is provided (i.e. not provided as input to the command), do nothing and return
+/// Ok(None). If the file_path is provided, but the file is malformed, Err is returned. Else, return
+/// the parsed struct.
+fn read_sns_canister_ids(file_path: Option<String>) -> AnyhowResult<Option<SnsCanisterIds>> {
+    let file_path = match file_path {
+        None => return Ok(None),
+        Some(path) => path,
+    };
 
-            let governance_canister_id = ids
-                .get("governance_canister_id")
-                .map(|id| CanisterId::from_str(id))
-                .expect("Could not parse governance_canister_id as CanisterId")?;
+    let path = PathBuf::from(file_path);
+    let file = File::open(path).context("Could not open the SNS Canister Ids file")?;
+    let ids: HashMap<String, String> =
+        serde_json::from_reader(file).context("Could not parse the SNS Canister Ids file")?;
 
-            let ledger_canister_id = ids
-                .get("ledger_canister_id")
-                .map(|id| CanisterId::from_str(id))
-                .expect("Could not parse ledger_canister_id as CanisterId")?;
+    let governance_canister_id = parse_canister_id("governance_canister_id", &ids)?;
+    let ledger_canister_id = parse_canister_id("ledger_canister_id", &ids)?;
+    let root_canister_id = parse_canister_id("root_canister_id", &ids)?;
 
-            let root_canister_id = ids
-                .get("root_canister_id")
-                .map(|id| CanisterId::from_str(id))
-                .expect("Could not parse root_canister_id as CanisterId")?;
+    Ok(Some(SnsCanisterIds {
+        governance_canister_id,
+        ledger_canister_id,
+        root_canister_id,
+    }))
+}
 
-            Ok(Some(CanisterIds {
-                governance_canister_id,
-                ledger_canister_id,
-                root_canister_id,
-            }))
-        }
-        _ => Ok(None),
-    }
+fn parse_canister_id(
+    key_name: &str,
+    canister_id_map: &HashMap<String, String>,
+) -> AnyhowResult<CanisterId> {
+    let value = canister_id_map.get(key_name).ok_or(anyhow!(
+        "'{}' is not present in --canister-ids-file <file>",
+        key_name
+    ))?;
+    let canister_id = CanisterId::from_str(value)
+        .map_err(|err| anyhow!("Could not parse CanisterId of '{}': {}", key_name, err))?;
+    Ok(canister_id)
 }
 
 fn parse_mnemonic(phrase: &str) -> AnyhowResult<Mnemonic> {
@@ -197,19 +217,20 @@ fn test_read_canister_ids_from_file() {
 
     let mut canister_ids_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
 
-    let expected_canister_ids = CanisterIds {
+    let expected_canister_ids = SnsCanisterIds {
         governance_canister_id: CanisterId::from_str("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap(),
         ledger_canister_id: CanisterId::from_str("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(),
         root_canister_id: CanisterId::from_str("r7inp-6aaaa-aaaaa-aaabq-cai").unwrap(),
     };
 
-    let json_str =  serde_json::to_string(&expected_canister_ids).unwrap();
+    let json_str = serde_json::to_string(&expected_canister_ids).unwrap();
 
     write!(canister_ids_file, "{}", json_str).expect("Cannot write to tmp file");
 
-    let actual_canister_ids = read_sns_canister_ids(Some(canister_ids_file.path().to_str().unwrap().to_string()))
-        .expect("Unable to read canister_ids_file")
-        .expect("None returned instead of Some");
+    let actual_canister_ids =
+        read_sns_canister_ids(Some(canister_ids_file.path().to_str().unwrap().to_string()))
+            .expect("Unable to read canister_ids_file")
+            .expect("None returned instead of Some");
 
     assert_eq!(actual_canister_ids, expected_canister_ids);
 }
@@ -226,4 +247,30 @@ fn test_canister_ids_from_non_existing_file() {
         .to_string();
 
     read_sns_canister_ids(Some(non_existing_file.clone())).unwrap_err();
+}
+
+#[test]
+fn test_canister_ids_from_malformed_canister_id() {
+    use std::io::Write;
+
+    let mut canister_ids_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
+
+    let raw_json = r#"{"governance_canister_id": "Not a valid canister id","ledger_canister_id": "Not a valid canister id","root_canister_id": "Not a valid canister id"}"#;
+    write!(canister_ids_file, "{}", raw_json).expect("Cannot write to tmp file");
+
+    read_sns_canister_ids(Some(canister_ids_file.path().to_str().unwrap().to_string()))
+        .unwrap_err();
+}
+
+#[test]
+fn test_canister_ids_from_missing_key() {
+    use std::io::Write;
+
+    let mut canister_ids_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
+
+    let raw_json = r#"{"ledger_canister_id": "Not a valid canister id","root_canister_id": "Not a valid canister id"}"#;
+    write!(canister_ids_file, "{}", raw_json).expect("Cannot write to tmp file");
+
+    read_sns_canister_ids(Some(canister_ids_file.path().to_str().unwrap().to_string()))
+        .unwrap_err();
 }

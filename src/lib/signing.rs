@@ -1,14 +1,15 @@
 use crate::lib::AnyhowResult;
-use crate::lib::{get_candid_type, get_local_candid};
-use crate::lib::{get_idl_string, TargetCanister};
+use crate::lib::{get_candid_type, get_idl_string, get_local_candid, TargetCanister};
 use anyhow::{anyhow, Context};
-use ic_agent::agent::QueryBuilder;
-use ic_agent::agent::UpdateBuilder;
-use ic_agent::RequestId;
+use ic_agent::{
+    agent::{QueryBuilder, UpdateBuilder},
+    RequestId,
+};
 use ic_types::principal::Principal;
 use serde::{Deserialize, Serialize};
 use serde_cbor::Value;
 use std::convert::TryFrom;
+use std::fmt::{Display, Formatter};
 use std::time::Duration;
 
 use super::get_agent;
@@ -22,6 +23,23 @@ impl std::fmt::Display for MessageError {
     }
 }
 impl std::error::Error for MessageError {}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub enum CallType {
+    Update,
+    Query,
+}
+
+impl Display for CallType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let call_type_string = match self {
+            CallType::Update => "update",
+            CallType::Query => "query",
+        };
+
+        write!(f, "{}", call_type_string)
+    }
+}
 
 /// Represents a signed message with the corresponding request id.
 #[derive(Clone)]
@@ -39,7 +57,7 @@ pub struct RequestStatus {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Ingress {
-    pub call_type: String,
+    pub call_type: CallType,
     pub request_id: Option<String>,
     pub content: String,
     pub target_canister: TargetCanister,
@@ -102,7 +120,6 @@ pub fn request_status_sign(
 
 pub fn sign(
     pem: &str,
-    canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
     target_canister: TargetCanister,
@@ -115,6 +132,7 @@ pub fn sign(
     };
 
     let ingress_expiry = Duration::from_secs(5 * 60);
+    let canister_id = Principal::from(target_canister);
 
     let (content, request_id) = if is_query {
         let bytes = QueryBuilder::new(&get_agent(pem)?, canister_id, method_name.to_string())
@@ -138,7 +156,11 @@ pub fn sign(
 
     Ok(SignedMessageWithRequestId {
         message: Ingress {
-            call_type: if is_query { "query" } else { "update" }.to_string(),
+            call_type: if is_query {
+                CallType::Query
+            } else {
+                CallType::Update
+            },
             request_id: request_id.map(|v| v.into()),
             content,
             target_canister,
@@ -150,15 +172,15 @@ pub fn sign(
 /// Generates a bundle of signed messages (ingress + request status query).
 pub fn sign_ingress_with_request_status_query(
     pem: &str,
-    canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
     target_canister: TargetCanister,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(pem, canister_id, method_name, args, target_canister)?;
+    let msg_with_req_id = sign(pem, method_name, args, target_canister)?;
     let request_id = msg_with_req_id
         .request_id
         .context("No request id for transfer call found")?;
+    let canister_id = Principal::from(target_canister);
     let request_status = request_status_sign(pem, request_id, canister_id)?;
     let message = IngressWithRequestId {
         ingress: msg_with_req_id.message,

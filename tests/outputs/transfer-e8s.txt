@@ -1,0 +1,16 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: transfer
+  Arguments:   (
+  record {
+    to = blob "4_r>\9ea\994\da\acj\e0\f4\be\13\a7\b0\baW\d6\a6\08\e5\11\a0\0f\d0\de\d5\86gR";
+    fee = record { e8s = 10_000 : nat64 };
+    memo = 0 : nat64;
+    from_subaccount = null;
+    created_at_time = null;
+    amount = record { e8s = 12_345_600 : nat64 };
+  },
+)

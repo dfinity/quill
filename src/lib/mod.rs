@@ -1,5 +1,5 @@
 //! All the common functionality.
-use crate::CanisterIds;
+use crate::SnsCanisterIds;
 use anyhow::{anyhow, Context};
 use bip39::Mnemonic;
 use candid::{
@@ -37,29 +37,40 @@ pub mod signing;
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
 #[derive(
-Serialize, Deserialize, CandidType, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord,
+    Serialize, Deserialize, CandidType, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord,
 )]
 pub enum TargetCanister {
-    Governance,
-    Ledger,
+    Governance(Principal),
+    Ledger(Principal),
 }
 
-// Returns the candid for the target canister, if there is one.
+impl From<TargetCanister> for Principal {
+    fn from(target_canister: TargetCanister) -> Self {
+        match target_canister {
+            TargetCanister::Governance(principal) => principal,
+            TargetCanister::Ledger(principal) => principal,
+        }
+    }
+}
+
+/// Returns the candid interface definition (i.e. the contents of a .did file)
+/// for the target canister, if there is one.
 pub fn get_local_candid(target_canister: TargetCanister) -> AnyhowResult<String> {
-    if target_canister == TargetCanister::Governance {
-        String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
-            .context("Cannot load governance.did")
-    } else if target_canister == TargetCanister::Ledger {
-        String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
-            .context("Cannot load ledger.did")
-    } else {
-        unreachable!()
+    match target_canister {
+        TargetCanister::Governance(_) => {
+            String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
+                .context("Cannot load governance.did")
+        }
+        TargetCanister::Ledger(_) => {
+            String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
+                .context("Cannot load ledger.did")
+        }
     }
 }
 
 /// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
-    blob: &[u8],
+    serialized_candid: &[u8],
     target_canister: TargetCanister,
     method_name: &str,
     part: &str,
@@ -67,9 +78,9 @@ pub fn get_idl_string(
     let spec = get_local_candid(target_canister)?;
     let method_type = get_candid_type(spec, method_name);
     let result = match method_type {
-        None => candid::IDLArgs::from_bytes(blob),
+        None => candid::IDLArgs::from_bytes(serialized_candid),
         Some((env, func)) => candid::IDLArgs::from_bytes_with_types(
-            blob,
+            serialized_candid,
             &env,
             if part == "args" {
                 &func.args
@@ -148,8 +159,10 @@ pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
     }
 }
 
-pub fn require_canister_ids(canister_ids: &Option<CanisterIds>) -> AnyhowResult<CanisterIds> {
-    match canister_ids {
+pub fn require_canister_ids(
+    sns_canister_ids: &Option<SnsCanisterIds>,
+) -> AnyhowResult<SnsCanisterIds> {
+    match sns_canister_ids {
         None => Err(anyhow!(
             "Cannot sign command without knowing the SNS canister ids, did you forget --canister-ids-file <json-file> ?"
         )),
@@ -162,8 +175,7 @@ pub fn parse_query_response(response: Vec<u8>) -> AnyhowResult<Vec<u8>> {
         .context("Invalid cbor data in the content of the message.")?;
     if let Value::Map(m) = cbor {
         // Try to decode a rejected response.
-        if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
-            m.get(&Value::Text("status".to_string())),
+        if let (Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
             m.get(&Value::Text("reject_code".to_string())),
             m.get(&Value::Text("reject_message".to_string())),
         ) {
@@ -175,10 +187,7 @@ pub fn parse_query_response(response: Vec<u8>) -> AnyhowResult<Vec<u8>> {
         }
 
         // Try to decode a successful response.
-        if let (_, Some(Value::Map(m))) = (
-            m.get(&Value::Text("status".to_string())),
-            m.get(&Value::Text("reply".to_string())),
-        ) {
+        if let Some(Value::Map(m)) = m.get(&Value::Text("reply".to_string())) {
             if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
                 return Ok(reply.clone());
             }
