@@ -27,6 +27,7 @@ openssl = "0.10.32"
 pem = "1.0.1"
 rand = { version = "0.8.4", features = ["getrandom"] }
 reqwest = "0.11.7"
+sha2 = "0.10.2"
 simple_asn1 = "0.6.1"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
