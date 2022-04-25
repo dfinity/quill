@@ -60,7 +60,7 @@ pub fn exec(
         wasm_path,
     } = opts;
 
-    let wasm = std::fs::read(wasm_path)?;
+    let wasm = std::fs::read(wasm_path).context("Unable to read --wasm-path.")?;
 
     // (Dynamically) come up with a summary if one wasn't provided.
     let summary = if !summary.is_empty() {
