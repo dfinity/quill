@@ -87,7 +87,8 @@ pub fn exec(
         Command::MakeUpgradeCanisterProposal(opts) => {
             let pem = require_pem(pem)?;
             let canister_ids = require_canister_ids(canister_ids)?;
-            make_upgrade_canister_proposal::exec(&pem, &canister_ids, opts).and_then(|out| print_vec(qr, &out))
+            make_upgrade_canister_proposal::exec(&pem, &canister_ids, opts)
+                .and_then(|out| print_vec(qr, &out))
         }
     }
 }

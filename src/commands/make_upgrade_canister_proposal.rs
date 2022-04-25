@@ -10,7 +10,9 @@ use anyhow::Error;
 use candid::Encode;
 use clap::Parser;
 use ic_base_types::PrincipalId;
-use ic_sns_governance::pb::v1::{manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister};
+use ic_sns_governance::pb::v1::{
+    manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister,
+};
 use ic_types::Principal;
 use sha2::{Digest, Sha256};
 
@@ -67,23 +69,30 @@ pub fn exec(
         let mut hasher = Sha256::new();
         hasher.update(&wasm);
         let wasm_fingerprint = hex::encode(hasher.finalize());
-        format!("Upgrade canister:
+        format!(
+            "Upgrade canister:
 
   ID: {}
 
   WASM:
     length: {}
-    fingerprint: {}", target_canister_id, wasm.len(), wasm_fingerprint)
+    fingerprint: {}",
+            target_canister_id,
+            wasm.len(),
+            wasm_fingerprint
+        )
     };
 
     let proposal = Proposal {
         title,
         url,
         summary,
-        action: Some(proposal::Action::UpgradeSnsControlledCanister(UpgradeSnsControlledCanister {
-            canister_id: Some(PrincipalId(Principal::from_text(target_canister_id)?)),
-            new_canister_wasm: wasm,
-        })),
+        action: Some(proposal::Action::UpgradeSnsControlledCanister(
+            UpgradeSnsControlledCanister {
+                canister_id: Some(PrincipalId(Principal::from_text(target_canister_id)?)),
+                new_canister_wasm: wasm,
+            },
+        )),
     };
 
     let neuron_id = parse_neuron_id(proposer_neuron_id)?;
