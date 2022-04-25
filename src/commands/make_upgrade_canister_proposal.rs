@@ -6,7 +6,7 @@ use crate::{
     },
     AnyhowResult, SnsCanisterIds,
 };
-use anyhow::Error;
+use anyhow::{Context, Error};
 use candid::Encode;
 use clap::Parser;
 use ic_base_types::PrincipalId;
