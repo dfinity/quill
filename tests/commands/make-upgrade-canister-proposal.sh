@@ -4,7 +4,7 @@ ${CARGO_TARGET_DIR:-../target}/debug/sns-quill \
                               --canister-ids-file=./canister_ids.json \
                               --pem-file=- \
                               make-upgrade-canister-proposal \
-                              --wasm-path=/dev/null \
+                              --wasm-path=outputs/canister.wasm \
                               --target-canister-id=pycv5-3jbbb-ccccc-ddddd-cai \
                               $PROPOSER_NEURON_ID \
     | ${CARGO_TARGET_DIR:-../target}/debug/sns-quill \
