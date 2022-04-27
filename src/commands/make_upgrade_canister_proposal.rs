@@ -37,7 +37,7 @@ pub struct MakeUpgradeCanisterProposalOpts {
     #[clap(long, default_value_t = String::new())]
     summary: String,
 
-    /// Canister to be upgraded.
+    /// Canister to be upgraded. For example: qoctq-giaaa-aaaaa-aaaea-cai.
     #[clap(long)]
     target_canister_id: String,
 
