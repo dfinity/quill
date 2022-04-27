@@ -60,27 +60,14 @@ pub fn exec(
         wasm_path,
     } = opts;
 
+    let target_canister_id = PrincipalId(Principal::from_text(target_canister_id)?);
     let wasm = std::fs::read(wasm_path).context("Unable to read --wasm-path.")?;
 
     // (Dynamically) come up with a summary if one wasn't provided.
     let summary = if !summary.is_empty() {
         summary
     } else {
-        let mut hasher = Sha256::new();
-        hasher.update(&wasm);
-        let wasm_fingerprint = hex::encode(hasher.finalize());
-        format!(
-            "Upgrade canister:
-
-  ID: {}
-
-  WASM:
-    length: {}
-    fingerprint: {}",
-            target_canister_id,
-            wasm.len(),
-            wasm_fingerprint
-        )
+        summarize(target_canister_id, &wasm)
     };
 
     let proposal = Proposal {
@@ -89,7 +76,7 @@ pub fn exec(
         summary,
         action: Some(proposal::Action::UpgradeSnsControlledCanister(
             UpgradeSnsControlledCanister {
-                canister_id: Some(PrincipalId(Principal::from_text(target_canister_id)?)),
+                canister_id: Some(target_canister_id),
                 new_canister_wasm: wasm,
             },
         )),
@@ -112,4 +99,24 @@ pub fn exec(
     )?;
 
     Ok(vec![msg])
+}
+
+fn summarize(target_canister_id: PrincipalId, wasm: &Vec<u8>) -> String {
+    // Fingerprint wasm.
+    let mut hasher = Sha256::new();
+    hasher.update(&wasm);
+    let wasm_fingerprint = hex::encode(hasher.finalize());
+
+    format!(
+        "Upgrade canister:
+
+  ID: {}
+
+  WASM:
+    length: {}
+    fingerprint: {}",
+        target_canister_id,
+        wasm.len(),
+        wasm_fingerprint
+    )
 }
