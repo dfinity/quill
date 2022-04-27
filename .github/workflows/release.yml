@@ -52,7 +52,7 @@ jobs:
 
     - name: Install toolchain (Linux static)
       if: matrix.name == 'linux'
-      uses: ghcr.io/mariodfinity/rust-musl-action:latest
+      uses: mariodfinity/rust-musl-action:latest
       with:
         args: make ${{ matrix.make_target }}
     - name: Install toolchain (ARM)
