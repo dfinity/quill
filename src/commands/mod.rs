@@ -33,7 +33,8 @@ pub enum Command {
     QRCode(qrcode::QRCodeOpts),
     /// Sends signed messages to the Internet computer.
     Send(send::SendOpts),
-    /// Make a proposal to upgrade an SNS-controlled canister.
+    /// Signs a ManageNeuron message to submit a UpgradeSnsControlledCanister
+    /// proposal.
     MakeUpgradeCanisterProposal(make_upgrade_canister_proposal::MakeUpgradeCanisterProposalOpts),
 }
 
