@@ -80,7 +80,7 @@ jobs:
         args: --target arm-unknown-linux-gnueabihf --features static-ssl --release --locked
 
     - name: Make
-      if: matrix.name != 'arm'
+      if: matrix.name != 'linux' && matrix.name != 'arm'
       run: make ${{ matrix.make_target }}
 
     - name: Upload binaries to release
