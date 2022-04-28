@@ -12,15 +12,16 @@ path = "src/main.rs"
 anyhow = "1.0.34"
 base64 = "0.13.0"
 bip39 = "1.0.1"
-candid = "0.7.8"
+candid = "0.7.14"
 clap = "3.0.0-beta.5"
 flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
-ic-agent = "0.10.0"
+ic-agent = "0.15.0"
+ic-identity-hsm = "0.15.0"
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
-ic-types = "0.2.2"
+ic-types = "0.3.0"
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 libsecp256k1 = "0.7.0"
 num-bigint = "0.4.3"

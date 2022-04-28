@@ -12,6 +12,7 @@ use ic_agent::{
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
+use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
 use libsecp256k1::{PublicKey, SecretKey};
@@ -21,6 +22,7 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
+use std::env::VarError;
 use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
@@ -31,7 +33,6 @@ pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
-pub mod hsm;
 pub mod qr;
 pub mod signing;
 
@@ -168,7 +169,23 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
         .map_err(|err| anyhow!(err))
 }
 
+fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
+    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+        .context("Cannot read NitroHSM PIN from tty")
+        // TODO: better error string
+        .map_err(|e| format!("{}", e))
+}
+
+fn read_nitrohsm_pin_env_var() -> Result<Option<String>, String> {
+    match std::env::var("NITROHSM_PIN") {
+        Ok(val) => Ok(Some(val)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
 /// Returns an identity derived from the private key.
+// TODO: return the errors
 pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
     match auth {
         AuthInfo::NoAuth => Box::new(AnonymousIdentity),
@@ -185,24 +202,22 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
                 },
             },
         },
-        AuthInfo::NitroHsm(info) => Box::new(
-            hsm::HardwareIdentity::new(&info.libpath, info.slot, &info.ident, || {
-                let pin = info.pin.borrow().clone();
-                Ok(pin.unwrap_or_else(|| {
-                    std::env::var("NITROHSM_PIN").unwrap_or_else(|_| {
-                        let pin = rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
-                            .map_err(|_| {
-                                eprintln!("NITROHSM_PIN not set");
-                                std::process::exit(1);
-                            })
-                            .unwrap();
+        AuthInfo::NitroHsm(info) => {
+            let pin_fn = || match info.pin.borrow().clone() {
+                None => match read_nitrohsm_pin_env_var() {
+                    Ok(Some(pin)) => Ok(pin),
+                    Ok(None) => {
+                        let pin = ask_nitrohsm_pin_via_tty()?;
                         *info.pin.borrow_mut() = Some(pin.clone());
-                        pin
-                    })
-                }))
-            })
-            .unwrap(),
-        ),
+                        Ok(pin)
+                    }
+                    Err(e) => Err(e),
+                },
+                Some(pin) => Ok(pin),
+            };
+            let id = HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn).unwrap();
+            Box::new(id)
+        }
     }
 }
 

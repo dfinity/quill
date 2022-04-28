@@ -24,7 +24,10 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
     });
     let Replied::CallReplied(blob) = async {
         loop {
-            match agent.request_status_raw(&request_id, canister_id).await? {
+            match agent
+                .request_status_raw(&request_id, canister_id, false)
+                .await?
+            {
                 RequestStatusResponse::Replied { reply } => return Ok(reply),
                 RequestStatusResponse::Rejected {
                     reject_code,
