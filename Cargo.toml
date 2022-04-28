@@ -25,7 +25,7 @@ ic-types = "0.3.0"
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 libsecp256k1 = "0.7.0"
 num-bigint = "0.4.3"
-openssl = "0.10.32"
+openssl = "0.10.38"
 pem = "1.0.1"
 rand = { version = "0.8.4", features = ["getrandom"] }
 simple_asn1 = "0.6.1"
