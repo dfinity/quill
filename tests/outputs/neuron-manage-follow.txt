@@ -1,0 +1,21 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    command = opt variant {
+      Follow = record {
+        topic = 0 : int32;
+        followees = vec {
+          record { id = 380_519_530_470_538 : nat64 };
+          record { id = 380_519_530_470_539 : nat64 };
+        };
+      }
+    };
+    neuron_id_or_subaccount = null;
+  },
+)

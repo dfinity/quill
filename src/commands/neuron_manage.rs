@@ -89,6 +89,12 @@ pub struct Merge {
     pub source_neuron_id: NeuronId,
 }
 
+#[derive(CandidType)]
+pub struct Follow {
+    pub topic: i32,
+    pub followees: Vec<NeuronId>,
+}
+
 #[derive(candid::CandidType)]
 pub struct MergeMaturity {
     pub percentage_to_merge: u32,
@@ -100,6 +106,7 @@ pub enum Command {
     Disburse(Disburse),
     Spawn(Spawn),
     Split(Split),
+    Follow(Follow),
     Merge(Merge),
     MergeMaturity(MergeMaturity),
 }
@@ -149,6 +156,10 @@ pub struct ManageOpts {
     #[clap(long)]
     split: Option<u64>,
 
+    /// Remove all followees for the NeuronManagement topic
+    #[clap(long)]
+    clear_manage_neuron_followees: bool,
+
     /// Merge stake, maturity and age from the neuron specified by this option into the neuron being managed.
     #[clap(long)]
     merge_from_neuron: Option<String>,
@@ -160,6 +171,14 @@ pub struct ManageOpts {
     /// Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible.
     #[clap(long)]
     join_community_fund: bool,
+
+    /// Defines the topic of a follow rule.
+    #[clap(long)]
+    follow_topic: Option<i32>,
+
+    /// Defines the neuron ids of a follow rule.
+    #[clap(long)]
+    follow_neurons: Option<Vec<u64>>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -295,6 +314,18 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         msgs.push(args);
     };
 
+    if opts.clear_manage_neuron_followees {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Follow(Follow {
+                topic: 1, // Topic::NeuronManagement as i32,
+                followees: Vec::new()
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    }
+
     if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
             id,
@@ -335,6 +366,23 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         msgs.push(args);
     };
 
+    if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
+        let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Follow(Follow {
+                topic, // Topic::NeuronManagement as i32,
+                followees,
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    } else if opts.follow_topic.is_some() {
+        return Err(anyhow!("Follow topic specified without followees."));
+    } else if opts.follow_neurons.is_some() {
+        return Err(anyhow!("Followees specified without topic."));
+    }
+
     if msgs.is_empty() {
         return Err(anyhow!("No instructions provided"));
     }
@@ -352,7 +400,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 }
 
 fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
-    id.replace("_", "")
+    id.replace('_', "")
         .parse()
         .context("Failed to parse the neuron id")
 }

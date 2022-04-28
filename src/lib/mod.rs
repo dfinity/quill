@@ -25,6 +25,8 @@ use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
 
+const EC_PARAMETERS: [u8; 7] = [6, 4, 43, 129, 4, 0, 10];
+
 pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
@@ -282,8 +284,16 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     let public_key = PublicKey::from_secret_key(&secret_key);
     let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec())?;
     let pem = Pem {
+        tag: String::from("EC PARAMETERS"),
+        contents: EC_PARAMETERS.to_vec(),
+    };
+    let parameters_pem = encode(&pem);
+    let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
-    Ok(encode(&pem).replace("\r", "").replace("\n\n", "\n"))
+    let key_pem = encode(&pem);
+    Ok((parameters_pem + &key_pem)
+        .replace('\r', "")
+        .replace("\n\n", "\n"))
 }
