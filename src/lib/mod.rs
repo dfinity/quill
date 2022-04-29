@@ -203,7 +203,8 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
             },
         },
         AuthInfo::NitroHsm(info) => {
-            let pin_fn = || match info.pin.borrow().clone() {
+            let user_set_pin = { info.pin.borrow().clone() };
+            let pin_fn = || match user_set_pin {
                 None => match read_nitrohsm_pin_env_var() {
                     Ok(Some(pin)) => Ok(pin),
                     Ok(None) => {
