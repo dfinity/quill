@@ -163,8 +163,9 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
+    let identity = get_identity(auth)?;
     builder
-        .with_boxed_identity(get_identity(auth))
+        .with_boxed_identity(identity)
         .build()
         .map_err(|err| anyhow!(err))
 }
@@ -185,21 +186,14 @@ fn read_nitrohsm_pin_env_var() -> Result<Option<String>, String> {
 }
 
 /// Returns an identity derived from the private key.
-// TODO: return the errors
-pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
+pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
     match auth {
-        AuthInfo::NoAuth => Box::new(AnonymousIdentity),
+        AuthInfo::NoAuth => Ok(Box::new(AnonymousIdentity) as _),
         AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
-            Ok(identity) => Box::new(identity),
+            Ok(id) => Ok(Box::new(id) as _),
             Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-                Ok(identity) => Box::new(identity),
-                Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-                    Ok(identity) => Box::new(identity),
-                    Err(_) => {
-                        eprintln!("Couldn't load identity from PEM file");
-                        std::process::exit(1);
-                    }
-                },
+                Ok(id) => Ok(Box::new(id) as _),
+                Err(_) => Err(anyhow!("Couldn't load identity from PEM file")),
             },
         },
         AuthInfo::NitroHsm(info) => {
@@ -216,8 +210,9 @@ pub fn get_identity(auth: &AuthInfo) -> Box<dyn Identity + Sync + Send> {
                 },
                 Some(pin) => Ok(pin),
             };
-            let id = HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn).unwrap();
-            Box::new(id)
+            HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn)
+                .context("Unable to use your hardware key")
+                .map(|i| Box::new(i) as _)
         }
     }
 }

@@ -43,6 +43,6 @@ fn get_public_ids(
 
 /// Returns the account id and the principal id if the private key was provided.
 pub fn get_ids(auth: &AuthInfo) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    let principal_id = get_identity(auth).sender().map_err(|e| anyhow!(e))?;
+    let principal_id = get_identity(auth)?.sender().map_err(|e| anyhow!(e))?;
     Ok((principal_id, get_account_id(principal_id)?))
 }
