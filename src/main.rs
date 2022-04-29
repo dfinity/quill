@@ -116,59 +116,65 @@ fn read_file(path: &str, name: &str) -> AnyhowResult<String> {
     }
 }
 
-#[test]
-fn test_read_pem_none_none() {
-    let res = read_pem(None, None);
-    assert_eq!(None, res.expect("read_pem(None, None) failed"));
-}
+#[cfg(test)]
+mod tests {
+    use bip39::Mnemonic;
+    use crate::read_pem;
 
-#[test]
-fn test_read_pem_from_pem_file() {
-    use std::io::Write;
+    #[test]
+    fn test_read_pem_none_none() {
+        let res = read_pem(None, None);
+        assert_eq!(None, res.expect("read_pem(None, None) failed"));
+    }
 
-    let mut pem_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
+    #[test]
+    fn test_read_pem_from_pem_file() {
+        use std::io::Write;
 
-    let content = "pem".to_string();
-    pem_file
-        .write_all(content.as_bytes())
-        .expect("Cannot write to temp file");
+        let mut pem_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
 
-    let res = read_pem(Some(pem_file.path().to_str().unwrap().to_string()), None);
+        let content = "pem".to_string();
+        pem_file
+            .write_all(content.as_bytes())
+            .expect("Cannot write to temp file");
 
-    assert_eq!(Some(content), res.expect("read_pem from pem file"));
-}
+        let res = read_pem(Some(pem_file.path().to_str().unwrap().to_string()), None);
 
-#[test]
-fn test_read_pem_from_seed_file() {
-    use std::io::Write;
+        assert_eq!(Some(content), res.expect("read_pem from pem file"));
+    }
 
-    let mut seed_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
+    #[test]
+    fn test_read_pem_from_seed_file() {
+        use std::io::Write;
 
-    let phrase = "ozone drill grab fiber curtain grace pudding thank cruise elder eight about";
-    seed_file
-        .write_all(phrase.as_bytes())
-        .expect("Cannot write to temp file");
-    let mnemonic = lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
+        let mut seed_file = tempfile::NamedTempFile::new().expect("Cannot create temp file");
 
-    let pem = read_pem(None, Some(seed_file.path().to_str().unwrap().to_string()))
-        .expect("Unable to read seed_file")
-        .expect("None returned instead of Some");
+        let phrase = "ozone drill grab fiber curtain grace pudding thank cruise elder eight about";
+        seed_file
+            .write_all(phrase.as_bytes())
+            .expect("Cannot write to temp file");
+        let mnemonic = crate::lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
 
-    assert_eq!(mnemonic, pem);
-}
+        let pem = read_pem(None, Some(seed_file.path().to_str().unwrap().to_string()))
+            .expect("Unable to read seed_file")
+            .expect("None returned instead of Some");
 
-#[test]
-fn test_read_pem_from_non_existing_file() {
-    let dir = tempfile::tempdir().expect("Cannot create temp dir");
-    let non_existing_file = dir
-        .path()
-        .join("non_existing_pem_file")
-        .as_path()
-        .to_str()
-        .unwrap()
-        .to_string();
+        assert_eq!(mnemonic, pem);
+    }
 
-    read_pem(Some(non_existing_file.clone()), None).unwrap_err();
+    #[test]
+    fn test_read_pem_from_non_existing_file() {
+        let dir = tempfile::tempdir().expect("Cannot create temp dir");
+        let non_existing_file = dir
+            .path()
+            .join("non_existing_pem_file")
+            .as_path()
+            .to_str()
+            .unwrap()
+            .to_string();
 
-    read_pem(None, Some(non_existing_file)).unwrap_err();
+        read_pem(Some(non_existing_file.clone()), None).unwrap_err();
+
+        read_pem(None, Some(non_existing_file)).unwrap_err();
+    }
 }
