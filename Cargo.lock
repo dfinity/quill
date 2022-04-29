@@ -2182,7 +2182,6 @@ dependencies = [
  "num-bigint 0.4.3",
  "openssl",
  "pem",
- "pkcs11",
  "rand 0.8.4",
  "reqwest",
  "rpassword",
@@ -2192,7 +2191,6 @@ dependencies = [
  "serde_json",
  "simple_asn1",
  "tempfile",
- "thiserror",
  "tiny-hderive",
  "tokio",
 ]

@@ -35,8 +35,6 @@ serde_cbor = "0.11.2"
 serde_json = "1.0.57"
 tiny-hderive = "0.3.0"
 tokio = { version = "1.15.0", features = [ "fs" ] }
-pkcs11 = "0.5.0"
-thiserror = "1.0.20"
 rpassword = "4.0.0"
 
 # forces reqwest to be >0.11.6 to avoid issues in agent-rs
