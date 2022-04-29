@@ -31,7 +31,9 @@ fn get_public_ids(
         }
         None => {
             if let AuthInfo::NoAuth = auth {
-                panic!("public-ids cannot be used without specifying a private key")
+                Err(anyhow!(
+                    "public-ids cannot be used without specifying a private key"
+                ))
             } else {
                 get_ids(auth)
             }

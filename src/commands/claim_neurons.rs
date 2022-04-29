@@ -3,6 +3,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
+use anyhow::anyhow;
 use candid::Encode;
 use openssl::bn::BigNumContext;
 use openssl::ec::{EcKey, PointConversionForm};
@@ -27,6 +28,8 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
             sig,
         )?])
     } else {
-        panic!("claim-neurons command requires a --pem-file to be specified");
+        Err(anyhow!(
+            "claim-neurons command requires a --pem-file to be specified"
+        ))
     }
 }

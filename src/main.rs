@@ -118,8 +118,8 @@ fn read_file(path: &str, name: &str) -> AnyhowResult<String> {
 
 #[cfg(test)]
 mod tests {
-    use bip39::Mnemonic;
     use crate::read_pem;
+    use bip39::Mnemonic;
 
     #[test]
     fn test_read_pem_none_none() {
