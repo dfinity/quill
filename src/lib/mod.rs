@@ -174,7 +174,7 @@ fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
     rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
         .context("Cannot read NitroHSM PIN from tty")
         // TODO: better error string
-        .map_err(|e| format!("{}", e))
+        .map_err(|e| e.to_string())
 }
 
 fn read_nitrohsm_pin_env_var() -> Result<Option<String>, String> {
