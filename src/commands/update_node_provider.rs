@@ -27,12 +27,7 @@ pub fn exec(
     opts: UpdateNodeProviderOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let reward_account = ledger_canister::AccountIdentifier::from_hex(&opts.reward_account)
-        .map_err(|e| {
-            anyhow::Error::msg(format!(
-                "Account {} is not valid address, {}",
-                &opts.reward_account, e,
-            ))
-        })?;
+        .with_context(|| format!("Account {} is not valid address", &opts.reward_account))?;
     let args = Encode!(&UpdateNodeProvider {
         reward_account: Some(AccountIdentifier {
             hash: reward_account.hash.to_vec()
