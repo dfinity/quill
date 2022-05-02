@@ -1,8 +1,8 @@
-use anyhow::Context;
 use crate::{
     lib::signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     lib::{governance_canister_id, AnyhowResult, AuthInfo},
 };
+use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
 use clap::Parser;
 
@@ -28,6 +28,7 @@ pub fn exec(
     opts: UpdateNodeProviderOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let reward_account = ledger_canister::AccountIdentifier::from_hex(&opts.reward_account)
+        .map_err(|e| anyhow!(e))
         .with_context(|| format!("Account {} is not valid address", &opts.reward_account))?;
     let args = Encode!(&UpdateNodeProvider {
         reward_account: Some(AccountIdentifier {

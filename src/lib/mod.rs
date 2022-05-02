@@ -193,7 +193,7 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
             Ok(id) => Ok(Box::new(id) as _),
             Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
                 Ok(id) => Ok(Box::new(id) as _),
-                Err(e) => e.context("couldn't load identity from PEM file"),
+                Err(e) => Err(e).context("couldn't load identity from PEM file"),
             },
         },
         AuthInfo::NitroHsm(info) => {
