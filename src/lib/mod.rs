@@ -197,18 +197,20 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
             },
         },
         AuthInfo::NitroHsm(info) => {
-            let user_set_pin = { info.pin.borrow().clone() };
-            let pin_fn = || match user_set_pin {
-                None => match read_nitrohsm_pin_env_var() {
-                    Ok(Some(pin)) => Ok(pin),
-                    Ok(None) => {
-                        let pin = ask_nitrohsm_pin_via_tty()?;
-                        *info.pin.borrow_mut() = Some(pin.clone());
-                        Ok(pin)
-                    }
-                    Err(e) => Err(e),
-                },
-                Some(pin) => Ok(pin),
+            let pin_fn = || {
+                let user_set_pin = { info.pin.borrow().clone() };
+                match user_set_pin {
+                    None => match read_nitrohsm_pin_env_var() {
+                        Ok(Some(pin)) => Ok(pin),
+                        Ok(None) => {
+                            let pin = ask_nitrohsm_pin_via_tty()?;
+                            *info.pin.borrow_mut() = Some(pin.clone());
+                            Ok(pin)
+                        }
+                        Err(e) => Err(e),
+                    },
+                    Some(pin) => Ok(pin),
+                }
             };
             HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn)
                 .context("Unable to use your hardware key")
