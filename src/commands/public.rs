@@ -1,4 +1,4 @@
-use crate::lib::{get_account_id, get_identity, require_pem, AnyhowResult};
+use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
 use clap::Parser;
 use ic_types::principal::Principal;
@@ -12,8 +12,8 @@ pub struct PublicOpts {
 }
 
 /// Prints the account and the principal ids.
-pub fn exec(pem: &Option<String>, opts: PublicOpts) -> AnyhowResult {
-    let (principal_id, account_id) = get_public_ids(pem, opts)?;
+pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
+    let (principal_id, account_id) = get_public_ids(auth, opts)?;
     println!("Principal id: {}", principal_id.to_text());
     println!("Account id: {}", account_id);
     Ok(())
@@ -21,7 +21,7 @@ pub fn exec(pem: &Option<String>, opts: PublicOpts) -> AnyhowResult {
 
 /// Returns the account id and the principal id if the private key was provided.
 fn get_public_ids(
-    pem: &Option<String>,
+    auth: &AuthInfo,
     opts: PublicOpts,
 ) -> AnyhowResult<(Principal, AccountIdentifier)> {
     match opts.principal_id {
@@ -29,13 +29,20 @@ fn get_public_ids(
             let principal_id = ic_types::Principal::from_text(principal_id)?;
             Ok((principal_id, get_account_id(principal_id)?))
         }
-        None => get_ids(pem),
+        None => {
+            if let AuthInfo::NoAuth = auth {
+                Err(anyhow!(
+                    "public-ids cannot be used without specifying a private key"
+                ))
+            } else {
+                get_ids(auth)
+            }
+        }
     }
 }
 
 /// Returns the account id and the principal id if the private key was provided.
-pub fn get_ids(pem: &Option<String>) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    let pem = require_pem(pem)?;
-    let principal_id = get_identity(&pem).sender().map_err(|e| anyhow!(e))?;
+pub fn get_ids(auth: &AuthInfo) -> AnyhowResult<(Principal, AccountIdentifier)> {
+    let principal_id = get_identity(auth)?.sender().map_err(|e| anyhow!(e))?;
     Ok((principal_id, get_account_id(principal_id)?))
 }

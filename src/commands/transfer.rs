@@ -2,7 +2,7 @@ use crate::commands::send::{Memo, SendArgs};
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
@@ -28,7 +28,7 @@ pub struct TransferOpts {
     pub fee: Option<String>,
 }
 
-pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let amount = parse_icpts(&opts.amount).context("Cannot parse amount")?;
     let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
         parse_icpts(&v).context("Cannot parse fee")
@@ -50,7 +50,7 @@ pub fn exec(pem: &str, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithReques
         created_at_time: None,
     })?;
 
-    let msg = sign_ingress_with_request_status_query(pem, ledger_canister_id(), "send_dfx", args)?;
+    let msg = sign_ingress_with_request_status_query(auth, ledger_canister_id(), "send_dfx", args)?;
     Ok(vec![msg])
 }
 

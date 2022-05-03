@@ -12,6 +12,7 @@ use ic_agent::{
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
+use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
 use ic_types::Principal;
 use libsecp256k1::{PublicKey, SecretKey};
@@ -21,6 +22,8 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
+use std::env::VarError;
+use std::path::PathBuf;
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -34,6 +37,42 @@ pub mod qr;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
+
+#[derive(Debug)]
+pub struct HSMInfo {
+    pub libpath: PathBuf,
+    pub slot: usize,
+    pub ident: String,
+    pin: std::cell::RefCell<Option<String>>,
+}
+
+#[cfg(target_os = "macos")]
+const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
+#[cfg(target_os = "linux")]
+const PKCS11_LIBPATH: &str = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
+#[cfg(target_os = "windows")]
+const PKCS11_LIBPATH: &str = "C:/Program Files/OpenSC Project/OpenSC/pkcs11/opensc-pkcs11.dll";
+
+impl HSMInfo {
+    pub fn new() -> Self {
+        HSMInfo {
+            libpath: std::path::PathBuf::from(
+                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
+            ),
+            slot: std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap()),
+            ident: std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string()),
+            pin: std::cell::RefCell::new(None),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum AuthInfo {
+    NoAuth, // No authentication details were provided;
+    // only unsigned queries are allowed.
+    PemFile(String), // --private-pem file specified
+    NitroHsm(HSMInfo),
+}
 
 pub fn ledger_canister_id() -> Principal {
     Principal::from_slice(LEDGER_CANISTER_ID.as_ref())
@@ -87,7 +126,8 @@ pub fn get_idl_string(
     Ok(format!("{}", result?))
 }
 
-/// Returns the candid type of a specifed method and correspondig idl description.
+/// Returns the candid type of a specifed method and correspondig idl
+/// description.
 pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
     let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
     let mut env = TypeEnv::new();
@@ -111,8 +151,9 @@ pub fn read_from_file(path: &str) -> AnyhowResult<String> {
     Ok(content)
 }
 
-/// Returns an agent with an identity derived from a private key if it was provided.
-pub fn get_agent(pem: &str) -> AnyhowResult<Agent> {
+/// Returns an agent with an identity derived from a private key if it was
+/// provided.
+pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
     let timeout = std::time::Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
@@ -122,35 +163,59 @@ pub fn get_agent(pem: &str) -> AnyhowResult<Agent> {
         )
         .with_ingress_expiry(Some(timeout));
 
+    let identity = get_identity(auth)?;
     builder
-        .with_boxed_identity(get_identity(pem))
+        .with_boxed_identity(identity)
         .build()
         .map_err(|err| anyhow!(err))
 }
 
-/// Returns an identity derived from the private key.
-pub fn get_identity(pem: &str) -> Box<dyn Identity + Sync + Send> {
-    if pem.is_empty() {
-        return Box::new(AnonymousIdentity);
-    }
-    match Secp256k1Identity::from_pem(pem.as_bytes()) {
-        Ok(identity) => Box::new(identity),
-        Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-            Ok(identity) => Box::new(identity),
-            Err(_) => {
-                eprintln!("Couldn't load identity from PEM file");
-                std::process::exit(1);
-            }
-        },
+fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
+    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+        .context("Cannot read NitroHSM PIN from tty")
+        // TODO: better error string
+        .map_err(|e| e.to_string())
+}
+
+fn read_nitrohsm_pin_env_var() -> Result<Option<String>, String> {
+    match std::env::var("NITROHSM_PIN") {
+        Ok(val) => Ok(Some(val)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(e) => Err(format!("{}", e)),
     }
 }
 
-pub fn require_pem(pem: &Option<String>) -> AnyhowResult<String> {
-    match pem {
-        None => Err(anyhow!(
-            "Cannot use anonymous principal, did you forget --pem-file <pem-file> ?"
-        )),
-        Some(val) => Ok(val.clone()),
+/// Returns an identity derived from the private key.
+pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
+    match auth {
+        AuthInfo::NoAuth => Ok(Box::new(AnonymousIdentity) as _),
+        AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
+            Ok(id) => Ok(Box::new(id) as _),
+            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
+                Ok(id) => Ok(Box::new(id) as _),
+                Err(e) => Err(e).context("couldn't load identity from PEM file"),
+            },
+        },
+        AuthInfo::NitroHsm(info) => {
+            let pin_fn = || {
+                let user_set_pin = { info.pin.borrow().clone() };
+                match user_set_pin {
+                    None => match read_nitrohsm_pin_env_var() {
+                        Ok(Some(pin)) => Ok(pin),
+                        Ok(None) => {
+                            let pin = ask_nitrohsm_pin_via_tty()?;
+                            *info.pin.borrow_mut() = Some(pin.clone());
+                            Ok(pin)
+                        }
+                        Err(e) => Err(e),
+                    },
+                    Some(pin) => Ok(pin),
+                }
+            };
+            let identity = HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn)
+                .context("Unable to use your hardware key")?;
+            Ok(Box::new(identity) as _)
+        }
     }
 }
 

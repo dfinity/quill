@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::{qr, require_pem, AnyhowResult};
+use crate::lib::{qr, AnyhowResult, AuthInfo};
 use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
@@ -20,6 +20,7 @@ mod qrcode;
 mod request_status;
 mod send;
 mod transfer;
+mod update_node_provider;
 
 pub use public::get_ids;
 
@@ -40,6 +41,8 @@ pub enum Command {
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
+    /// Update node provider details
+    UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
@@ -48,30 +51,21 @@ pub enum Command {
     QRCode(qrcode::QRCodeOpts),
 }
 
-pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
+pub fn exec(auth: &AuthInfo, qr: bool, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
-        Command::PublicIds(opts) => public::exec(pem, opts),
-        Command::Transfer(opts) => {
-            let pem = require_pem(pem)?;
-            transfer::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
-        }
+        Command::PublicIds(opts) => public::exec(auth, opts),
+        Command::Transfer(opts) => transfer::exec(auth, opts).and_then(|out| print_vec(qr, &out)),
         Command::NeuronStake(opts) => {
-            let pem = require_pem(pem)?;
-            neuron_stake::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            neuron_stake::exec(auth, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::NeuronManage(opts) => {
-            let pem = require_pem(pem)?;
-            neuron_manage::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            neuron_manage::exec(auth, opts).and_then(|out| print_vec(qr, &out))
         }
         Command::ListNeurons(opts) => {
-            let pem = require_pem(pem)?;
-            list_neurons::exec(&pem, opts).and_then(|out| print_vec(qr, &out))
+            list_neurons::exec(auth, opts).and_then(|out| print_vec(qr, &out))
         }
-        Command::ClaimNeurons => {
-            let pem = require_pem(pem)?;
-            claim_neurons::exec(&pem).and_then(|out| print_vec(qr, &out))
-        }
+        Command::ClaimNeurons => claim_neurons::exec(auth).and_then(|out| print_vec(qr, &out)),
         Command::ListProposals(opts) => {
             runtime.block_on(async { list_proposals::exec(opts).await })
         }
@@ -83,6 +77,9 @@ pub fn exec(pem: &Option<String>, qr: bool, cmd: Command) -> AnyhowResult {
         }
         Command::AccountBalance(opts) => {
             runtime.block_on(async { account_balance::exec(opts).await })
+        }
+        Command::UpdateNodeProvider(opts) => {
+            update_node_provider::exec(auth, opts).and_then(|out| print(&out))
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
         Command::Generate(opts) => generate::exec(opts),

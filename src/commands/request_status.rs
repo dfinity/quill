@@ -1,5 +1,5 @@
 use crate::lib::get_ic_url;
-use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult};
+use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
 use ic_agent::AgentError::MessageError;
@@ -11,10 +11,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
-    let canister_id =
-        Principal::from_text(&req.canister_id).context("Cannot parse the canister id")?;
-    let request_id = RequestId::from_str(&req.request_id).context("Cannot parse the request_id")?;
-    let mut agent = get_agent("")?;
+    let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
+    let request_id =
+        RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
+    let mut agent = get_agent(&AuthInfo::NoAuth)?;
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
@@ -24,7 +24,10 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
     });
     let Replied::CallReplied(blob) = async {
         loop {
-            match agent.request_status_raw(&request_id, canister_id).await? {
+            match agent
+                .request_status_raw(&request_id, canister_id, false)
+                .await?
+            {
                 RequestStatusResponse::Replied { reply } => return Ok(reply),
                 RequestStatusResponse::Rejected {
                     reject_code,

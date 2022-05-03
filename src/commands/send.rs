@@ -2,7 +2,7 @@ use crate::commands::request_status;
 use crate::lib::{
     get_ic_url, parse_query_response, read_from_file,
     signing::{Ingress, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, Context};
 use candid::CandidType;
@@ -84,7 +84,7 @@ pub async fn submit_unsigned_ingress(
     args: Vec<u8>,
     dry_run: bool,
 ) -> AnyhowResult {
-    let msg = crate::lib::signing::sign("", canister_id, method_name, args)?;
+    let msg = crate::lib::signing::sign(&AuthInfo::NoAuth, canister_id, method_name, args)?;
     let ingress = msg.message;
     send(
         &ingress,

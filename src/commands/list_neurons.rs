@@ -1,6 +1,6 @@
 use crate::{
     lib::signing::{sign_ingress, Ingress},
-    lib::{governance_canister_id, AnyhowResult},
+    lib::{governance_canister_id, AnyhowResult, AuthInfo},
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -23,13 +23,13 @@ pub struct ListNeuronsOpts {
 }
 
 // We currently only support a subset of the functionality.
-pub fn exec(pem: &str, opts: ListNeuronsOpts) -> AnyhowResult<Vec<Ingress>> {
+pub fn exec(auth: &AuthInfo, opts: ListNeuronsOpts) -> AnyhowResult<Vec<Ingress>> {
     let args = Encode!(&ListNeurons {
         neuron_ids: opts.neuron_id.clone(),
         include_neurons_readable_by_caller: opts.neuron_id.is_empty(),
     })?;
     Ok(vec![sign_ingress(
-        pem,
+        auth,
         governance_canister_id(),
         "list_neurons",
         args,

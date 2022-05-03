@@ -3,7 +3,7 @@ use crate::{
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult,
+        AnyhowResult, AuthInfo,
     },
 };
 use anyhow::anyhow;
@@ -39,8 +39,8 @@ pub struct StakeOpts {
     fee: Option<String>,
 }
 
-pub fn exec(pem: &str, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (controller, _) = crate::commands::public::get_ids(&Some(pem.to_string()))?;
+pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    let (controller, _) = crate::commands::public::get_ids(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
         (_, Some(name)) => convert_name_to_nonce(name),
@@ -50,7 +50,7 @@ pub fn exec(pem: &str, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
     let mut messages = match opts.amount {
         Some(amount) => transfer::exec(
-            pem,
+            auth,
             transfer::TransferOpts {
                 to: account.to_hex(),
                 amount,
@@ -66,7 +66,7 @@ pub fn exec(pem: &str, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId
     })?;
 
     messages.push(sign_ingress_with_request_status_query(
-        pem,
+        auth,
         governance_canister_id(),
         "claim_or_refresh_neuron_from_account",
         args,

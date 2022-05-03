@@ -1,7 +1,7 @@
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult,
+    AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
@@ -181,7 +181,7 @@ pub struct ManageOpts {
     follow_neurons: Option<Vec<u64>>,
 }
 
-pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
@@ -390,7 +390,7 @@ pub fn exec(pem: &str, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestI
     let mut generated = Vec::new();
     for args in msgs {
         generated.push(sign_ingress_with_request_status_query(
-            pem,
+            auth,
             governance_canister_id(),
             "manage_neuron",
             args,
