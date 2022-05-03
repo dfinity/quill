@@ -212,8 +212,9 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
                     Some(pin) => Ok(pin),
                 }
             };
-            Box::new(HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn)
-                .context("Unable to use your hardware key")?)
+            let identity = HardwareIdentity::new(&info.libpath, info.slot, &info.ident, pin_fn)
+                .context("Unable to use your hardware key")?;
+            Ok(Box::new(identity) as _)
         }
     }
 }
