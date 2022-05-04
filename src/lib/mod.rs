@@ -42,6 +42,7 @@ pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 pub enum TargetCanister {
     Governance(Principal),
     Ledger(Principal),
+    Root(Principal),
 }
 
 impl From<TargetCanister> for Principal {
@@ -49,6 +50,7 @@ impl From<TargetCanister> for Principal {
         match target_canister {
             TargetCanister::Governance(principal) => principal,
             TargetCanister::Ledger(principal) => principal,
+            TargetCanister::Root(principal) => principal,
         }
     }
 }
@@ -64,6 +66,10 @@ pub fn get_local_candid(target_canister: TargetCanister) -> AnyhowResult<String>
         TargetCanister::Ledger(_) => {
             String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
                 .context("Cannot load ledger.did")
+        }
+        TargetCanister::Root(_) => {
+            String::from_utf8(include_bytes!("../../candid/root.did").to_vec())
+                .context("Cannot load root.did")
         }
     }
 }

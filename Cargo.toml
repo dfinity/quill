@@ -19,6 +19,7 @@ hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.15.0"
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
 ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
+ic-ic00-types = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
 ic-types = "0.3.0"
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "9ccfb7c3ed424e907be2213c3bb18fb0bd740efb" }
 libsecp256k1 = "0.7.0"

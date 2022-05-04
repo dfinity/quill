@@ -14,6 +14,9 @@ use ic_agent::{
 use ic_sns_governance::pb::v1::ManageNeuronResponse;
 use ledger_canister::{BlockHeight, Tokens, TransferError};
 use std::str::FromStr;
+use ic_base_types::PrincipalId;
+use ic_ic00_types::CanisterStatusResultV2;
+use crate::lib::signing::sign_ingress_with_request_status_query;
 
 /// Sends a signed message or a set of messages.
 #[derive(Parser)]
@@ -67,8 +70,27 @@ pub async fn send_unsigned_ingress(
     .await
 }
 
+/// Signs an ingress message with request id, then submits it, and retrieves a reply.
+pub async fn sign_send_and_check_status(
+    pem: &str,
+    method_name: &str,
+    args: Vec<u8>,
+    dry_run: bool,
+    target_canister: TargetCanister) -> AnyhowResult {
+    let msg = sign_ingress_with_request_status_query(pem, method_name, args, target_canister)?;
+    send_ingress_and_check_status(
+        &msg,
+        &SendOpts {
+            file_name: Default::default(), // Not used.
+            yes: false,
+            dry_run,
+        }
+    ).await?;
+    Ok(())
+}
+
 /// Submits a ingress message to the Internet Computer and retrieves a reply.
-async fn send_ingress_and_check_status(
+pub async fn send_ingress_and_check_status(
     message: &IngressWithRequestId,
     opts: &SendOpts,
 ) -> AnyhowResult {
@@ -133,6 +155,7 @@ enum SupportedResponse {
     ManageNeuronResponse,
     TransferResponse,
     AccountBalanceResponse,
+    OwnershipSummary,
 }
 
 impl FromStr for SupportedResponse {
@@ -143,6 +166,7 @@ impl FromStr for SupportedResponse {
             "account_balance" => Ok(SupportedResponse::AccountBalanceResponse),
             "transfer" => Ok(SupportedResponse::TransferResponse),
             "manage_neuron" => Ok(SupportedResponse::ManageNeuronResponse),
+            "get_sns_canisters_summary" => Ok(SupportedResponse::OwnershipSummary),
             unsupported_response => Err(anyhow!(
                 "{} is not a supported response",
                 unsupported_response
@@ -166,6 +190,13 @@ fn print_response(blob: Vec<u8>, method_name: &String) -> AnyhowResult {
         SupportedResponse::ManageNeuronResponse => {
             let response = Decode!(blob.as_slice(), ManageNeuronResponse)?;
             println!("Response: {:?\n}", response);
+        }
+        SupportedResponse::OwnershipSummary => {
+            let response: Vec<(String, PrincipalId, CanisterStatusResultV2)> = Decode!(blob.as_slice(), Vec<(String, PrincipalId, CanisterStatusResultV2)>)?;
+            for element in response.into_iter() {
+                let (name, principal, canister_status) = element;
+                println!("{}: \n id: {} \n controller {}", name, principal, canister_status.controller());
+            }
         }
     }
 

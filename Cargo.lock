@@ -3850,6 +3850,7 @@ dependencies = [
  "hex",
  "ic-agent",
  "ic-base-types",
+ "ic-ic00-types",
  "ic-sns-governance",
  "ic-types 0.3.0",
  "ledger-canister",

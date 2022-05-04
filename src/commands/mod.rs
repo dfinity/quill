@@ -14,6 +14,7 @@ mod qrcode;
 mod request_status;
 mod send;
 mod transfer;
+mod ownership_summary;
 
 use crate::SnsCanisterIds;
 
@@ -36,6 +37,9 @@ pub enum Command {
     /// Signs a ManageNeuron message to submit a UpgradeSnsControlledCanister
     /// proposal.
     MakeUpgradeCanisterProposal(make_upgrade_canister_proposal::MakeUpgradeCanisterProposalOpts),
+    /// Print a summary of the ownership of the sns canisters, takes the dapp canister id as an
+    /// argument.
+    OwnershipSummary(ownership_summary::OwnershipSummaryOps),
 }
 
 pub fn exec(
@@ -90,7 +94,12 @@ pub fn exec(
             let canister_ids = require_canister_ids(canister_ids)?;
             make_upgrade_canister_proposal::exec(&pem, &canister_ids, opts)
                 .and_then(|out| print_vec(qr, &out))
-        }
+        },
+        Command::OwnershipSummary(opts) => {
+            let pem = require_pem(pem)?;
+            let canister_ids = require_canister_ids(canister_ids)?;
+            runtime.block_on(async { ownership_summary::exec(&pem, &canister_ids, opts).await })
+        },
     }
 }
 
