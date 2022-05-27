@@ -1,4 +1,5 @@
 use crate::commands::request_status;
+use crate::lib::{fetch_root_key_if_needed, get_agent};
 use crate::lib::{
     get_ic_url, parse_query_response, read_from_file,
     signing::{Ingress, IngressWithRequestId},
@@ -68,7 +69,7 @@ pub async fn exec(opts: SendOpts) -> AnyhowResult {
         for msg in vals {
             send(&msg, &opts).await?;
         }
-    } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
+    } else if let Ok(vals) = dbg!(serde_json::from_str::<Vec<IngressWithRequestId>>(&json)) {
         for tx in vals {
             submit_ingress_and_check_status(&tx, &opts).await?;
         }
@@ -136,13 +137,15 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
+    let agent = get_agent(&AuthInfo::NoAuth)?;
+    fetch_root_key_if_needed(&agent).await?;
     let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
-    match message.call_type.as_str() {
+    match dbg!(message.call_type.as_str()) {
         "query" => {
             let response = parse_query_response(
-                transport.query(canister_id, content).await?,
+                agent.query_signed(canister_id, content).await?,
                 canister_id,
                 &method_name,
             )?;
@@ -155,7 +158,8 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                     .request_id
                     .context("Cannot get request_id from the update message")?,
             )?;
-            transport.call(canister_id, content, request_id).await?;
+            agent.update_signed(canister_id, content).await?;
+            // transport.call(canister_id, content, request_id).await?;
             let request_id = format!("0x{}", String::from(request_id));
             println!("Request ID: {}", request_id);
         }
