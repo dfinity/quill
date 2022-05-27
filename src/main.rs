@@ -1,5 +1,4 @@
 #![warn(unused_extern_crates)]
-
 use crate::lib::AnyhowResult;
 use anyhow::{Context, Error};
 use bip39::Mnemonic;

@@ -27,6 +27,7 @@ libsecp256k1 = "0.7.0"
 num-bigint = "0.4.3"
 openssl = "0.10.38"
 pem = "1.0.1"
+qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
 simple_asn1 = "0.6.1"
 serde = { version = "1.0.130", features = ["derive"] }

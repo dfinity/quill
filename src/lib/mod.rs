@@ -33,7 +33,6 @@ pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
-pub mod qr;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;

@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::{qr, AnyhowResult, AuthInfo};
+use crate::lib::{AnyhowResult, AuthInfo};
 use anyhow::Context;
 use clap::Parser;
 use std::io::{self, Write};
@@ -87,7 +87,8 @@ pub fn exec(auth: &AuthInfo, qr: bool, cmd: Command) -> AnyhowResult {
         // Source code: https://github.com/ninegua/ic-qr-scanner
         Command::ScannerQRCode => {
             println!(
-                "█████████████████████████████████████
+                "\
+█████████████████████████████████████
 █████████████████████████████████████
 ████ ▄▄▄▄▄ █▀█ █▄▀▄▀▄█ ▄ █ ▄▄▄▄▄ ████
 ████ █   █ █▀▀▀█ ▀▀█▄▀████ █   █ ████
@@ -139,7 +140,7 @@ where
     e.write_all(json.as_bytes()).unwrap();
     let json = e.finish().unwrap();
     let json = base64::encode(json);
-    qr::print_qr(json.as_str());
+    qrcode::print_qr(json.as_str());
     if pause {
         let mut input_string = String::new();
         std::io::stdin()
