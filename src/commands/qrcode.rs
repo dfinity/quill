@@ -1,6 +1,6 @@
 use crate::lib::{read_from_file, AnyhowResult};
 use clap::Parser;
-use qrcodegen::{QrCodeEcc, QrCode};
+use qrcodegen::{QrCode, QrCodeEcc};
 
 #[derive(Parser)]
 pub struct QRCodeOpts {
