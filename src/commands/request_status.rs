@@ -24,7 +24,6 @@ pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowR
                 .context("Failed to create an agent")?,
         ),
     });
-    println!("AAAAAAAAAAAAA");
     let Replied::CallReplied(blob) = async {
         loop {
             match agent
