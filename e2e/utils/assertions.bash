@@ -79,6 +79,24 @@ assert_match() {
          | fail)
 }
 
+# Asserts that a string contains another string, WITHOUT using regexp.
+# Arguments:
+#    $1 - The string literal to use to match.
+#    $2 - The string to match against (output). By default it will use
+#         $output.
+assert_string_match() {
+    literal="$1"
+    if [[ $# < 2 ]]; then
+        text="$output"
+    else
+        text="$2"
+    fi
+    [[ "$text" =~ "$literal" ]] || \
+        (batslib_print_kv_single_or_multi 10 "literal" "$literal" "actual" "$text" \
+         | batslib_decorate "output does not match" \
+         | fail)
+}
+
 # Asserts that a string does not contain another string, using regexp.
 # Arguments:
 #    $1 - The regex to use to match.
