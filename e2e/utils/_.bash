@@ -32,7 +32,7 @@ standard_nns_setup() {
     standard_setup
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_dfx.json" dfx.json
     dfx_start
-    $BATS_TEST_DIRNAME/../utils/setup_nns.bash
+    NO_CLOBBER="1" $BATS_TEST_DIRNAME/../utils/setup_nns.bash
     export IC_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
 }
 

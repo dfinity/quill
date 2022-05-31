@@ -2,7 +2,11 @@
 
 IC_COMMIT="b90edb9897718730f65e92eb4ff6057b1b25f766"
 
-DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
+if [[ -z "${DOWNLOAD_DIR}" ]]; then
+  DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
+else
+  echo "DOWNLOAD DIR is ${DOWNLOAD_DIR}."
+fi
 
 get_binary() {
   local FILENAME

@@ -24,6 +24,8 @@ rm v$version.tar.gz
 BATS_SUPPORT="/usr/local/lib/bats-support"
 echo "BATSLIB=${BATS_SUPPORT}" >> "$GITHUB_ENV"
 echo "$HOME/bin" >> "$GITHUB_PATH"
+# if this is set, setup_nns.sh will not download all wasm modules for every individual test
+echo "DOWNLOAD_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
 
 # Exit temporary directory.
 popd
