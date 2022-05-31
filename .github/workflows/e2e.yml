@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.task }} (${{ matrix.os }})
+    name: ${{ matrix.task }} build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,6 +16,7 @@ jobs:
         # windows not supported by dfx
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
+        binary_path: [ 'target/release' ]
     steps:
       - uses: actions/checkout@master
 
