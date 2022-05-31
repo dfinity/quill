@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-PEM=`cat ./identity.pem`
+PEM=`cat ../e2e/assets/identity.pem`
 
 set -euo pipefail
 

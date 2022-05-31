@@ -315,7 +315,6 @@ pub async fn fetch_root_key_if_needed(agent: &Agent) -> AnyhowResult<()> {
     let current_url = get_ic_url();
     if !current_url.starts_with(IC_URL) {
         agent.fetch_root_key().await?;
-        println!("ROOT KEY FETCHED");
     }
     Ok(())
 }

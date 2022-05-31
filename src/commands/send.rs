@@ -68,7 +68,7 @@ pub async fn exec(opts: SendOpts) -> AnyhowResult {
         for msg in vals {
             send(&msg, &opts).await?;
         }
-    } else if let Ok(vals) = dbg!(serde_json::from_str::<Vec<IngressWithRequestId>>(&json)) {
+    } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
             submit_ingress_and_check_status(&tx, &opts).await?;
         }
@@ -139,7 +139,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     let _transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
-    match dbg!(message.call_type.as_str()) {
+    match message.call_type.as_str() {
         "query" => {
             let response = parse_query_response(
                 ic_agent::agent::ReplicaV2Transport::query(&_transport, canister_id, content)
