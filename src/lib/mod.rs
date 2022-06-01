@@ -1,6 +1,6 @@
 //! All the common functionality.
 
-use anyhow::{anyhow, Context, bail};
+use anyhow::{anyhow, bail, Context};
 use bip39::Mnemonic;
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -97,13 +97,18 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
         String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
             .context("Cannot load gtc.did")
     } else {
-        bail!("\
+        bail!(
+            "\
 Unknown recipient in message!
 Recipient: {canister_id}
 Should be one of:
 - Ledger: {ledger}
 - Governance: {governance}
-- Genesis: {genesis}", ledger = ledger_canister_id(), governance = governance_canister_id(), genesis = genesis_token_canister_id());
+- Genesis: {genesis}",
+            ledger = ledger_canister_id(),
+            governance = governance_canister_id(),
+            genesis = genesis_token_canister_id()
+        );
     }
 }
 
