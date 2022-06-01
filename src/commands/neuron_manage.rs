@@ -177,7 +177,7 @@ pub struct ManageOpts {
     follow_topic: Option<i32>,
 
     /// Defines the neuron ids of a follow rule.
-    #[clap(long)]
+    #[clap(long, multiple_values(true))]
     follow_neurons: Option<Vec<u64>>,
 }
 
