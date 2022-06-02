@@ -1,6 +1,6 @@
 Sending message with
 
-  Call type:   query
+  Call type:   update
   Sender:      2vxsx-fae
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
   Method name: list_proposals

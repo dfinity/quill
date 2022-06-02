@@ -84,10 +84,14 @@ pub async fn submit_unsigned_ingress(
     args: Vec<u8>,
     dry_run: bool,
 ) -> AnyhowResult {
-    let msg = crate::lib::signing::sign(&AuthInfo::NoAuth, canister_id, method_name, args)?;
-    let ingress = msg.message;
-    send(
-        &ingress,
+    let msg = crate::lib::signing::sign_ingress_with_request_status_query(
+        &AuthInfo::NoAuth,
+        canister_id,
+        method_name,
+        args,
+    )?;
+    submit_ingress_and_check_status(
+        &msg,
         &SendOpts {
             file_name: Default::default(),
             yes: false,
