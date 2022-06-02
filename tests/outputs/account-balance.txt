@@ -1,6 +1,6 @@
 Sending message with
 
-  Call type:   query
+  Call type:   update
   Sender:      2vxsx-fae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
   Method name: account_balance_dfx
