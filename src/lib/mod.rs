@@ -181,7 +181,7 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
 }
 
 fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
-    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+    rpassword::prompt_password("NitroHSM PIN: ")
         .context("Cannot read NitroHSM PIN from tty")
         // TODO: better error string
         .map_err(|e| e.to_string())
