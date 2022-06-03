@@ -24,7 +24,7 @@ teardown() {
     echo "NEURON: $NEURON_ID"
     assert_string_match "record { result = opt variant { NeuronId = record { id =" #fragment of a correct response
 
-    # check that staking worked
+    # check that staking worked using get-neuron-info
     assert_command bash -c "quill get-neuron-info $NEURON_ID --yes"
     assert_string_match 'stake_e8s = 300_000_000'
 
@@ -33,7 +33,8 @@ teardown() {
     assert_file_not_empty more-delay.call
     assert_command quill send more-delay.call --yes #provides no interesting output on succes. Command not failing is good enough here
 
-    # check that increasing dissolve delay worked
-    assert_command bash -c "quill get-neuron-info $NEURON_ID --yes"
+    # check that increasing dissolve delay worked, this time using list-neurons
+    assert_command bash -c "quill --pem-file $PEM_LOCATION/identity.pem list-neurons > neuron.call"
+    assert_command quill send neuron.call --yes
     assert_string_match "dissolve_delay_seconds = 15_778_800"
 }
