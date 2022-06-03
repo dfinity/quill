@@ -9,6 +9,10 @@ use clap::Parser;
 pub struct GetProposalInfoOpts {
     pub ident: u64,
 
+    /// Skips confirmation and sends the message directly.
+    #[clap(long)]
+    yes: bool,
+
     /// Will display the query, but not send it.
     #[clap(long)]
     dry_run: bool,
@@ -21,6 +25,7 @@ pub async fn exec(opts: GetProposalInfoOpts) -> AnyhowResult {
         governance_canister_id(),
         "get_proposal_info",
         args,
+        opts.yes,
         opts.dry_run,
     )
     .await

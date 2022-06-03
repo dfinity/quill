@@ -82,6 +82,7 @@ pub async fn submit_unsigned_ingress(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
+    yes: bool,
     dry_run: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
@@ -94,7 +95,7 @@ pub async fn submit_unsigned_ingress(
         &msg,
         &SendOpts {
             file_name: Default::default(),
-            yes: false,
+            yes,
             dry_run,
         },
     )
@@ -161,7 +162,6 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                     .context("Cannot get request_id from the update message")?,
             )?;
             _transport.call(canister_id, content, request_id).await?;
-            // transport.call(canister_id, content, request_id).await?;
             let request_id = format!("0x{}", String::from(request_id));
             println!("Request ID: {}", request_id);
         }

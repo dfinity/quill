@@ -16,6 +16,10 @@ pub struct AccountBalanceOpts {
     /// The id of the account to query.
     account_id: String,
 
+    /// Skips confirmation and sends the message directly.
+    #[clap(long)]
+    yes: bool,
+
     /// Will display the query, but not send it.
     #[clap(long)]
     dry_run: bool,
@@ -30,6 +34,7 @@ pub async fn exec(opts: AccountBalanceOpts) -> AnyhowResult {
         ledger_canister_id(),
         "account_balance_dfx",
         args,
+        opts.yes,
         opts.dry_run,
     )
     .await
