@@ -1,8 +1,6 @@
 use crate::lib::get_idl_string;
-use crate::lib::{get_candid_type, get_local_candid};
 use crate::lib::{AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
-use ic_agent::agent::QueryBuilder;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
 use ic_types::principal::Principal;
@@ -105,42 +103,23 @@ pub fn sign(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
-    let spec = get_local_candid(canister_id)?;
-    let method_type = get_candid_type(spec, method_name);
-    let is_query = match &method_type {
-        Some((_, f)) => f.is_query(),
-        _ => false,
-    };
-
     let ingress_expiry = Duration::from_secs(5 * 60);
 
-    let (content, request_id) = if is_query {
-        let bytes = QueryBuilder::new(&get_agent(auth)?, canister_id, method_name.to_string())
-            .with_arg(args)
-            .expire_after(ingress_expiry)
-            .sign()?
-            .signed_query;
-        (hex::encode(bytes), None)
-    } else {
-        let signed_update =
-            UpdateBuilder::new(&get_agent(auth)?, canister_id, method_name.to_string())
-                .with_arg(args)
-                .expire_after(ingress_expiry)
-                .sign()?;
+    let signed_update = UpdateBuilder::new(&get_agent(auth)?, canister_id, method_name.to_string())
+        .with_arg(args)
+        .expire_after(ingress_expiry)
+        .sign()?;
 
-        (
-            hex::encode(signed_update.signed_update),
-            Some(signed_update.request_id),
-        )
-    };
+    let content = hex::encode(signed_update.signed_update);
+    let request_id = signed_update.request_id;
 
     Ok(SignedMessageWithRequestId {
         message: Ingress {
-            call_type: if is_query { "query" } else { "update" }.to_string(),
-            request_id: request_id.map(|v| v.into()),
+            call_type: "update".to_string(),
+            request_id: Some(request_id.into()),
             content,
         },
-        request_id,
+        request_id: Some(request_id),
     })
 }
 

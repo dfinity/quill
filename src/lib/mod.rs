@@ -1,6 +1,6 @@
 //! All the common functionality.
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use bip39::Mnemonic;
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -33,7 +33,6 @@ pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
-pub mod qr;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
@@ -98,7 +97,18 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
         String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
             .context("Cannot load gtc.did")
     } else {
-        unreachable!()
+        bail!(
+            "\
+Unknown recipient in message!
+Recipient: {canister_id}
+Should be one of:
+- Ledger: {ledger}
+- Governance: {governance}
+- Genesis: {genesis}",
+            ledger = ledger_canister_id(),
+            governance = governance_canister_id(),
+            genesis = genesis_token_canister_id()
+        );
     }
 }
 
@@ -171,7 +181,7 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
 }
 
 fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
-    rpassword::read_password_from_tty(Some("NitroHSM PIN: "))
+    rpassword::prompt_password("NitroHSM PIN: ")
         .context("Cannot read NitroHSM PIN from tty")
         // TODO: better error string
         .map_err(|e| e.to_string())

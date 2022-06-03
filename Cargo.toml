@@ -13,11 +13,11 @@ anyhow = "1.0.34"
 base64 = "0.13.0"
 bip39 = "1.0.1"
 candid = "0.7.14"
-clap = "3.0.0-beta.5"
+clap = { version = "3.1.18", features = ["derive", "cargo"] }
 flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
-ic-agent = "0.15.0"
-ic-identity-hsm = "0.15.0"
+ic-agent = "0.17.0"
+ic-identity-hsm = "0.17.0"
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
 ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "bd3b73e075aea1cc81b23b38ccfb138ca4ab17ab" }
@@ -27,6 +27,7 @@ libsecp256k1 = "0.7.0"
 num-bigint = "0.4.3"
 openssl = "0.10.38"
 pem = "1.0.1"
+qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
 simple_asn1 = "0.6.1"
 serde = { version = "1.0.130", features = ["derive"] }
@@ -35,7 +36,7 @@ serde_cbor = "0.11.2"
 serde_json = "1.0.57"
 tiny-hderive = "0.3.0"
 tokio = { version = "1.15.0", features = [ "fs" ] }
-rpassword = "4.0.0"
+rpassword = "6.0.0"
 
 # forces reqwest to be >0.11.6 to avoid issues in agent-rs
 reqwest = "0.11.10"
