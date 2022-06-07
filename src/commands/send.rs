@@ -141,7 +141,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let _transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
+    let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {
@@ -161,7 +161,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                     .request_id
                     .context("Cannot get request_id from the update message")?,
             )?;
-            _transport.call(canister_id, content, request_id).await?;
+            transport.call(canister_id, content, request_id).await?;
             let request_id = format!("0x{}", String::from(request_id));
             println!("Request ID: {}", request_id);
         }
