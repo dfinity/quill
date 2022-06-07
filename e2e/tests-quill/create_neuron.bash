@@ -20,7 +20,13 @@ teardown() {
     assert_command echo "$SEND_OUTPUT" # replay the output so string matches work
     echo "$SEND_OUTPUT"
     assert_string_match "Method name: claim_or_refresh_neuron_from_account"
-    NEURON_ID=`echo "$SEND_OUTPUT" | grep -E 'NeuronId' | sed 's/[^0-9]//g'` | sed 's/64$//g'
+    N=`echo "$SEND_OUTPUT" | grep -E 'NeuronId'`
+    echo "N1: $N"
+    N=`echo "$N" | sed 's/[^0-9]//g'`
+    echo "N2: $N"
+    N=`echo "$N" | sed 's/64$//g'`
+    echo "N3: $N"
+    NEURON_ID=`echo "$SEND_OUTPUT" | grep -E 'NeuronId' | sed 's/[^0-9]//g' | sed 's/64$//g'`
     echo "NEURON: $NEURON_ID"
     assert_string_match "record { result = opt variant { NeuronId = record { id =" #fragment of a correct response
 
