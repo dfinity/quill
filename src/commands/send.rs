@@ -147,7 +147,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     match message.call_type.as_str() {
         "query" => {
             let response = parse_query_response(
-                ic_agent::agent::ReplicaV2Transport::query(&_transport, canister_id, content)
+                ic_agent::agent::ReplicaV2Transport::query(&transport, canister_id, content)
                     .await?,
                 canister_id,
                 &method_name,
