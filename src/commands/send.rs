@@ -82,6 +82,7 @@ pub async fn submit_unsigned_ingress(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
+    yes: bool,
     dry_run: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
@@ -94,7 +95,7 @@ pub async fn submit_unsigned_ingress(
         &msg,
         &SendOpts {
             file_name: Default::default(),
-            yes: false,
+            yes,
             dry_run,
         },
     )
@@ -146,7 +147,8 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     match message.call_type.as_str() {
         "query" => {
             let response = parse_query_response(
-                transport.query(canister_id, content).await?,
+                ic_agent::agent::ReplicaV2Transport::query(&transport, canister_id, content)
+                    .await?,
                 canister_id,
                 &method_name,
             )?;

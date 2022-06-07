@@ -141,14 +141,3 @@ pub fn sign_ingress_with_request_status_query(
     };
     Ok(message)
 }
-
-/// Generates a signed ingress message.
-pub fn sign_ingress(
-    auth: &AuthInfo,
-    canister_id: Principal,
-    method_name: &str,
-    args: Vec<u8>,
-) -> AnyhowResult<Ingress> {
-    let msg = sign(auth, canister_id, method_name, args)?;
-    Ok(msg.message)
-}

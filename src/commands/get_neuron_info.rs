@@ -9,6 +9,10 @@ use clap::Parser;
 pub struct GetNeuronInfoOpts {
     pub ident: u64,
 
+    /// Skips confirmation and sends the message directly.
+    #[clap(long)]
+    yes: bool,
+
     /// Will display the query, but not send it.
     #[clap(long)]
     dry_run: bool,
@@ -21,6 +25,7 @@ pub async fn exec(opts: GetNeuronInfoOpts) -> AnyhowResult {
         governance_canister_id(),
         "get_neuron_info",
         args,
+        opts.yes,
         opts.dry_run,
     )
     .await
