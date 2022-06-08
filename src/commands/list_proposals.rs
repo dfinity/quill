@@ -30,7 +30,7 @@ pub struct ListProposalsOpts {
 }
 
 // We currently only support a subset of the functionality.
-pub async fn exec(opts: ListProposalsOpts) -> AnyhowResult {
+pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&ListProposalInfo {
         limit: opts.limit.unwrap_or(100),
         before_proposal: None,
@@ -44,6 +44,7 @@ pub async fn exec(opts: ListProposalsOpts) -> AnyhowResult {
         args,
         opts.yes,
         opts.dry_run,
+        fetch_root_key,
     )
     .await
 }

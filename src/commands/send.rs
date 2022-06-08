@@ -60,7 +60,7 @@ pub struct SendOpts {
     yes: bool,
 }
 
-pub async fn exec(opts: SendOpts) -> AnyhowResult {
+pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
     let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
@@ -70,7 +70,7 @@ pub async fn exec(opts: SendOpts) -> AnyhowResult {
         }
     } else if let Ok(vals) = serde_json::from_str::<Vec<IngressWithRequestId>>(&json) {
         for tx in vals {
-            submit_ingress_and_check_status(&tx, &opts).await?;
+            submit_ingress_and_check_status(&tx, &opts, fetch_root_key).await?;
         }
     } else {
         return Err(anyhow!("Invalid JSON content"));
@@ -84,6 +84,7 @@ pub async fn submit_unsigned_ingress(
     args: Vec<u8>,
     yes: bool,
     dry_run: bool,
+    fetch_root_key: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
         &AuthInfo::NoAuth,
@@ -98,6 +99,7 @@ pub async fn submit_unsigned_ingress(
             yes,
             dry_run,
         },
+        fetch_root_key,
     )
     .await
 }
@@ -105,13 +107,20 @@ pub async fn submit_unsigned_ingress(
 async fn submit_ingress_and_check_status(
     message: &IngressWithRequestId,
     opts: &SendOpts,
+    fetch_root_key: bool,
 ) -> AnyhowResult {
     send(&message.ingress, opts).await?;
     if opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _) = &message.ingress.parse()?;
-    match request_status::submit(&message.request_status, Some(method_name.to_string())).await {
+    match request_status::submit(
+        &message.request_status,
+        Some(method_name.to_string()),
+        fetch_root_key,
+    )
+    .await
+    {
         Ok(result) => println!("{}\n", result),
         Err(err) => println!("{}\n", err),
     };

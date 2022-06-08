@@ -51,7 +51,7 @@ pub enum Command {
     QRCode(qrcode::QRCodeOpts),
 }
 
-pub fn exec(auth: &AuthInfo, qr: bool, cmd: Command) -> AnyhowResult {
+pub fn exec(auth: &AuthInfo, qr: bool, fetch_root_key: bool, cmd: Command) -> AnyhowResult {
     let runtime = Runtime::new().expect("Unable to create a runtime");
     match cmd {
         Command::PublicIds(opts) => public::exec(auth, opts),
@@ -67,21 +67,21 @@ pub fn exec(auth: &AuthInfo, qr: bool, cmd: Command) -> AnyhowResult {
         }
         Command::ClaimNeurons => claim_neurons::exec(auth).and_then(|out| print_vec(qr, &out)),
         Command::ListProposals(opts) => {
-            runtime.block_on(async { list_proposals::exec(opts).await })
+            runtime.block_on(async { list_proposals::exec(opts, fetch_root_key).await })
         }
         Command::GetProposalInfo(opts) => {
-            runtime.block_on(async { get_proposal_info::exec(opts).await })
+            runtime.block_on(async { get_proposal_info::exec(opts, fetch_root_key).await })
         }
         Command::GetNeuronInfo(opts) => {
-            runtime.block_on(async { get_neuron_info::exec(opts).await })
+            runtime.block_on(async { get_neuron_info::exec(opts, fetch_root_key).await })
         }
         Command::AccountBalance(opts) => {
-            runtime.block_on(async { account_balance::exec(opts).await })
+            runtime.block_on(async { account_balance::exec(opts, fetch_root_key).await })
         }
         Command::UpdateNodeProvider(opts) => {
             update_node_provider::exec(auth, opts).and_then(|out| print(&out))
         }
-        Command::Send(opts) => runtime.block_on(async { send::exec(opts).await }),
+        Command::Send(opts) => runtime.block_on(async { send::exec(opts, fetch_root_key).await }),
         Command::Generate(opts) => generate::exec(opts),
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner

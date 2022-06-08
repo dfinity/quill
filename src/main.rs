@@ -35,6 +35,11 @@ pub struct CliOpts {
     #[clap(long)]
     qr: bool,
 
+    /// Fetches the root key before making requests so that interfacing with local instances is possible.
+    /// DO NOT USE WITH ANY REAL INFORMATION
+    #[clap(long)]
+    insecure_local_dev_mode: bool,
+
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -79,7 +84,7 @@ fn run(opts: CliOpts) -> AnyhowResult<()> {
         }
     }?;
 
-    commands::exec(&auth, opts.qr, opts.command)
+    commands::exec(&auth, opts.qr, opts.insecure_local_dev_mode, opts.command)
 }
 
 // Get PEM from the file if provided, or try to convert from the seed file

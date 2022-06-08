@@ -1,4 +1,4 @@
-use crate::lib::{fetch_root_key_if_needed, get_ic_url};
+use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
@@ -10,13 +10,19 @@ use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub async fn submit(req: &RequestStatus, method_name: Option<String>) -> AnyhowResult<String> {
+pub async fn submit(
+    req: &RequestStatus,
+    method_name: Option<String>,
+    fetch_root_key: bool,
+) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
     let mut agent = get_agent(&AuthInfo::NoAuth)?;
     // fetching root key before replacing the transport layer because the proxy layer does not support the necessary functions
-    fetch_root_key_if_needed(&agent).await?;
+    if fetch_root_key {
+        agent.fetch_root_key().await?;
+    }
     agent.set_transport(ProxySignReplicaV2Transport {
         req: req.clone(),
         http_transport: Arc::new(
