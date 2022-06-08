@@ -26,7 +26,7 @@ pub struct AccountBalanceOpts {
 }
 
 // We currently only support a subset of the functionality.
-pub async fn exec(opts: AccountBalanceOpts) -> AnyhowResult {
+pub async fn exec(opts: AccountBalanceOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&AccountBalanceArgs {
         account: opts.account_id,
     })?;
@@ -36,6 +36,7 @@ pub async fn exec(opts: AccountBalanceOpts) -> AnyhowResult {
         args,
         opts.yes,
         opts.dry_run,
+        fetch_root_key,
     )
     .await
 }

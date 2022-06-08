@@ -19,7 +19,7 @@ pub struct GetProposalInfoOpts {
 }
 
 // We currently only support a subset of the functionality.
-pub async fn exec(opts: GetProposalInfoOpts) -> AnyhowResult {
+pub async fn exec(opts: GetProposalInfoOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&opts.ident)?;
     submit_unsigned_ingress(
         governance_canister_id(),
@@ -27,6 +27,7 @@ pub async fn exec(opts: GetProposalInfoOpts) -> AnyhowResult {
         args,
         opts.yes,
         opts.dry_run,
+        fetch_root_key,
     )
     .await
 }

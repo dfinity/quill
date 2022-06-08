@@ -320,11 +320,3 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
         .replace('\r', "")
         .replace("\n\n", "\n"))
 }
-
-pub async fn fetch_root_key_if_needed(agent: &Agent) -> AnyhowResult<()> {
-    let current_url = get_ic_url();
-    if !current_url.starts_with(IC_URL) {
-        agent.fetch_root_key().await?;
-    }
-    Ok(())
-}
