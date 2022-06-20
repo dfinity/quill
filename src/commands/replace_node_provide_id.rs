@@ -12,12 +12,12 @@ use ic_base_types::PrincipalId;
 /// Signs a message to replace Node Provide ID in targeted Node Operator Record
 #[derive(Parser)]
 pub struct ReplaceNodeProviderIdOpts {
-    /// The principal id of the node operator. This principal is the entity that
+    /// The Principal id of the node operator. This principal is the entity that
     /// is able to add and remove nodes.
     #[clap(long)]
     node_operator_id: String,
 
-    /// The principal id of this node's provider.
+    /// The new Principal id of the node provider.
     #[clap(long)]
     node_provider_id: String,
 }
