@@ -17,6 +17,7 @@ mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod qrcode;
+mod replace_node_provide_id;
 mod request_status;
 mod send;
 mod transfer;
@@ -43,6 +44,7 @@ pub enum Command {
     AccountBalance(account_balance::AccountBalanceOpts),
     /// Update node provider details
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
+    ReplaceNodeProviderId(replace_node_provide_id::ReplaceNodeProviderIdOpts),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
@@ -80,6 +82,9 @@ pub fn exec(auth: &AuthInfo, qr: bool, fetch_root_key: bool, cmd: Command) -> An
         }
         Command::UpdateNodeProvider(opts) => {
             update_node_provider::exec(auth, opts).and_then(|out| print(&out))
+        }
+        Command::ReplaceNodeProviderId(opts) => {
+            replace_node_provide_id::exec(auth, opts).and_then(|out| print(&out))
         }
         Command::Send(opts) => runtime.block_on(async { send::exec(opts, fetch_root_key).await }),
         Command::Generate(opts) => generate::exec(opts),
