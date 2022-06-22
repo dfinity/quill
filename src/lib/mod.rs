@@ -13,7 +13,9 @@ use ic_agent::{
 };
 use ic_base_types::PrincipalId;
 use ic_identity_hsm::HardwareIdentity;
-use ic_nns_constants::{GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID};
+use ic_nns_constants::{
+    GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
+};
 use ic_types::Principal;
 use libsecp256k1::{PublicKey, SecretKey};
 use pem::{encode, Pem};
@@ -85,6 +87,10 @@ pub fn genesis_token_canister_id() -> Principal {
     Principal::from_slice(GENESIS_TOKEN_CANISTER_ID.as_ref())
 }
 
+pub fn registry_canister_id() -> Principal {
+    Principal::from_slice(REGISTRY_CANISTER_ID.as_ref())
+}
+
 // Returns the candid for the specified canister id, if there is one.
 pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     if canister_id == governance_canister_id() {
@@ -96,6 +102,9 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
     } else if canister_id == genesis_token_canister_id() {
         String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
             .context("Cannot load gtc.did")
+    } else if canister_id == registry_canister_id() {
+        String::from_utf8(include_bytes!("../../candid/registry.did").to_vec())
+            .context("Cannot load registry.did")
     } else {
         bail!(
             "\
@@ -104,10 +113,12 @@ Recipient: {canister_id}
 Should be one of:
 - Ledger: {ledger}
 - Governance: {governance}
-- Genesis: {genesis}",
+- Genesis: {genesis}
+- Registry: {registry}",
             ledger = ledger_canister_id(),
             governance = governance_canister_id(),
-            genesis = genesis_token_canister_id()
+            genesis = genesis_token_canister_id(),
+            registry = registry_canister_id()
         );
     }
 }
