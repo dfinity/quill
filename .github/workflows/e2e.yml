@@ -15,8 +15,8 @@ jobs:
       matrix:
         # windows not supported by dfx
         os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-        binary_path: [ 'target/release' ]
+        rust: [1.60.0]
+        binary_path: ["target/release"]
     steps:
       - uses: actions/checkout@master
 
@@ -26,7 +26,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           # components: rustfmt, clippy
-  
+
       - name: Build release
         run: make release
       - name: Upload Artifacts
@@ -46,7 +46,7 @@ jobs:
 
   test:
     runs-on: ${{ matrix.os }}
-    needs: [ build, list_tests ]
+    needs: [build, list_tests]
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.list_tests.outputs.matrix)}}
