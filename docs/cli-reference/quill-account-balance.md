@@ -1,6 +1,6 @@
 # quill account-balance
 
-Queries a ledger account balance.
+Queries a ledger account for its balance.
 
 ## Basic usage
 

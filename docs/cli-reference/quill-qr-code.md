@@ -1,6 +1,6 @@
 # quill qr-code
 
-Print QR code for data e.g. principal id.
+Print QR code for provided data e.g. principal id.
 
 ## Basic usage
 

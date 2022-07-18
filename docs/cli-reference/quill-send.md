@@ -1,6 +1,6 @@
 # quill send
 
-Sends a signed message or a set of messages.
+Sends a signed message or a set of messages to the IC.
 
 ## Basic usage
 
