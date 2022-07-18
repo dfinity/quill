@@ -68,10 +68,11 @@ After this, find the binary at `target/release/quill`.
 
 If you have access to an Internet Computer testnet (for example, a version the
 replica binary and NNS running locally), you can target quill at this test
-network by setting the `IC_URL` environment variable to the full URL. For
+network by setting the `IC_URL` environment variable to the full URL. In addition
+to that, it is required to use the `--insecure-local-dev-mode` flag. For
 example:
 
-    IC_URL=https://nnsdapp.dfinity.network quill --pem-file <path> list-neurons
+    IC_URL=https://nnsdapp.dfinity.network quill --insecure-local-dev-mode --pem-file <path> list-neurons
 
 ## Contribution
 
