@@ -80,7 +80,7 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     if opts.hsm {
         let mut hsm = lib::HSMInfo::new();
         if let Some(path) = opts.hsm_libpath {
-            hsm.libpath = std::path::PathBuf::from(path);
+            hsm.libpath = path;
         }
         if let Some(slot) = opts.hsm_slot {
             hsm.slot = slot;

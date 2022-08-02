@@ -3,7 +3,7 @@ use anyhow::{anyhow, Context};
 use bip39::{Language, Mnemonic};
 use clap::Parser;
 use rand::{rngs::OsRng, RngCore};
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
@@ -14,11 +14,11 @@ pub struct GenerateOpts {
 
     /// File to write the seed phrase to.
     #[clap(long, default_value = "seed.txt")]
-    seed_file: String,
+    seed_file: PathBuf,
 
     /// File to write the PEM to.
     #[clap(long)]
-    pem_file: Option<String>,
+    pem_file: Option<PathBuf>,
 
     /// A seed phrase in quotes to use to generate the PEM file.
     #[clap(long)]
@@ -35,11 +35,11 @@ pub struct GenerateOpts {
 
 /// Generate or recover mnemonic seed phrase and/or PEM file.
 pub fn exec(opts: GenerateOpts) -> AnyhowResult {
-    if Path::new(&opts.seed_file).exists() && !opts.overwrite_seed_file {
+    if opts.seed_file.exists() && !opts.overwrite_seed_file {
         return Err(anyhow!("Seed file exists and overwrite is not set."));
     }
     if let Some(path) = &opts.pem_file {
-        if Path::new(path).exists() && !opts.overwrite_pem_file {
+        if path.exists() && !opts.overwrite_pem_file {
             return Err(anyhow!("PEM file exists and overwrite is not set."));
         }
     }
@@ -64,7 +64,7 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     phrase.push('\n');
     std::fs::write(opts.seed_file, phrase)?;
     if let Some(path) = opts.pem_file {
-        std::fs::write(path, pem.clone())?;
+        std::fs::write(path, &pem)?;
     }
     let (principal_id, account_id) = crate::commands::public::get_ids(&AuthInfo::PemFile(pem))?;
     println!("Principal id: {}", principal_id);
