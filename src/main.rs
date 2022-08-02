@@ -53,9 +53,9 @@ struct GlobalOpts {
 #[derive(Args)]
 pub struct BaseOpts<T: Args> {
     #[clap(flatten)]
-    global_opts: GlobalOpts,
-    #[clap(flatten)]
     command_opts: T,
+    #[clap(flatten, next_help_heading = "COMMON")]
+    global_opts: GlobalOpts,
 }
 
 fn main() {
