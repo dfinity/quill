@@ -46,7 +46,7 @@ struct GlobalOpts {
 
     /// Fetches the root key before making requests so that interfacing with local instances is possible.
     /// DO NOT USE WITH ANY REAL INFORMATION
-    #[clap(long, name = "insecure-local-dev-mode")]
+    #[clap(long = "insecure-local-dev-mode", name = "insecure-local-dev-mode")]
     fetch_root_key: bool,
 }
 
