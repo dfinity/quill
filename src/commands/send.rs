@@ -12,6 +12,7 @@ use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use ic_types::principal::Principal;
 use ledger_canister::{ICPTs, Subaccount};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(
@@ -49,7 +50,7 @@ pub struct SendArgs {
 #[derive(Parser)]
 pub struct SendOpts {
     /// Path to the signed message
-    file_name: String,
+    file_name: PathBuf,
 
     /// Will display the signed message, but not send it.
     #[clap(long)]

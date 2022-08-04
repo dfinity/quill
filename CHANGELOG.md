@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+- All command parameters have been moved to the end of the command. E.g. instead of `quill --pem-file $PEM <subcommand>`, it is now `quill <subcommand> --pem-file $PEM`.
+
 ## [0.2.17] - 2022-07-13
 
 ### Fixed

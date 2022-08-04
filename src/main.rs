@@ -1,8 +1,11 @@
 #![warn(unused_extern_crates)]
+use std::path::{Path, PathBuf};
+
 use crate::lib::AnyhowResult;
-use anyhow::{Context, Error};
+use anyhow::Context;
 use bip39::Mnemonic;
-use clap::{crate_version, Parser};
+use clap::{crate_version, Args, Parser};
+use lib::AuthInfo;
 
 mod commands;
 mod lib;
@@ -11,15 +14,21 @@ mod lib;
 #[derive(Parser)]
 #[clap(name("quill"), version = crate_version!())]
 pub struct CliOpts {
+    #[clap(subcommand)]
+    command: commands::Command,
+}
+
+#[derive(Args)]
+struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
     #[clap(long)]
-    pem_file: Option<String>,
+    pem_file: Option<PathBuf>,
 
     #[clap(long)]
     hsm: bool,
 
     #[clap(long)]
-    hsm_libpath: Option<String>,
+    hsm_libpath: Option<PathBuf>,
 
     #[clap(long)]
     hsm_slot: Option<usize>,
@@ -29,7 +38,7 @@ pub struct CliOpts {
 
     /// Path to your seed file (use "-" for STDIN)
     #[clap(long)]
-    seed_file: Option<String>,
+    seed_file: Option<PathBuf>,
 
     /// Output the result(s) as UTF-8 QR codes.
     #[clap(long)]
@@ -37,16 +46,21 @@ pub struct CliOpts {
 
     /// Fetches the root key before making requests so that interfacing with local instances is possible.
     /// DO NOT USE WITH ANY REAL INFORMATION
-    #[clap(long)]
-    insecure_local_dev_mode: bool,
+    #[clap(long = "insecure-local-dev-mode", name = "insecure-local-dev-mode")]
+    fetch_root_key: bool,
+}
 
-    #[clap(subcommand)]
-    command: commands::Command,
+#[derive(Args)]
+pub struct BaseOpts<T: Args> {
+    #[clap(flatten)]
+    command_opts: T,
+    #[clap(flatten, next_help_heading = "COMMON")]
+    global_opts: GlobalOpts,
 }
 
 fn main() {
     let opts = CliOpts::parse();
-    if let Err(err) = run(opts) {
+    if let Err(err) = commands::dispatch(opts.command) {
         for (level, cause) in err.chain().enumerate() {
             if level == 0 {
                 eprintln!("Error: {}", err);
@@ -61,12 +75,12 @@ fn main() {
     }
 }
 
-fn run(opts: CliOpts) -> AnyhowResult<()> {
+fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     // Get PEM from the file if provided, or try to convert from the seed file
-    let auth: lib::AuthInfo = if opts.hsm {
+    if opts.hsm {
         let mut hsm = lib::HSMInfo::new();
         if let Some(path) = opts.hsm_libpath {
-            hsm.libpath = std::path::PathBuf::from(path);
+            hsm.libpath = path;
         }
         if let Some(slot) = opts.hsm_slot {
             hsm.slot = slot;
@@ -74,25 +88,23 @@ fn run(opts: CliOpts) -> AnyhowResult<()> {
         if let Some(id) = opts.hsm_id {
             hsm.ident = id;
         }
-        Ok::<_, Error>(lib::AuthInfo::NitroHsm(hsm))
+        Ok(lib::AuthInfo::NitroHsm(hsm))
     } else {
-        let pem = read_pem(opts.pem_file, opts.seed_file)?;
+        let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
         if let Some(pem) = pem {
             Ok(lib::AuthInfo::PemFile(pem))
         } else {
             Ok(lib::AuthInfo::NoAuth)
         }
-    }?;
-
-    commands::exec(&auth, opts.qr, opts.insecure_local_dev_mode, opts.command)
+    }
 }
 
 // Get PEM from the file if provided, or try to convert from the seed file
-fn read_pem(pem_file: Option<String>, seed_file: Option<String>) -> AnyhowResult<Option<String>> {
+fn read_pem(pem_file: Option<&Path>, seed_file: Option<&Path>) -> AnyhowResult<Option<String>> {
     match (pem_file, seed_file) {
-        (Some(pem_file), _) => read_file(&pem_file, "PEM").map(Some),
+        (Some(pem_file), _) => read_file(pem_file, "PEM").map(Some),
         (_, Some(seed_file)) => {
-            let seed = read_file(&seed_file, "seed")?;
+            let seed = read_file(seed_file, "seed")?;
             let mnemonic = parse_mnemonic(&seed)?;
             let mnemonic = lib::mnemonic_to_pem(&mnemonic)?;
             Ok(Some(mnemonic))
@@ -105,18 +117,18 @@ fn parse_mnemonic(phrase: &str) -> AnyhowResult<Mnemonic> {
     Mnemonic::parse(phrase).context("Couldn't parse the seed phrase as a valid mnemonic. {:?}")
 }
 
-fn read_file(path: &str, name: &str) -> AnyhowResult<String> {
-    match path {
+fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
+    let path = path.as_ref();
+    if path == Path::new("-") {
         // read from STDIN
-        "-" => {
-            let mut buffer = String::new();
-            use std::io::Read;
-            std::io::stdin()
-                .read_to_string(&mut buffer)
-                .map(|_| buffer)
-                .context(format!("Couldn't read {} from STDIN", name))
-        }
-        path => std::fs::read_to_string(path).context(format!("Couldn't read {} file", name)),
+        let mut buffer = String::new();
+        use std::io::Read;
+        std::io::stdin()
+            .read_to_string(&mut buffer)
+            .map(|_| buffer)
+            .context(format!("Couldn't read {} from STDIN", name))
+    } else {
+        std::fs::read_to_string(path).with_context(|| format!("Couldn't read {} file", name))
     }
 }
 
@@ -142,7 +154,7 @@ mod tests {
             .write_all(content.as_bytes())
             .expect("Cannot write to temp file");
 
-        let res = read_pem(Some(pem_file.path().to_str().unwrap().to_string()), None);
+        let res = read_pem(Some(pem_file.path()), None);
 
         assert_eq!(Some(content), res.expect("read_pem from pem file"));
     }
@@ -159,7 +171,7 @@ mod tests {
             .expect("Cannot write to temp file");
         let mnemonic = crate::lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
 
-        let pem = read_pem(None, Some(seed_file.path().to_str().unwrap().to_string()))
+        let pem = read_pem(None, Some(seed_file.path()))
             .expect("Unable to read seed_file")
             .expect("None returned instead of Some");
 
@@ -169,16 +181,10 @@ mod tests {
     #[test]
     fn test_read_pem_from_non_existing_file() {
         let dir = tempfile::tempdir().expect("Cannot create temp dir");
-        let non_existing_file = dir
-            .path()
-            .join("non_existing_pem_file")
-            .as_path()
-            .to_str()
-            .unwrap()
-            .to_string();
+        let non_existing_file = dir.path().join("non_existing_pem_file");
 
-        read_pem(Some(non_existing_file.clone()), None).unwrap_err();
+        read_pem(Some(&non_existing_file), None).unwrap_err();
 
-        read_pem(None, Some(non_existing_file)).unwrap_err();
+        read_pem(None, Some(&non_existing_file)).unwrap_err();
     }
 }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::lib::{read_from_file, AnyhowResult};
 use clap::Parser;
 use qrcodegen::{QrCode, QrCodeEcc};
@@ -6,7 +8,7 @@ use qrcodegen::{QrCode, QrCodeEcc};
 pub struct QRCodeOpts {
     /// File the contents of which to be output as a QRCode.
     #[clap(long)]
-    file: Option<String>,
+    file: Option<PathBuf>,
 
     // String to be output as a QRCode.
     #[clap(long)]

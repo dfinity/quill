@@ -24,8 +24,8 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::env::VarError;
 use std::path::PathBuf;
+use std::{env::VarError, path::Path};
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -160,13 +160,13 @@ pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Funct
 }
 
 /// Reads from the file path or STDIN and returns the content.
-pub fn read_from_file(path: &str) -> AnyhowResult<String> {
+pub fn read_from_file(path: impl AsRef<Path>) -> AnyhowResult<String> {
     use std::io::Read;
+    let path = path.as_ref();
     let mut content = String::new();
-    if path == "-" {
+    if path == Path::new("-") {
         std::io::stdin().read_to_string(&mut content)?;
     } else {
-        let path = std::path::Path::new(&path);
         let mut file = std::fs::File::open(&path).context("Cannot open the message file.")?;
         file.read_to_string(&mut content)
             .context("Cannot read the message file.")?;
