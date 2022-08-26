@@ -10,7 +10,7 @@ use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use ic_types::principal::Principal;
-use ledger_canister::{ICPTs, Subaccount};
+use ledger_canister::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -39,8 +39,8 @@ pub struct TimeStamp {
 #[derive(CandidType)]
 pub struct SendArgs {
     pub memo: Memo,
-    pub amount: ICPTs,
-    pub fee: ICPTs,
+    pub amount: Tokens,
+    pub fee: Tokens,
     pub from_subaccount: Option<Subaccount>,
     pub to: String,
     pub created_at_time: Option<TimeStamp>,
