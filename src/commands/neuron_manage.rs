@@ -7,7 +7,7 @@ use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
 use clap::Parser;
 use ic_types::Principal;
-use ledger_canister::ICPTs;
+use ledger_canister::Tokens;
 
 // These constants are copied from src/governance.rs
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
@@ -71,7 +71,7 @@ pub struct AccountIdentifier {
 #[derive(CandidType)]
 pub struct Disburse {
     pub to_account: Option<AccountIdentifier>,
-    pub amount: Option<ICPTs>,
+    pub amount: Option<Tokens>,
 }
 
 #[derive(CandidType, Default)]
