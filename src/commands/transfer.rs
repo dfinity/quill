@@ -7,7 +7,7 @@ use crate::lib::{
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
-use ledger_canister::{ICPTs, TRANSACTION_FEE};
+use ledger_canister::{Tokens, DEFAULT_TRANSFER_FEE};
 
 /// Signs an ICP transfer transaction.
 #[derive(Default, Parser)]
@@ -16,7 +16,7 @@ pub struct TransferOpts {
     pub to: String,
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
-    #[clap(long, validator(icpts_amount_validator))]
+    #[clap(long, validator(token_amount_validator))]
     pub amount: String,
 
     /// Reference number, default is 0.
@@ -24,14 +24,14 @@ pub struct TransferOpts {
     pub memo: Option<String>,
 
     /// Transaction fee, default is 10000 e8s.
-    #[clap(long, validator(icpts_amount_validator))]
+    #[clap(long, validator(token_amount_validator))]
     pub fee: Option<String>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let amount = parse_icpts(&opts.amount).context("Cannot parse amount")?;
-    let fee = opts.fee.map_or(Ok(TRANSACTION_FEE), |v| {
-        parse_icpts(&v).context("Cannot parse fee")
+    let amount = parse_tokens(&opts.amount).context("Cannot parse amount")?;
+    let fee = opts.fee.map_or(Ok(DEFAULT_TRANSFER_FEE), |v| {
+        parse_tokens(&v).context("Cannot parse fee")
     })?;
     let memo = Memo(
         opts.memo
@@ -54,33 +54,33 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     Ok(vec![msg])
 }
 
-fn new_icps(icpt: u64, e8s: u64) -> AnyhowResult<ICPTs> {
-    ICPTs::new(icpt, e8s)
+fn new_tokens(tokens: u64, e8s: u64) -> AnyhowResult<Tokens> {
+    Tokens::new(tokens, e8s)
         .map_err(|err| anyhow!(err))
-        .context("Cannot create new ICPs")
+        .context("Cannot create new tokens structure")
 }
 
-fn parse_icpts(amount: &str) -> AnyhowResult<ICPTs> {
+fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
     let parse = |s: &str| {
         s.parse::<u64>()
-            .context("Failed to parse ICPTs as unsigned integer")
+            .context("Failed to parse tokens as unsigned integer")
     };
     match &amount.split('.').collect::<Vec<_>>().as_slice() {
-        [icpts] => new_icps(parse(icpts)?, 0),
-        [icpts, e8s] => {
+        [tokens] => new_tokens(parse(tokens)?, 0),
+        [tokens, e8s] => {
             let mut e8s = e8s.to_string();
             while e8s.len() < 8 {
                 e8s.push('0');
             }
             let e8s = &e8s[..8];
-            new_icps(parse(icpts)?, parse(e8s)?)
+            new_tokens(parse(tokens)?, parse(e8s)?)
         }
         _ => bail!("Cannot parse amount {}", amount),
     }
 }
 
-fn icpts_amount_validator(icpts: &str) -> AnyhowResult<()> {
-    parse_icpts(icpts).map(|_| ())
+fn token_amount_validator(tokens: &str) -> AnyhowResult<()> {
+    parse_tokens(tokens).map(|_| ())
 }
 
 fn memo_validator(memo: &str) -> Result<(), String> {
