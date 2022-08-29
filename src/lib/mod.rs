@@ -17,7 +17,7 @@ use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
 use ic_types::Principal;
-use libsecp256k1::{PublicKey, SecretKey};
+use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
 use simple_asn1::ASN1Block::{
@@ -312,13 +312,16 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     }
 
     let seed = mnemonic.to_seed("");
-    let ext = tiny_hderive::bip32::ExtendedPrivKey::derive(&seed, "m/44'/223'/0'/0/0")
+    let ext = bip32::XPrv::derive_from_path(&seed, &"m/44'/223'/0'/0/0".parse()?)
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
-    let secret = ext.secret();
-    let secret_key = SecretKey::parse(&secret).context("Failed to parse secret key")?;
-    let public_key = PublicKey::from_secret_key(&secret_key);
-    let der = der_encode_secret_key(public_key.serialize().to_vec(), secret.to_vec())?;
+    let secret = ext.private_key();
+    let secret_key = SecretKey::from(secret);
+    let public_key = secret_key.public_key();
+    let der = der_encode_secret_key(
+        public_key.to_encoded_point(false).to_bytes().into(),
+        secret_key.to_be_bytes().to_vec(),
+    )?;
     let pem = Pem {
         tag: String::from("EC PARAMETERS"),
         contents: EC_PARAMETERS.to_vec(),
