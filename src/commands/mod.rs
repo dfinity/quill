@@ -46,7 +46,7 @@ pub enum Command {
     UpdateNodeProvider(BaseOpts<update_node_provider::UpdateNodeProviderOpts>),
     ReplaceNodeProviderId(BaseOpts<replace_node_provide_id::ReplaceNodeProviderIdOpts>),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
-    Generate(BaseOpts<generate::GenerateOpts>),
+    Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
     /// Print QR code for data e.g. principal id.
@@ -109,7 +109,7 @@ pub fn dispatch(cmd: Command) -> AnyhowResult {
         Command::Send(opts) => runtime.block_on(async {
             send::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
         })?,
-        Command::Generate(opts) => generate::exec(opts.command_opts)?,
+        Command::Generate(opts) => generate::exec(opts)?,
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner
         Command::ScannerQRCode => {
