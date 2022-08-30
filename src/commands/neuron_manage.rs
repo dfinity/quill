@@ -50,6 +50,17 @@ pub struct AddHotKey {
 pub struct JoinCommunityFund {}
 
 #[derive(CandidType)]
+pub struct ProposalId {
+    pub id: u64,
+}
+
+#[derive(CandidType)]
+pub struct RegisterVote {
+    pub vote: i32,
+    pub proposal: Option<ProposalId>,
+}
+
+#[derive(CandidType)]
 pub enum Operation {
     RemoveHotKey(RemoveHotKey),
     StartDissolving(StartDissolving),
@@ -103,6 +114,7 @@ pub struct MergeMaturity {
 #[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
+    RegisterVote(RegisterVote),
     Disburse(Disburse),
     Spawn(Spawn),
     Split(Split),
@@ -179,6 +191,14 @@ pub struct ManageOpts {
     /// Defines the neuron ids of a follow rule.
     #[clap(long, multiple_values(true))]
     follow_neurons: Option<Vec<u64>>,
+
+    /// Vote on proposal(s) (approve by default).
+    #[clap(long, multiple_values(true))]
+    register_vote: Option<Vec<u64>>,
+
+    /// Reject proposal(s).
+    #[clap(long)]
+    reject: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -364,6 +384,20 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
+    };
+
+    if let Some(proposals) = opts.register_vote {
+        for proposal in proposals {
+            let args = Encode!(&ManageNeuron {
+                id,
+                command: Some(Command::RegisterVote(RegisterVote {
+                    vote: if opts.reject { 2 } else { 1 },
+                    proposal: Some(ProposalId { id: proposal }),
+                })),
+                neuron_id_or_subaccount: None,
+            })?;
+            msgs.push(args);
+        }
     };
 
     if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
