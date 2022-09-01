@@ -1,5 +1,5 @@
-{ rev    ? "8e1eab9eae4278c9bb1dcae426848a581943db5a"
-, sha256 ? "0jf4rccc0z9in1iahw13i5wl93gbp1x6mkjd3qivjg97ms9qw3l0"
+{ rev    ? "7a94fcdda304d143f9a40006c033d7e190311b54"
+, sha256 ? "0d643wp3l77hv2pmg2fi7vyxn4rwy0iyr8djcw1h5x72315ck9ik"
 , pkgs   ? import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256; }) {
@@ -10,11 +10,11 @@
 
 with pkgs; rustPlatform.buildRustPackage rec {
   pname = "quill";
-  version = "0.2.14";
+  version = "0.2.17";
 
   src = ./.;
 
-  cargoSha256 = "sha256-t+N0UoVOJIxi1q0SBfCqxNIcmXVBo44hhKE0SllJ63M=";
+  cargoSha256 = "sha256-J66D1j1AdQanD9FuI+OuXalVbX3sYzIpSSRdIt10/TE=";
 
   cargoBuildFlags = [];
 
@@ -25,8 +25,9 @@ with pkgs; rustPlatform.buildRustPackage rec {
   ic = fetchFromGitHub {
     owner = "dfinity";
     repo = "ic";
-    rev = "779549eccfcf61ac702dfc2ee6d76ffdc2db1f7f";
-    sha256 = "1r31d5hab7k1n60a7y8fw79fjgfq04cgj9krwa6r9z4isi3919v6";
+    rev = "c7c002be1f49482f920d22b3ec561331edacc6f8";
+    sha256 = "1v3w0r0kfwzhmwkyar0rha8s98nfc9cjpi90gx9f02xdx0wz8hxm";
+    # date = "2022-08-17T09:06:20+00:00";
   };
 
   registry = "file://local-registry";
