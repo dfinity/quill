@@ -198,7 +198,12 @@ type Operation = variant {
   SetDissolveTimestamp : SetDissolveTimestamp;
   JoinCommunityFund: JoinCommunityFund;
 };
-type Proposal = record { url : text; action : opt Action; summary : text };
+type Proposal = record {
+  title : opt text;
+  summary : text;
+  url : text;
+  action : opt Action;
+};
 type ProposalData = record {
   id : opt NeuronId;
   failure_reason : opt GovernanceError;

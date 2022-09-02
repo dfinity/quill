@@ -111,6 +111,32 @@ pub struct MergeMaturity {
     pub percentage_to_merge: u32,
 }
 
+#[derive(candid::CandidType)]
+pub struct Motion {
+    pub motion_text: String,
+}
+
+#[derive(candid::CandidType)]
+pub enum Action {
+    // ManageNeuron(ManageNeuron),
+    // ExecuteNnsFunction(ExecuteNnsFunction),
+    // RewardNodeProvider(RewardNodeProvider),
+    // SetDefaultFollowees(SetDefaultFollowees),
+    // RewardNodeProviders(RewardNodeProviders),
+    // ManageNetworkEconomics(NetworkEconomics),
+    // ApproveGenesisKyc(ApproveGenesisKyc),
+    // AddOrRemoveNodeProvider(AddOrRemoveNodeProvider),
+    Motion(Motion),
+}
+
+#[derive(candid::CandidType)]
+pub struct Proposal {
+    pub title: Option<String>,
+    pub summary: String,
+    pub url: String,
+    pub action: Option<Action>,
+}
+
 #[derive(CandidType)]
 pub enum Command {
     Configure(Configure),
@@ -121,6 +147,7 @@ pub enum Command {
     Follow(Follow),
     Merge(Merge),
     MergeMaturity(MergeMaturity),
+    MakeProposal(Proposal),
 }
 
 #[derive(CandidType)]
@@ -199,6 +226,18 @@ pub struct ManageOpts {
     /// Reject proposal(s).
     #[clap(long)]
     reject: bool,
+
+    /// Submit a proposal with this title; must be used with --proposal-summary-file
+    #[clap(long)]
+    proposal_title: Option<String>,
+
+    /// URL to be associated with a submitted proposal
+    #[clap(long)]
+    proposal_url: Option<String>,
+
+    /// Submit a proposal, taking its summary from this file and title from --proposal-title
+    #[clap(long)]
+    proposal_summary_file: Option<std::path::PathBuf>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -373,6 +412,33 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
+    };
+
+    if let Some(summary_file) = opts.proposal_summary_file {
+        if let Some(title) = opts.proposal_title {
+            let args = Encode!(&ManageNeuron {
+                id,
+                command: Some(Command::MakeProposal(Proposal {
+                    title: Some(title.clone()),
+                    url: opts.proposal_url.unwrap_or_default(),
+                    action: Some(Action::Motion(Motion { motion_text: title })),
+                    summary: std::fs::read_to_string(summary_file.clone()).expect(&format!(
+                        "Could not read summary file {}",
+                        summary_file.display()
+                    )),
+                })),
+                neuron_id_or_subaccount: None,
+            })?;
+            msgs.push(args);
+        } else {
+            return Err(anyhow!(
+                "--proposal-summary-file must be used with --proposal-title"
+            ));
+        }
+    } else if let Some(_) = opts.proposal_title {
+        return Err(anyhow!(
+            "--proposal-summary-file must be used with --proposal-title"
+        ));
     };
 
     if opts.join_community_fund {
