@@ -103,6 +103,7 @@ type IncreaseDissolveDelay = record {
   additional_dissolve_delay_seconds : nat32;
 };
 type JoinCommunityFund = record {};
+type LeaveCommunityFund = record {};
 type ListNeurons = record {
   neuron_ids : vec nat64;
   include_neurons_readable_by_caller : bool;
@@ -197,6 +198,7 @@ type Operation = variant {
   IncreaseDissolveDelay : IncreaseDissolveDelay;
   SetDissolveTimestamp : SetDissolveTimestamp;
   JoinCommunityFund: JoinCommunityFund;
+  LeaveCommunityFund: LeaveCommunityFund;
 };
 type Proposal = record { url : text; action : opt Action; summary : text };
 type ProposalData = record {
