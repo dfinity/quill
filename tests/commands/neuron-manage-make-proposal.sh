@@ -1,0 +1,1 @@
+${CARGO_TARGET_DIR:-../target}/debug/quill neuron-manage 65 --proposal-title "Hello" --proposal-summary-file commands/neuron-manage-make-proposal.sh --pem-file - |  ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -

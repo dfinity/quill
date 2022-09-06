@@ -1,0 +1,20 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = opt record { id = 65 : nat64 };
+    command = opt variant {
+      MakeProposal = record {
+        url = "";
+        title = opt "Hello";
+        action = variant { Motion = record { motion_text = "Hello" } };
+        summary = "${CARGO_TARGET_DIR:-../target}/debug/quill neuron-manage 65 --proposal-title \"Hello\" --proposal-summary-file commands/neuron-manage-make-proposal.sh --pem-file - |  ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -\n";
+      }
+    };
+    neuron_id_or_subaccount = null;
+  },
+)
