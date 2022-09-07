@@ -58,7 +58,7 @@ type Command_1 = variant {
   Disburse : DisburseResponse;
 };
 type Command_2 = variant {
-  Spawn : Spawn;
+  Spawn : NeuronId;
   Split : Split;
   Configure : Configure;
   Merge : Merge;
@@ -90,10 +90,13 @@ type Followees = record { followees : vec NeuronId };
 type Governance = record {
   default_followees : vec record { int32; Followees };
   most_recent_monthly_node_provider_rewards : opt MostRecentMonthlyNodeProviderRewards;
+  maturity_modulation_last_updated_at_timestamp_seconds : opt nat64;
   wait_for_quiet_threshold_seconds : nat64;
   metrics : opt GovernanceCachedMetrics;
   node_providers : vec NodeProvider;
+  cached_daily_maturity_modulation_basis_points : opt int32;
   economics : opt NetworkEconomics;
+  spawning_neurons : opt bool;
   latest_reward_event : opt RewardEvent;
   to_claim_transfers : vec NeuronStakeTransfer;
   short_voting_period_seconds : nat64;
@@ -193,6 +196,7 @@ type Neuron = record {
   neuron_fees_e8s : nat64;
   transfer : opt NeuronStakeTransfer;
   known_neuron_data : opt KnownNeuronData;
+  spawn_at_timestamp_seconds : opt nat64;
 };
 type NeuronId = record { id : nat64 };
 type NeuronIdOrSubaccount = variant {
