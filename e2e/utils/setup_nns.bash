@@ -62,6 +62,7 @@ get_wasm lifeline.wasm
 get_wasm genesis-token-canister.wasm
 get_wasm identity-canister.wasm
 get_wasm nns-ui-canister.wasm
+get_wasm sns-wasm-canister.wasm
 
 NNS_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
 
