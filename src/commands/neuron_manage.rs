@@ -422,10 +422,9 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
                     title: Some(title.clone()),
                     url: opts.proposal_url.unwrap_or_default(),
                     action: Some(Action::Motion(Motion { motion_text: title })),
-                    summary: std::fs::read_to_string(summary_file.clone()).expect(&format!(
-                        "Could not read summary file {}",
-                        summary_file.display()
-                    )),
+                    summary: std::fs::read_to_string(summary_file.clone()).unwrap_or_else(
+                        |_| panic!("Could not read summary file {}", summary_file.display())
+                    ),
                 })),
                 neuron_id_or_subaccount: None,
             })?;
@@ -435,7 +434,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
                 "--proposal-summary-file must be used with --proposal-title"
             ));
         }
-    } else if let Some(_) = opts.proposal_title {
+    } else if opts.proposal_title.is_some() {
         return Err(anyhow!(
             "--proposal-summary-file must be used with --proposal-title"
         ));
