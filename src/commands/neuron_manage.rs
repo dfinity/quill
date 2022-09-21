@@ -202,7 +202,7 @@ pub struct ManageOpts {
 
     /// Vote on proposal(s) (approve by default).
     #[clap(long, multiple_values(true))]
-    register_vote: Option<Vec<u64>>,
+    register_vote: Option<Vec<String>>,
 
     /// Reject proposal(s).
     #[clap(long)]
@@ -407,15 +407,47 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {
-            let args = Encode!(&ManageNeuron {
-                id,
-                command: Some(Command::RegisterVote(RegisterVote {
-                    vote: if opts.reject { 2 } else { 1 },
-                    proposal: Some(ProposalId { id: proposal }),
-                })),
-                neuron_id_or_subaccount: None,
-            })?;
-            msgs.push(args);
+            let mut proposals = Vec::new();
+            if proposal.contains('-') {
+                let pieces: Vec<&str> = proposal.split("-").collect();
+                if pieces.len() == 2 {
+                    if let Ok(mut first) = pieces[0].parse::<u64>() {
+                        let mut last = pieces[0].to_string();
+                        last.replace_range(
+                            pieces[0].chars().count() - pieces[1].chars().count()..,
+                            &pieces[1],
+                        );
+                        if let Ok(last) = last.parse::<u64>() {
+                            if ((last - first) as usize) < 100 {
+                                proposals.resize_with((last - first + 1) as usize, || {
+                                    first += 1;
+                                    first - 1
+                                });
+                            }
+                        }
+                    }
+                }
+            } else {
+                if let Ok(proposal) = proposal.parse::<u64>() {
+                    proposals.push(proposal);
+                }
+            }
+            if proposals.len() == 0 {
+                return Err(anyhow!(
+                    "Proposal ranges must be less than 100 and in the form XXX-YY."
+                ));
+            }
+            for proposal in proposals {
+                let args = Encode!(&ManageNeuron {
+                    id,
+                    command: Some(Command::RegisterVote(RegisterVote {
+                        vote: if opts.reject { 2 } else { 1 },
+                        proposal: Some(ProposalId { id: proposal }),
+                    })),
+                    neuron_id_or_subaccount: None,
+                })?;
+                msgs.push(args);
+            }
         }
     };
 
