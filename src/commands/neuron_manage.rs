@@ -409,13 +409,13 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         for proposal in proposals {
             let mut proposals = Vec::new();
             if proposal.contains('-') {
-                let pieces: Vec<&str> = proposal.split("-").collect();
+                let pieces: Vec<&str> = proposal.split('-').collect();
                 if pieces.len() == 2 {
                     if let Ok(mut first) = pieces[0].parse::<u64>() {
                         let mut last = pieces[0].to_string();
                         last.replace_range(
                             pieces[0].chars().count() - pieces[1].chars().count()..,
-                            &pieces[1],
+                            pieces[1],
                         );
                         if let Ok(last) = last.parse::<u64>() {
                             if ((last - first) as usize) < 100 {
@@ -427,12 +427,10 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
                         }
                     }
                 }
-            } else {
-                if let Ok(proposal) = proposal.parse::<u64>() {
-                    proposals.push(proposal);
-                }
+            } else if let Ok(proposal) = proposal.parse::<u64>() {
+                proposals.push(proposal);
             }
-            if proposals.len() == 0 {
+            if proposals.is_empty() {
                 return Err(anyhow!(
                     "Proposal ranges must be less than 100 and in the form XXX-YY."
                 ));
