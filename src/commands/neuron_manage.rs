@@ -117,7 +117,20 @@ pub struct Motion {
 }
 
 #[derive(candid::CandidType)]
+pub struct KnownNeuron {
+    id: Option<NeuronId>,
+    known_neuron_data: Option<KnownNeuronData>,
+}
+
+#[derive(candid::CandidType)]
+pub struct KnownNeuronData {
+    name: String,
+    description: Option<String>,
+}
+
+#[derive(candid::CandidType)]
 pub enum Action {
+    RegisterKnownNeuron(KnownNeuron),
     // ManageNeuron(ManageNeuron),
     // ExecuteNnsFunction(ExecuteNnsFunction),
     // RewardNodeProvider(RewardNodeProvider),
@@ -238,6 +251,22 @@ pub struct ManageOpts {
     /// Submit a proposal, taking its summary from this file and title from --proposal-title
     #[clap(long)]
     proposal_summary_file: Option<std::path::PathBuf>,
+
+    /// The kind of proposal to be submitted: "motion", or "register-known-neuron"
+    #[clap(long)]
+    proposal_kind: Option<String>,
+
+    /// For a register-known-neuron proposal, the neuron id being proposed
+    #[clap(long)]
+    known_neuron_id: Option<String>,
+
+    /// For a register-known-neuron proposal, the name being proposed
+    #[clap(long)]
+    known_neuron_name: Option<String>,
+
+    /// For a register-known-neuron proposal, a brief description of the neuron
+    #[clap(long)]
+    known_neuron_desc: Option<String>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -421,7 +450,22 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
                 command: Some(Command::MakeProposal(Proposal {
                     title: Some(title.clone()),
                     url: opts.proposal_url.unwrap_or_default(),
-                    action: Some(Action::Motion(Motion { motion_text: title })),
+                    action: Some(match opts.proposal_kind.as_deref() {
+                        Some("register-known-neuron") => Action::RegisterKnownNeuron(KnownNeuron {
+                            id: opts.known_neuron_id.map(|x| NeuronId {
+                                id: parse_neuron_id(x.to_string())
+                                    .expect("Could not parse known neuron id to propose")
+                            }),
+                            known_neuron_data: Some(KnownNeuronData {
+                                name: opts
+                                    .known_neuron_name
+                                    .expect("Expected a known neuron name to propose")
+                                    .to_string(),
+                                description: opts.known_neuron_desc.map(|x| x.to_string()),
+                            }),
+                        }),
+                        _ => Action::Motion(Motion { motion_text: title }),
+                    }),
                     summary: std::fs::read_to_string(summary_file.clone()).unwrap_or_else(
                         |_| panic!("Could not read summary file {}", summary_file.display())
                     ),
