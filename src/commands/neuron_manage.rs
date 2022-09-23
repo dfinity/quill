@@ -50,6 +50,9 @@ pub struct AddHotKey {
 pub struct JoinCommunityFund {}
 
 #[derive(CandidType)]
+pub struct LeaveCommunityFund {}
+
+#[derive(CandidType)]
 pub struct ProposalId {
     pub id: u64,
 }
@@ -68,6 +71,7 @@ pub enum Operation {
     AddHotKey(AddHotKey),
     IncreaseDissolveDelay(IncreaseDissolveDelay),
     JoinCommunityFund(JoinCommunityFund),
+    LeaveCommunityFund(LeaveCommunityFund),
 }
 
 #[derive(CandidType)]
@@ -220,9 +224,13 @@ pub struct ManageOpts {
     #[clap(long)]
     merge_maturity: Option<u32>,
 
-    /// Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible.
+    /// Join the Internet Computer's community fund with this neuron's entire stake.
     #[clap(long)]
     join_community_fund: bool,
+
+    /// Leave the Internet Computer's community fund.
+    #[clap(long, conflicts_with("join-community-fund"))]
+    leave_community_fund: bool,
 
     /// Defines the topic of a follow rule.
     #[clap(long)]
@@ -494,6 +502,17 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         })?;
         msgs.push(args);
     };
+
+    if opts.leave_community_fund {
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::LeaveCommunityFund(LeaveCommunityFund {}))
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    }
 
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {

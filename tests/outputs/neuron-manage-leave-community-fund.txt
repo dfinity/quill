@@ -8,10 +8,8 @@ Sending message with
   record {
     id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
     command = opt variant {
-      Spawn = record {
-        percentage_to_spawn = null;
-        new_controller = null;
-        nonce = null;
+      Configure = record {
+        operation = opt variant { LeaveCommunityFund = record {} };
       }
     };
     neuron_id_or_subaccount = null;
