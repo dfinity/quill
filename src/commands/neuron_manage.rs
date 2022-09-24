@@ -461,15 +461,14 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
                     action: Some(match opts.proposal_kind.as_deref() {
                         Some("register-known-neuron") => Action::RegisterKnownNeuron(KnownNeuron {
                             id: opts.known_neuron_id.map(|x| NeuronId {
-                                id: parse_neuron_id(x.to_string())
+                                id: parse_neuron_id(x)
                                     .expect("Could not parse known neuron id to propose")
                             }),
                             known_neuron_data: Some(KnownNeuronData {
                                 name: opts
                                     .known_neuron_name
-                                    .expect("Expected a known neuron name to propose")
-                                    .to_string(),
-                                description: opts.known_neuron_desc.map(|x| x.to_string()),
+                                    .expect("Expected a known neuron name to propose"),
+                                description: opts.known_neuron_desc,
                             }),
                         }),
                         _ => Action::Motion(Motion { motion_text: title }),
