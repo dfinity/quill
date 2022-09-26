@@ -411,10 +411,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             let mut proposals = Vec::new();
             if proposal.contains('-') {
                 let (mut first, last) = get_range(&proposal)?;
-                proposals.resize_with((last - first + 1) as usize, || {
-                    first += 1;
-                    first - 1
-                });
+                proposals = (first, last+1).collect();
             } else if let Ok(proposal) = proposal.parse::<u64>() {
                 proposals.push(proposal);
             }
