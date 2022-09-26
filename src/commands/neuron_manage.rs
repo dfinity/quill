@@ -410,10 +410,12 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         for proposal in proposals {
             let mut proposals = Vec::new();
             if proposal.contains('-') {
-                let (mut first, last) = get_range(&proposal)?;
-                proposals = (first, last+1).collect();
+                let (first, last) = get_range(&proposal)?;
+                proposals = (first..last + 1).collect();
             } else if let Ok(proposal) = proposal.parse::<u64>() {
                 proposals.push(proposal);
+            } else {
+                return Err(anyhow!("Unable to parse proposal or range."));
             }
             for proposal in proposals {
                 let args = Encode!(&ManageNeuron {
