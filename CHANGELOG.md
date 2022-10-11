@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.3.0] - 2022-10-11
+
+### Added
+- `neuron-manage register-vote`. (#132)
+-  Range voting. (#136)
 ### Changed
-- All command parameters have been moved to the end of the command. E.g. instead of `quill --pem-file $PEM <subcommand>`, it is now `quill <subcommand> --pem-file $PEM`.
+- All command parameters have been moved to the end of the command. (#126)
+
+### Fixed
+- `quill generate` arg. (#131)
 
 ## [0.2.17] - 2022-07-13
 

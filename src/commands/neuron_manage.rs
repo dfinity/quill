@@ -4,9 +4,8 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, Context};
-use candid::{CandidType, Encode};
+use candid::{CandidType, Encode, Principal};
 use clap::Parser;
-use ic_types::Principal;
 use ledger_canister::Tokens;
 
 // These constants are copied from src/governance.rs

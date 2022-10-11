@@ -1,7 +1,7 @@
 use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
+use candid::Principal;
 use clap::Parser;
-use ic_types::principal::Principal;
 use ledger_canister::AccountIdentifier;
 
 #[derive(Parser)]
@@ -26,7 +26,7 @@ fn get_public_ids(
 ) -> AnyhowResult<(Principal, AccountIdentifier)> {
     match opts.principal_id {
         Some(principal_id) => {
-            let principal_id = ic_types::Principal::from_text(principal_id)?;
+            let principal_id = Principal::from_text(principal_id)?;
             Ok((principal_id, get_account_id(principal_id)?))
         }
         None => {

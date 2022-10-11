@@ -1,10 +1,10 @@
 use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
+use candid::Principal;
 use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
-use ic_types::Principal;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;

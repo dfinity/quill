@@ -5,7 +5,7 @@ use bip39::Mnemonic;
 use candid::{
     parser::typing::{check_prog, TypeEnv},
     types::Function,
-    IDLProg,
+    IDLProg, Principal,
 };
 use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
@@ -16,7 +16,6 @@ use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
-use ic_types::Principal;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;

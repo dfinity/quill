@@ -1,9 +1,9 @@
 use crate::lib::get_idl_string;
 use crate::lib::{AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
+use candid::Principal;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
-use ic_types::principal::Principal;
 use serde::{Deserialize, Serialize};
 use serde_cbor::Value;
 use std::convert::TryFrom;
