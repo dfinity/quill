@@ -7,10 +7,9 @@ use crate::{
     },
 };
 use anyhow::anyhow;
-use candid::{CandidType, Encode};
+use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use ic_types::Principal;
 use ledger_canister::{AccountIdentifier, Subaccount};
 
 #[derive(CandidType)]

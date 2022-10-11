@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context};
 use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
-use ic_types::Principal;
+use candid::Principal;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
