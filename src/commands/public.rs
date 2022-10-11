@@ -1,7 +1,7 @@
 use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
-use clap::Parser;
 use candid::Principal;
+use clap::Parser;
 use ledger_canister::AccountIdentifier;
 
 #[derive(Parser)]

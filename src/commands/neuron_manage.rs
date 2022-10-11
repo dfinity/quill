@@ -4,7 +4,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, Context};
-use candid::{CandidType, Encode,Principal};
+use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ledger_canister::Tokens;
 
