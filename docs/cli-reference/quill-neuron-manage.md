@@ -40,5 +40,5 @@ quill neuron-manage [option] <neuron id>
 | `--merge-maturity <MERGE_MATURITY>` | Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake. |
 | `--remove-hot-key <REMOVE_HOT_KEY>` | Principal hot key to be removed. |
 | `--split <SPLIT>` | Split off the given number of ICP from a neuron. |
-| `--register-vote (<PROPOSAL_ID>\|<PROPOSAL_ID>-<RANGE_END_SUFFIX>)...` [--reject] | Vote to approve (default) or reject proposal(s). |
+| `--register-vote <PROPOSAL_ID>...` [--reject] | Vote to approve (default) or reject proposal(s). |
 

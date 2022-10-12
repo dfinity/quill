@@ -12,7 +12,6 @@ use ledger_canister::Tokens;
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
 pub const ONE_YEAR_SECONDS: u32 = (4 * 365 + 1) * ONE_DAY_SECONDS / 4;
 pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
-pub const RANGE_LIMIT: usize = 100;
 
 #[derive(CandidType)]
 pub struct IncreaseDissolveDelay {
@@ -202,7 +201,7 @@ pub struct ManageOpts {
 
     /// Vote on proposal(s) (approve by default).
     #[clap(long, multiple_values(true))]
-    register_vote: Option<Vec<String>>,
+    register_vote: Option<Vec<u64>>,
 
     /// Reject proposal(s).
     #[clap(long)]
@@ -407,26 +406,15 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {
-            let mut proposals = Vec::new();
-            if proposal.contains('-') {
-                let (first, last) = get_range(&proposal)?;
-                proposals = (first..last + 1).collect();
-            } else if let Ok(proposal) = proposal.parse::<u64>() {
-                proposals.push(proposal);
-            } else {
-                return Err(anyhow!("Unable to parse proposal or range."));
-            }
-            for proposal in proposals {
-                let args = Encode!(&ManageNeuron {
-                    id,
-                    command: Some(Command::RegisterVote(RegisterVote {
-                        vote: if opts.reject { 2 } else { 1 },
-                        proposal: Some(ProposalId { id: proposal }),
-                    })),
-                    neuron_id_or_subaccount: None,
-                })?;
-                msgs.push(args);
-            }
+            let args = Encode!(&ManageNeuron {
+                id,
+                command: Some(Command::RegisterVote(RegisterVote {
+                    vote: if opts.reject { 2 } else { 1 },
+                    proposal: Some(ProposalId { id: proposal }),
+                })),
+                neuron_id_or_subaccount: None,
+            })?;
+            msgs.push(args);
         }
     };
 
@@ -467,61 +455,4 @@ fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
     id.replace('_', "")
         .parse()
         .context("Failed to parse the neuron id")
-}
-
-// Get the range first..last from a string of the form X-Y
-// of the form 1234-5 = 1234..1245, 1234-45 = 1234-1245, etc. where
-// the string Y is a new suffix overwriting the end of X.
-// Empty ranges are an error as are any points which do not parse as u64 as
-// are any ranges not less than RANGE_LIMIT.
-// See test_get_range() for additional examples.
-fn get_range(range: &str) -> AnyhowResult<(u64, u64)> {
-    let pieces: Vec<&str> = range.split('-').collect();
-    if pieces.len() == 2 {
-        if let Ok(first) = pieces[0].parse::<u64>() {
-            let mut last = pieces[0].to_string();
-            last.replace_range(
-                pieces[0]
-                    .chars()
-                    .count()
-                    .saturating_sub(pieces[1].chars().count())..,
-                pieces[1],
-            );
-            if let Ok(last) = last.parse::<u64>() {
-                if last >= first && ((last - first) as usize) < RANGE_LIMIT {
-                    return Ok((first, last));
-                }
-            }
-        }
-    }
-    return Err(anyhow!(
-        "Proposal ranges must be of the form START-ENDSUFFIX (e.g. 123-31) and shorter than {}.",
-        RANGE_LIMIT
-    ));
-}
-
-#[test]
-fn test_get_range() {
-    assert!(get_range("1").is_err());
-    assert!(get_range("ABCDE").is_err());
-    assert!(get_range("1-A").is_err());
-    assert!(get_range("2-1").is_err());
-    assert!(get_range("12-10").is_err());
-    assert!(get_range("12-1").is_err());
-    assert!(get_range("10000-99999").is_err());
-
-    assert_eq!(get_range("1-1").ok(), Some((1, 1)));
-    assert_eq!(get_range("1-2").ok(), Some((1, 2)));
-    assert_eq!(get_range("1-29").ok(), Some((1, 29)));
-
-    assert_eq!(get_range("10-10").ok(), Some((10, 10)));
-    assert_eq!(get_range("10-2").ok(), Some((10, 12)));
-    assert_eq!(get_range("10-12").ok(), Some((10, 12)));
-    assert_eq!(get_range("10-22").ok(), Some((10, 22)));
-
-    assert_eq!(get_range("777-8").ok(), Some((777, 778)));
-    assert_eq!(get_range("777-88").ok(), Some((777, 788)));
-    assert_eq!(get_range("777-788").ok(), Some((777, 788)));
-    assert_eq!(get_range("777-783").ok(), Some((777, 783)));
-    assert_eq!(get_range("999-1001").ok(), Some((999, 1001)));
 }
