@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+-  Removed range voting. (#139)
+
 ## [0.3.0] - 2022-10-11
 
 ### Added
