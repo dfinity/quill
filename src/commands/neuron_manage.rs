@@ -264,7 +264,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         msgs.push(args);
     };
 
-    if let Some(_) = opts.merge_maturity {
+    if opts.merge_maturity.is_some() {
         bail!("Merging maturity is no longer a supported option. See --stake-maturity. https://wiki.internetcomputer.org/wiki/NNS_neuron_operations_related_to_maturity");
     };
 
