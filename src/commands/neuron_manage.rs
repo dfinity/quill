@@ -3,7 +3,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_base_types::PrincipalId;
@@ -11,8 +11,8 @@ use ic_nns_common::pb::v1::{NeuronId, ProposalId};
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
         configure::Operation, AddHotKey, Command, Configure, Disburse, Follow,
-        IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, MergeMaturity,
-        RegisterVote, RemoveHotKey, Split, StartDissolving, StopDissolving,
+        IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
+        RemoveHotKey, Split, StartDissolving, StopDissolving,
     },
     ManageNeuron,
 };
@@ -260,20 +260,8 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         msgs.push(args);
     };
 
-    if let Some(percentage_to_merge) = opts.merge_maturity {
-        if percentage_to_merge == 0 || percentage_to_merge > 100 {
-            return Err(anyhow!(
-                "Percentage to merge must be a number from 1 to 100"
-            ));
-        }
-        let args = Encode!(&ManageNeuron {
-            id: id.clone(),
-            command: Some(Command::MergeMaturity(MergeMaturity {
-                percentage_to_merge
-            })),
-            neuron_id_or_subaccount: None,
-        })?;
-        msgs.push(args);
+    if let Some(_) = opts.merge_maturity {
+        bail!("Merging maturity is no longer a supported option. See --stake-maturity. https://wiki.internetcomputer.org/wiki/NNS_neuron_operations_related_to_maturity");
     };
 
     if opts.join_community_fund {
