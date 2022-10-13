@@ -12,7 +12,7 @@ use ic_nns_governance::pb::v1::{
     manage_neuron::{
         configure::Operation, AddHotKey, Command, Configure, Disburse, Follow,
         IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
-        RemoveHotKey, Split, StartDissolving, StopDissolving,
+        RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
     },
     ManageNeuron,
 };
@@ -76,6 +76,10 @@ pub struct ManageOpts {
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
     #[clap(hide(true), long)]
     merge_maturity: Option<u32>,
+
+    /// Stake a percentage (between 1 and 100) of the maturity of a neuron.
+    #[clap(long)]
+    stake_maturity: Option<u32>,
 
     /// Join the Internet Computer's community fund with this neuron's entire stake.
     #[clap(long)]
@@ -263,6 +267,20 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     if let Some(_) = opts.merge_maturity {
         bail!("Merging maturity is no longer a supported option. See --stake-maturity. https://wiki.internetcomputer.org/wiki/NNS_neuron_operations_related_to_maturity");
     };
+
+    if let Some(percentage) = opts.stake_maturity {
+        if !(1..=100).contains(&percentage) {
+            bail!("Percentage to merge must be a number from 1 to 100");
+        }
+        let args = Encode!(&ManageNeuron {
+            id: id.clone(),
+            command: Some(Command::StakeMaturity(StakeMaturity {
+                percentage_to_stake: Some(percentage),
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
+    }
 
     if opts.join_community_fund {
         let args = Encode!(&ManageNeuron {
