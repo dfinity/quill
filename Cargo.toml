@@ -19,10 +19,12 @@ flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
 ic-identity-hsm = "0.21.0"
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "0f34788b2e7316062d40fe114fbe4e7766d21f6d" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "0f34788b2e7316062d40fe114fbe4e7766d21f6d" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "0f34788b2e7316062d40fe114fbe4e7766d21f6d" }
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "0f34788b2e7316062d40fe114fbe4e7766d21f6d" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-types = "0.4.1"
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
 num-bigint = "0.4.3"
 openssl = "0.10.38"
 pem = "1.0.1"
