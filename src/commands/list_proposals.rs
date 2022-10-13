@@ -2,18 +2,9 @@ use crate::{
     commands::send::submit_unsigned_ingress,
     lib::{governance_canister_id, AnyhowResult},
 };
-use candid::{CandidType, Encode};
+use candid::Encode;
 use clap::Parser;
-use ic_nns_common::types::ProposalId;
-
-#[derive(CandidType)]
-pub struct ListProposalInfo {
-    pub limit: u32,
-    pub before_proposal: Option<ProposalId>,
-    pub exclude_topic: Vec<i32>,
-    pub include_reward_status: Vec<i32>,
-    pub include_status: Vec<i32>,
-}
+use ic_nns_governance::pb::v1::ListProposalInfo;
 
 #[derive(Parser)]
 pub struct ListProposalsOpts {
