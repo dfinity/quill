@@ -1,6 +1,6 @@
 #! /bin/bash
 
-IC_COMMIT="7fb55980481a526cda59e538114e7c3282d38f22"
+IC_COMMIT="63bfd63f0ff7cb44ef7751d830b979341741d169"
 
 if [[ -z "${DOWNLOAD_DIR}" ]]; then
   DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
