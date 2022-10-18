@@ -5,13 +5,13 @@ use crate::lib::{
 };
 use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
-use clap::Parser;
+use clap::{ArgEnum, Parser};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
-        configure::Operation, AddHotKey, Command, Configure, Disburse, Follow,
-        IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
+        configure::Operation, AddHotKey, ChangeAutoStakeMaturity, Command, Configure, Disburse,
+        Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
         RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
     },
     ManageNeuron,
@@ -25,6 +25,12 @@ pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
 #[derive(CandidType)]
 pub struct AccountIdentifier {
     hash: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Copy, ArgEnum)]
+enum EnableState {
+    Enabled,
+    Disabled,
 }
 
 /// Signs a neuron configuration change.
@@ -104,6 +110,10 @@ pub struct ManageOpts {
     /// Reject proposal(s).
     #[clap(long)]
     reject: bool,
+
+    /// Set whether new maturity should be automatically staked.
+    #[clap(long, arg_enum)]
+    auto_stake_maturity: Option<EnableState>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -321,7 +331,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
         let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Follow(Follow {
                 topic, // Topic::NeuronManagement as i32,
                 followees,
@@ -333,6 +343,22 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         return Err(anyhow!("Follow topic specified without followees."));
     } else if opts.follow_neurons.is_some() {
         return Err(anyhow!("Followees specified without topic."));
+    }
+
+    if let Some(enable) = opts.auto_stake_maturity {
+        let requested_setting_for_auto_stake_maturity = matches!(enable, EnableState::Enabled);
+        let args = Encode!(&ManageNeuron {
+            id,
+            command: Some(Command::Configure(Configure {
+                operation: Some(Operation::ChangeAutoStakeMaturity(
+                    ChangeAutoStakeMaturity {
+                        requested_setting_for_auto_stake_maturity,
+                    }
+                ))
+            })),
+            neuron_id_or_subaccount: None,
+        })?;
+        msgs.push(args);
     }
 
     if msgs.is_empty() {
