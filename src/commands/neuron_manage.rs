@@ -3,10 +3,19 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
-use ledger_canister::Tokens;
+use ic_base_types::PrincipalId;
+use ic_nns_common::pb::v1::{NeuronId, ProposalId};
+use ic_nns_governance::pb::v1::{
+    manage_neuron::{
+        configure::Operation, AddHotKey, Command, Configure, Disburse, Follow,
+        IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
+        RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
+    },
+    ManageNeuron,
+};
 
 // These constants are copied from src/governance.rs
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
@@ -14,123 +23,8 @@ pub const ONE_YEAR_SECONDS: u32 = (4 * 365 + 1) * ONE_DAY_SECONDS / 4;
 pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
 
 #[derive(CandidType)]
-pub struct IncreaseDissolveDelay {
-    pub additional_dissolve_delay_seconds: u32,
-}
-
-#[derive(CandidType, Copy, Clone)]
-pub struct NeuronId {
-    pub id: u64,
-}
-#[allow(dead_code)]
-#[derive(CandidType)]
-pub enum NeuronIdOrSubaccount {
-    Subaccount(Vec<u8>),
-    NeuronId(NeuronId),
-}
-
-#[derive(CandidType)]
-pub struct StartDissolving {}
-
-#[derive(CandidType)]
-pub struct StopDissolving {}
-
-#[derive(CandidType)]
-pub struct RemoveHotKey {
-    pub hot_key_to_remove: Option<Principal>,
-}
-
-#[derive(CandidType)]
-pub struct AddHotKey {
-    pub new_hot_key: Option<Principal>,
-}
-
-#[derive(CandidType)]
-pub struct JoinCommunityFund {}
-
-#[derive(CandidType)]
-pub struct LeaveCommunityFund {}
-
-#[derive(CandidType)]
-pub struct ProposalId {
-    pub id: u64,
-}
-
-#[derive(CandidType)]
-pub struct RegisterVote {
-    pub vote: i32,
-    pub proposal: Option<ProposalId>,
-}
-
-#[derive(CandidType)]
-pub enum Operation {
-    RemoveHotKey(RemoveHotKey),
-    StartDissolving(StartDissolving),
-    StopDissolving(StopDissolving),
-    AddHotKey(AddHotKey),
-    IncreaseDissolveDelay(IncreaseDissolveDelay),
-    JoinCommunityFund(JoinCommunityFund),
-    LeaveCommunityFund(LeaveCommunityFund),
-}
-
-#[derive(CandidType)]
-pub struct Configure {
-    pub operation: Option<Operation>,
-}
-
-#[derive(CandidType)]
 pub struct AccountIdentifier {
     hash: Vec<u8>,
-}
-#[derive(CandidType)]
-pub struct Disburse {
-    pub to_account: Option<AccountIdentifier>,
-    pub amount: Option<Tokens>,
-}
-
-#[derive(CandidType, Default)]
-pub struct Spawn {
-    pub new_controller: Option<Principal>,
-}
-
-#[derive(CandidType)]
-pub struct Split {
-    pub amount_e8s: u64,
-}
-
-#[derive(CandidType)]
-pub struct Merge {
-    pub source_neuron_id: NeuronId,
-}
-
-#[derive(CandidType)]
-pub struct Follow {
-    pub topic: i32,
-    pub followees: Vec<NeuronId>,
-}
-
-#[derive(candid::CandidType)]
-pub struct MergeMaturity {
-    pub percentage_to_merge: u32,
-}
-
-#[derive(CandidType)]
-pub enum Command {
-    Configure(Configure),
-    RegisterVote(RegisterVote),
-    Disburse(Disburse),
-    Spawn(Spawn),
-    Split(Split),
-    Follow(Follow),
-    Merge(Merge),
-    MergeMaturity(MergeMaturity),
-}
-
-#[derive(CandidType)]
-struct ManageNeuron {
-    id: Option<NeuronId>,
-    command: Option<Command>,
-    neuron_id_or_subaccount: Option<NeuronIdOrSubaccount>,
 }
 
 /// Signs a neuron configuration change.
@@ -180,8 +74,12 @@ pub struct ManageOpts {
     merge_from_neuron: Option<String>,
 
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
-    #[clap(long)]
+    #[clap(hide(true), long)]
     merge_maturity: Option<u32>,
+
+    /// Stake a percentage (between 1 and 100) of the maturity of a neuron.
+    #[clap(long)]
+    stake_maturity: Option<u32>,
 
     /// Join the Internet Computer's community fund with this neuron's entire stake.
     #[clap(long)]
@@ -216,10 +114,10 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::AddHotKey(AddHotKey {
-                    new_hot_key: opts.add_hot_key
+                    new_hot_key: opts.add_hot_key.map(PrincipalId)
                 }))
             })),
             neuron_id_or_subaccount: None,
@@ -229,10 +127,10 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.remove_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
-                    hot_key_to_remove: opts.remove_hot_key
+                    hot_key_to_remove: opts.remove_hot_key.map(PrincipalId)
                 }))
             })),
             neuron_id_or_subaccount: None,
@@ -242,7 +140,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.stop_dissolving {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             })),
@@ -253,7 +151,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.start_dissolving {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             })),
@@ -264,7 +162,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds: match additional_dissolve_delay_seconds
@@ -311,7 +209,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.disburse {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Disburse(Disburse {
                 to_account: None,
                 amount: None
@@ -323,7 +221,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Spawn(Default::default())),
             neuron_id_or_subaccount: None,
         })?;
@@ -332,7 +230,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(amount) = opts.split {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
             })),
@@ -343,7 +241,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.clear_manage_neuron_followees {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Follow(Follow {
                 topic: 1, // Topic::NeuronManagement as i32,
                 followees: Vec::new()
@@ -355,36 +253,38 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Merge(Merge {
-                source_neuron_id: NeuronId {
+                source_neuron_id: Some(NeuronId {
                     id: parse_neuron_id(neuron_id)?
-                },
+                }),
             })),
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
     };
 
-    if let Some(percentage_to_merge) = opts.merge_maturity {
-        if percentage_to_merge == 0 || percentage_to_merge > 100 {
-            return Err(anyhow!(
-                "Percentage to merge must be a number from 1 to 100"
-            ));
+    if opts.merge_maturity.is_some() {
+        bail!("Merging maturity is no longer a supported option. See --stake-maturity. https://wiki.internetcomputer.org/wiki/NNS_neuron_operations_related_to_maturity");
+    };
+
+    if let Some(percentage) = opts.stake_maturity {
+        if !(1..=100).contains(&percentage) {
+            bail!("Percentage to merge must be a number from 1 to 100");
         }
         let args = Encode!(&ManageNeuron {
-            id,
-            command: Some(Command::MergeMaturity(MergeMaturity {
-                percentage_to_merge
+            id: id.clone(),
+            command: Some(Command::StakeMaturity(StakeMaturity {
+                percentage_to_stake: Some(percentage),
             })),
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
-    };
+    }
 
     if opts.join_community_fund {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
             })),
@@ -395,7 +295,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.leave_community_fund {
         let args = Encode!(&ManageNeuron {
-            id,
+            id: id.clone(),
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::LeaveCommunityFund(LeaveCommunityFund {}))
             })),
@@ -407,7 +307,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {
             let args = Encode!(&ManageNeuron {
-                id,
+                id: id.clone(),
                 command: Some(Command::RegisterVote(RegisterVote {
                     vote: if opts.reject { 2 } else { 1 },
                     proposal: Some(ProposalId { id: proposal }),

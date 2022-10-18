@@ -1,6 +1,6 @@
 #! /bin/bash
 
-IC_COMMIT="999f7cc6bbe17abdb7b7a1eab73840a94597e363"
+IC_COMMIT="63bfd63f0ff7cb44ef7751d830b979341741d169"
 
 if [[ -z "${DOWNLOAD_DIR}" ]]; then
   DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
@@ -64,6 +64,7 @@ get_wasm identity-canister.wasm
 get_wasm nns-ui-canister.wasm
 get_wasm sns-wasm-canister.wasm
 get_wasm ic-icrc1-ledger.wasm
+get_wasm ic-ckbtc-minter.wasm
 
 NNS_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
 
