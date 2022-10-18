@@ -64,6 +64,7 @@ get_wasm identity-canister.wasm
 get_wasm nns-ui-canister.wasm
 get_wasm sns-wasm-canister.wasm
 get_wasm ic-icrc1-ledger.wasm
+get_wasm ic-ckbtc-minter.wasm
 
 NNS_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
 
