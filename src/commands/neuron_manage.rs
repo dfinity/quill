@@ -328,7 +328,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             }
             for proposal in proposals {
                 let args = Encode!(&ManageNeuron {
-                    id,
+                    id: id.clone(),
                     command: Some(Command::RegisterVote(RegisterVote {
                         vote: if opts.reject { 2 } else { 1 },
                         proposal: Some(ProposalId { id: proposal }),
