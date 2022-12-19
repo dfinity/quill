@@ -26,14 +26,22 @@ standard_setup() {
     export DFX_CONFIG_ROOT="$x/config-root"
     export RUST_BACKTRACE=1
     export PEM_LOCATION="${BATS_TEST_DIRNAME}/../assets"
+    if [ "$(uname)" == "Darwin" ]; then
+        export E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY="$HOME/Library/Application Support/org.dfinity.dfx/network/local"
+    elif [ "$(uname)" == "Linux" ]; then
+        export E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY="$HOME/.local/share/dfx/network/local"
+    fi
+    export E2E_NETWORKS_JSON="$DFX_CONFIG_ROOT/.config/dfx/networks.json"
 }
 
 standard_nns_setup() {
     standard_setup
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_dfx.json" dfx.json
+    mkdir -p "$(dirname "$E2E_NETWORKS_JSON")"
+    cp "${BATS_TEST_DIRNAME}/../assets/minimum_networks.json" "$E2E_NETWORKS_JSON"
     dfx_start
     NO_CLOBBER="1" $BATS_TEST_DIRNAME/../utils/setup_nns.bash
-    export IC_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
+    export IC_URL="http://localhost:$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
 }
 
 standard_nns_teardown() {
@@ -64,6 +72,24 @@ dfx_patchelf() {
     done
 }
 
+determine_network_directory() {
+    # not perfect: dfx.json can actually exist in a parent
+    if [ -f dfx.json ] && [ "$(jq .networks.local dfx.json)" != "null" ]; then
+        echo "found dfx.json with local network in $(pwd)"
+        data_dir="$(pwd)/.dfx/network/local"
+        wallets_json="$(pwd)/.dfx/local/wallets.json"
+        dfx_json="$(pwd)/dfx.json"
+        export E2E_NETWORK_DATA_DIRECTORY="$data_dir"
+        export E2E_NETWORK_WALLETS_JSON="$wallets_json"
+        export E2E_ROUTE_NETWORKS_JSON="$dfx_json"
+    else
+        echo "no dfx.json"
+        export E2E_NETWORK_DATA_DIRECTORY="$E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY"
+        export E2E_NETWORK_WALLETS_JSON="$E2E_NETWORK_DATA_DIRECTORY/wallets.json"
+        export E2E_ROUTE_NETWORKS_JSON="$E2E_NETWORKS_JSON"
+    fi
+}
+
 # Start the replica in the background.
 dfx_start() {
     dfx_patchelf
@@ -76,7 +102,7 @@ dfx_start() {
         # Start on random port for parallel test execution (needed on nix/hydra)
         FRONTEND_HOST="127.0.0.1:0"
     fi
-
+    determine_network_directory
     # Bats creates a FD 3 for test output, but child processes inherit it and Bats will
     # wait for it to close. Because `dfx start` leaves child processes running, we need
     # to close this pipe, otherwise Bats will wait indefinitely.
@@ -86,13 +112,13 @@ dfx_start() {
         dfx start --background "$@" 3>&-
     fi
 
-    local dfx_config_root=.dfx/replica-configuration
+    local dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY/replica-configuration"
     printf "Configuration Root for DFX: %s\n" "${dfx_config_root}"
-    test -f ${dfx_config_root}/replica-1.port
-    local port=$(cat ${dfx_config_root}/replica-1.port)
+    test -f "${dfx_config_root}/replica-1.port"
+    local port=$(cat "${dfx_config_root}/replica-1.port")
 
     # Overwrite the default networks.local.bind 127.0.0.1:8000 with allocated port
-    local webserver_port=$(cat .dfx/webserver-port)
+    local webserver_port=$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")
     cat <<<$(jq .networks.local.bind=\"127.0.0.1:${webserver_port}\" dfx.json) >dfx.json
 
     printf "Replica Configured Port: %s\n" "${port}"
@@ -111,70 +137,6 @@ wait_until_replica_healthy() {
         dfx ping --wait-healthy
     )
     echo "replica became healthy"
-}
-
-# Start the replica in the background.
-dfx_start_replica_and_bootstrap() {
-    dfx_patchelf
-    if [ "$USE_IC_REF" ]
-    then
-        # Bats creates a FD 3 for test output, but child processes inherit it and Bats will
-        # wait for it to close. Because `dfx start` leaves child processes running, we need
-        # to close this pipe, otherwise Bats will wait indefinitely.
-        dfx replica --emulator --port 0 "$@" 3>&- &
-        export DFX_REPLICA_PID=$!
-
-        timeout 60 sh -c \
-            "until test -s .dfx/ic-ref.port; do echo waiting for ic-ref port; sleep 1; done" \
-            || (echo "replica did not write to .dfx/ic-ref.port file" && exit 1)
-
-        test -f .dfx/ic-ref.port
-        local replica_port=$(cat .dfx/ic-ref.port)
-
-    else
-        # Bats creates a FD 3 for test output, but child processes inherit it and Bats will
-        # wait for it to close. Because `dfx start` leaves child processes running, we need
-        # to close this pipe, otherwise Bats will wait indefinitely.
-        dfx replica --port 0 "$@" 3>&- &
-        export DFX_REPLICA_PID=$!
-
-        timeout 60 sh -c \
-            "until test -s .dfx/replica-configuration/replica-1.port; do echo waiting for replica port; sleep 1; done" \
-            || (echo "replica did not write to port file" && exit 1)
-
-        local dfx_config_root=.dfx/replica-configuration
-        test -f ${dfx_config_root}/replica-1.port
-        local replica_port=$(cat ${dfx_config_root}/replica-1.port)
-
-    fi
-    # Overwrite the default networks.local.bind 127.0.0.1:8000 with allocated port
-    cat <<<$(jq .networks.local.bind=\"127.0.0.1:${replica_port}\" dfx.json) >dfx.json
-
-    printf "Replica Configured Port: %s\n" "${replica_port}"
-
-    timeout 5 sh -c \
-        "until nc -z localhost ${replica_port}; do echo waiting for replica; sleep 1; done" \
-        || (echo "could not connect to replica on port ${replica_port}" && exit 1)
-
-    wait_until_replica_healthy
-
-    # This only works because we use the network by name
-    #    (implicitly: --network local)
-    # If we passed --network http://127.0.0.1:${replica_port}
-    # we would get errors like this:
-    #    "Cannot find canister ryjl3-tyaaa-aaaaa-aaaba-cai for network http___127_0_0_1_54084"
-    dfx bootstrap --port 0 3>&- &
-    export DFX_BOOTSTRAP_PID=$!
-
-    timeout 5 sh -c \
-        'until nc -z localhost $(cat .dfx/proxy-port); do echo waiting for bootstrap; sleep 1; done' \
-        || (echo "could not connect to bootstrap on port $(cat .dfx/proxy-port)" && exit 1)
-
-    local proxy_port=$(cat .dfx/proxy-port)
-    printf "Proxy Configured Port: %s\n", "${proxy_port}"
-
-    local webserver_port=$(cat .dfx/webserver-port)
-    printf "Webserver Configured Port: %s\n", "${webserver_port}"
 }
 
 # Stop the replica and verify it is very very stopped.
