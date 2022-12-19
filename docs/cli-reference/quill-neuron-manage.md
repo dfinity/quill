@@ -37,7 +37,7 @@ quill neuron-manage [option] <neuron id>
 | `--follow-neurons <FOLLOW_NEURONS>...` | Defines the neuron ids of a follow rule. |
 | `--follow-topic <FOLLOW_TOPIC>` | Defines the topic of a follow rule as defined [here](https://github.com/dfinity/ic/blob/4c9e71499d90d00da986dbe7b985d861fd031c4e/rs/nns/governance/gen/ic_nns_governance.pb.v1.rs#L1571-L1632). |
 | `--merge-from-neuron <MERGE_FROM_NEURON>` | Merge stake, maturity and age from the neuron specified by this option into the neuron being managed. |
-| `--merge-maturity <MERGE_MATURITY>` | Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake. |
+| `--stake-maturity <STAKE_MATURITY>` | Stake the percentage (between 1 and 100) of the maturity of a neuron. |
 | `--remove-hot-key <REMOVE_HOT_KEY>` | Principal hot key to be removed. |
 | `--split <SPLIT>` | Split off the given number of ICP from a neuron. |
 | `--register-vote <PROPOSAL_ID>...` [--reject] | Vote to approve (default) or reject proposal(s). |
