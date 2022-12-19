@@ -119,7 +119,6 @@ dfx_start() {
 
     # Overwrite the default networks.local.bind 127.0.0.1:8000 with allocated port
     local webserver_port=$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")
-    cat <<<$(jq .networks.local.bind=\"127.0.0.1:${webserver_port}\" dfx.json) >dfx.json
 
     printf "Replica Configured Port: %s\n" "${port}"
     printf "Webserver Configured Port: %s\n" "${webserver_port}"
