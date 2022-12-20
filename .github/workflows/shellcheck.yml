@@ -25,4 +25,4 @@ jobs:
       - name: Check deploy scripts
         run: $HOME/bin/shellcheck-v0.7.1/shellcheck scripts/**/*.sh
       - name: Check test scripts
-        run: $HOME/bin/shellcheck-v0.7.1/shellcheck tests/**/*.sh
+        run: $HOME/bin/shellcheck-v0.7.1/shellcheck -s bash tests/**/*.sh

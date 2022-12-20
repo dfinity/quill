@@ -8,7 +8,7 @@ fixup() {
     cmd=$(basename "$1")
     out=${cmd/sh/txt}
     export QUILL="${CARGO_TARGET_DIR:-../target}/debug/quill"
-    echo "$PEM" | sh -o pipefail "commands/$f" > "./outputs/$out"
+    echo "$PEM" | bash -o pipefail "commands/$f" > "./outputs/$out"
 }
 
 if [ "$*" ]; then
