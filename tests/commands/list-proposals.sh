@@ -1,1 +1,1 @@
-${CARGO_TARGET_DIR:-../target}/debug/quill list-proposals --dry-run
+"$QUILL" list-proposals --dry-run
