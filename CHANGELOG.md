@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.3.1] - 2022-12-20
+
+### Changed
 - Added auto-staking maturity. (#141)
 - Removed the ability to merge maturity, replaced with staking maturity. (#140)
 - Removed range voting. (#139)
