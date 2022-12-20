@@ -66,7 +66,7 @@ get_wasm sns-wasm-canister.wasm
 get_wasm ic-icrc1-ledger.wasm
 get_wasm ic-ckbtc-minter.wasm
 
-NNS_URL="http://localhost:$(cat .dfx/replica-configuration/replica-1.port)"
+NNS_URL="http://localhost:$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
 
 "${DOWNLOAD_DIR}/ic-nns-init" \
   --url "$NNS_URL" \
