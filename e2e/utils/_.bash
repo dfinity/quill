@@ -1,12 +1,15 @@
-load ${BATSLIB}/load.bash
+load "${BATSLIB}"/load.bash
 load ../utils/assertions
 
 # Takes a name of the asset folder, and copy those files to the current project.
 install_asset() {
-    ASSET_ROOT=${BATS_TEST_DIRNAME}/../assets/$1/
-    cp -R $ASSET_ROOT/* .
+    ASSET_ROOT="${BATS_TEST_DIRNAME}/../assets/$1/"
+    cp -R "$ASSET_ROOT"/* .
 
-    [ -f ./patch.bash ] && source ./patch.bash
+    if [ -f ./patch.bash ]; then
+        # shellcheck disable=SC1091
+        source ./patch.bash
+    fi
 }
 
 standard_setup() {
@@ -39,9 +42,10 @@ standard_nns_setup() {
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_dfx.json" dfx.json
     mkdir -p "$(dirname "$E2E_NETWORKS_JSON")"
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_networks.json" "$E2E_NETWORKS_JSON"
-    dfx_start
-    NO_CLOBBER="1" $BATS_TEST_DIRNAME/../utils/setup_nns.bash
-    export IC_URL="http://localhost:$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
+    dfx_start "$@"
+    NO_CLOBBER="1" "$BATS_TEST_DIRNAME"/../utils/setup_nns.bash
+    IC_URL="http://localhost:$(< "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
+    export IC_URL
 }
 
 standard_nns_teardown() {
@@ -55,18 +59,20 @@ dfx_patchelf() {
 
     # Only run this function on Linux
     (uname -a | grep Linux) || return 0
-    echo dfx = $(which dfx)
-    local CACHE_DIR="$(dfx cache show)"
+    echo "dfx = $(which dfx)"
 
+    local CACHE_DIR LD_LINUX_SO
+    CACHE_DIR="$(dfx cache show)"
     dfx cache install
 
     # Both ldd and iconv are providedin glibc.bin package
-    local LD_LINUX_SO=$(ldd $(which iconv)|grep ld-linux-x86|cut -d' ' -f3)
+    LD_LINUX_SO="$(ldd "$(which iconv)"|grep ld-linux-x86|cut -d' ' -f3)"
     for binary in ic-starter icx-proxy replica; do
-        local BINARY="${CACHE_DIR}/${binary}"
+        local BINARY IS_STATIC USE_LIB64
+        BINARY="${CACHE_DIR}/${binary}"
         test -f "$BINARY" || continue
-        local IS_STATIC=$(ldd "${BINARY}" | grep 'not a dynamic executable')
-        local USE_LIB64=$(ldd "${BINARY}" | grep '/lib64/ld-linux-x86-64.so.2')
+        IS_STATIC="$(ldd "${BINARY}" | grep 'not a dynamic executable')"
+        USE_LIB64="$(ldd "${BINARY}" | grep '/lib64/ld-linux-x86-64.so.2')"
         chmod +rw "${BINARY}"
         test -n "$IS_STATIC" || test -z "$USE_LIB64" || patchelf --set-interpreter "${LD_LINUX_SO}" "${BINARY}"
     done
@@ -106,26 +112,30 @@ dfx_start() {
     # Bats creates a FD 3 for test output, but child processes inherit it and Bats will
     # wait for it to close. Because `dfx start` leaves child processes running, we need
     # to close this pipe, otherwise Bats will wait indefinitely.
-    if [[ "$@" == "" ]]; then
+    if [[ "$*" == "" ]]; then
         dfx start --background --host "$FRONTEND_HOST" 3>&- # Start on random port for parallel test execution
     else
         dfx start --background "$@" 3>&-
     fi
 
-    local dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY/replica-configuration"
+    local dfx_config_root port webserver_port
+    dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY/replica-configuration"
     printf "Configuration Root for DFX: %s\n" "${dfx_config_root}"
     test -f "${dfx_config_root}/replica-1.port"
-    local port=$(cat "${dfx_config_root}/replica-1.port")
+    port=$(cat "${dfx_config_root}/replica-1.port")
 
     # Overwrite the default networks.local.bind 127.0.0.1:8000 with allocated port
-    local webserver_port=$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")
+    webserver_port=$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")
 
     printf "Replica Configured Port: %s\n" "${port}"
     printf "Webserver Configured Port: %s\n" "${webserver_port}"
 
-    timeout 5 sh -c \
-        "until nc -z localhost ${port}; do echo waiting for replica; sleep 1; done" \
-        || (echo "could not connect to replica on port ${port}" && exit 1)
+    if ! timeout 5 sh -c \
+        "until nc -z localhost \"${port}\"; do echo \"waiting for replica\"; sleep 1; done"
+    then
+        echo "could not connect to replica on port ${port}"
+        exit 1
+    fi
 }
 
 wait_until_replica_healthy() {
@@ -144,7 +154,7 @@ dfx_stop() {
     echo "pwd: $(pwd)"
     # A suspicion: "address already is use" errors are due to an extra icx-proxy process.
     echo "icx-proxy processes:"
-    ps aux | grep icx-proxy || echo "no ps/grep/icx-proxy output"
+    pgrep icx-proxy || echo "no pgrep/icx-proxy output"
 
     dfx stop
     local dfx_root=.dfx/

@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-PEM=`cat ../e2e/assets/identity.pem`
-
 set -euo pipefail
+cd "$(dirname "$0")"
 
-tests=0
-for f in `ls -1 ./commands/| sort -n`; do
-    expected="outputs/${f/sh/txt}"
+PEM=$(cat ../e2e/assets/identity.pem)
+
+run_test() {
+    cmd=$(basename "$1")
+    expected="outputs/${cmd/sh/txt}"
     out=$(mktemp)
-    echo "$PEM" | sh "commands/$f" > "$out"
+    export QUILL="${CARGO_TARGET_DIR:-../target}/debug/quill"
+    echo "$PEM" | bash -o pipefail "commands/$cmd" > "$out"
     if ! diff -r --ignore-all-space "$expected" "$out" >/dev/null; then
-        >&2 echo "Test case $f failed." 
+        >&2 echo "Test case $cmd failed." 
         >&2 echo "Expected output:"
         >&2 cat "$expected"
         >&2 echo
@@ -19,6 +21,17 @@ for f in `ls -1 ./commands/| sort -n`; do
         exit 1
     fi
     tests=$((tests + 1))
-done
+}
+
+tests=0
+if [ "$*" ]; then
+    for f; do
+        run_test "$f"
+    done
+else
+    for f in ./commands/*; do
+        run_test "$f"
+    done
+fi
 
 echo "✅ All $tests tests succeeded!"

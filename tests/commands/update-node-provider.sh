@@ -1,1 +1,1 @@
-${CARGO_TARGET_DIR:-../target}/debug/quill update-node-provider --reward-account ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693 | ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -
+"$QUILL" update-node-provider --reward-account ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693 | "$QUILL" send --dry-run -
