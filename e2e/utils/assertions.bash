@@ -7,23 +7,24 @@
 # Returns:
 #   none
 assert_command() {
-    local stderrf="$(mktemp)"
-    local stdoutf="$(mktemp)"
-    local statusf="$(mktemp)"
+    local stdoutf stderrf statusf
+    stderrf="$(mktemp)"
+    stdoutf="$(mktemp)"
+    statusf="$(mktemp)"
     ( set +e; "$@" 2>"$stderrf" >"$stdoutf"; echo -n "$?" > "$statusf" )
-    status="$(<$statusf)"; rm "$statusf"
-
-    stderr="$(cat $stderrf)"; rm "$stderrf"
-    stdout="$(cat $stdoutf)"; rm "$stdoutf"
+    status="$(< "$statusf")"; rm "$statusf"
+    stderr="$(< "$stderrf")"; rm "$stderrf"
+    stdout="$(< "$stdoutf")"; rm "$stdoutf"
     output="$( \
-        [ "$stderr" ] && echo $stderr || true; \
-        [ "$stdout" ] && echo $stdout || true; \
+        if [ "$stderr" ]; then echo "$stderr"; fi
+        if [ "$stdout" ]; then echo "$stdout"; fi
     )"
 
-    [[ $status == 0 ]] || \
-        (  (echo "$*"; echo "status: $status"; echo "$output" | batslib_decorate "Output") \
+    if [[ $status != 0 ]]; then
+        (echo "$*"; echo "status: $status"; echo "$output" | batslib_decorate "Output") \
          | batslib_decorate "Command failed" \
-         | fail)
+         | fail
+    fi
 }
 
 # Asserts that a command line fails. Still sets $output to the stdout and stderr
@@ -33,31 +34,32 @@ assert_command() {
 # Returns:
 #   none
 assert_command_fail() {
-    local stderrf="$(mktemp)"
-    local stdoutf="$(mktemp)"
-    local statusf="$(mktemp)"
+    local stdoutf stderrf statusf
+    stderrf="$(mktemp)"
+    stdoutf="$(mktemp)"
+    statusf="$(mktemp)"
     ( set +e; "$@" 2>"$stderrf" >"$stdoutf"; echo -n "$?" >"$statusf" )
-    status="$(<$statusf)"; rm "$statusf"
-
-    stderr="$(cat $stderrf)"; rm "$stderrf"
-    stdout="$(cat $stdoutf)"; rm "$stdoutf"
+    status="$(< "$statusf")"; rm "$statusf"
+    stderr="$(< "$stderrf")"; rm "$stderrf"
+    stdout="$(< "$stdoutf")"; rm "$stdoutf"
     output="$(
-        [ "$stderr" ] && echo $stderr || true;
-        [ "$stdout" ] && echo $stdout || true;
+        if [ "$stderr" ]; then echo "$stderr"; fi
+        if [ "$stdout" ]; then echo "$stdout"; fi
     )"
 
-    [[ $status != 0 ]] || \
-        (  (echo "$*"; echo "$output" | batslib_decorate "Output") \
+    if [[ $status = 0 ]]; then
+        (echo "$*"; echo "$output" | batslib_decorate "Output") \
          | batslib_decorate "Command succeeded (should have failed)" \
-         | fail)
+         | fail
+    fi
 }
 
 # Asserts that `dfx start` and `replica` are no longer running
 assert_no_dfx_start_or_replica_processes() {
-    ! ( ps | grep "[/[:space:]]dfx start" )
-    if [ -e .dfx/replica-configuration/replica-pid ];
+    ! ( pgrep "dfx start" )
+    if [ -e "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-pid" ];
     then
-      ! ( kill -0 $(cat .dfx/replica-configuration/replica-pid) 2>/dev/null )
+      ! ( kill -0 "$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-pid")" 2>/dev/null )
     fi
 }
 
@@ -68,15 +70,16 @@ assert_no_dfx_start_or_replica_processes() {
 #         $output.
 assert_match() {
     regex="$1"
-    if [[ $# < 2 ]]; then
+    if [[ $# -lt 2 ]]; then
         text="$output"
     else
         text="$2"
     fi
-    [[ "$text" =~ $regex ]] || \
-        (batslib_print_kv_single_or_multi 10 "regex" "$regex" "actual" "$text" \
+    if [[ ! "$text" =~ $regex ]]; then
+        batslib_print_kv_single_or_multi 10 "regex" "$regex" "actual" "$text" \
          | batslib_decorate "output does not match" \
-         | fail)
+         | fail
+    fi
 }
 
 # Asserts that a string contains another string, WITHOUT using regexp.
@@ -86,15 +89,16 @@ assert_match() {
 #         $output.
 assert_string_match() {
     literal="$1"
-    if [[ $# < 2 ]]; then
+    if [[ $# -lt 2 ]]; then
         text="$output"
     else
         text="$2"
     fi
-    [[ "$text" =~ "$literal" ]] || \
-        (batslib_print_kv_single_or_multi 10 "literal" "$literal" "actual" "$text" \
+    if [[ ! "$text" == *"$literal"* ]]; then
+        batslib_print_kv_single_or_multi 10 "literal" "$literal" "actual" "$text" \
          | batslib_decorate "output does not match" \
-         | fail)
+         | fail
+    fi
 }
 
 # Asserts that a string does not contain another string, using regexp.
@@ -104,15 +108,15 @@ assert_string_match() {
 #         $output.
 assert_not_match() {
     regex="$1"
-    if [[ $# < 2 ]]; then
+    if [[ $# -lt 2 ]]; then
         text="$output"
     else
         text="$2"
     fi
     if [[ "$text" =~ $regex ]]; then
-        (batslib_print_kv_single_or_multi 10 "regex" "$regex" "actual" "$text" \
+        batslib_print_kv_single_or_multi 10 "regex" "$regex" "actual" "$text" \
          | batslib_decorate "output matches but is expected not to" \
-         | fail)
+         | fail
     fi
 }
 
@@ -128,16 +132,17 @@ assert_not_match() {
 #    $2 - The actual value.
 assert_eq() {
     expected="$1"
-    if [[ $# < 2 ]]; then
+    if [[ $# -lt 2 ]]; then
         actual="$output"
     else
         actual="$2"
     fi
 
-    [[ "$actual" == "$expected" ]] || \
-        (batslib_print_kv_single_or_multi 10 "expected" "$expected" "actual" "$actual" \
+    if [[ "$actual" != "$expected" ]]; then
+        batslib_print_kv_single_or_multi 10 "expected" "$expected" "actual" "$actual" \
          | batslib_decorate "output does not match" \
-         | fail)
+         | fail
+    fi
 }
 
 # Asserts that two values are not equal.
@@ -146,16 +151,17 @@ assert_eq() {
 #    $2 - The actual value.
 assert_neq() {
     expected="$1"
-    if [[ $# < 2 ]]; then
+    if [[ $# -lt 2 ]]; then
         actual="$output"
     else
         actual="$2"
     fi
 
-    [[ "$actual" != "$expected" ]] || \
-        (batslib_print_kv_single_or_multi 10 "expected" "$expected" "actual" "$actual" \
+    if [[ "$actual" = "$expected" ]]; then
+        batslib_print_kv_single_or_multi 10 "expected" "$expected" "actual" "$actual" \
          | batslib_decorate "output does not match" \
-         | fail)
+         | fail
+    fi
 }
 
 
@@ -169,9 +175,13 @@ assert_process_exits() {
 
     echo "waiting up to $timeout seconds for process $pid to exit"
 
-    timeout $timeout sh -c \
-      "while kill -0 $pid; do echo waiting for process $pid to exit; sleep 1; done" \
-      || (echo "process $pid did not exit" && ps aux && exit 1)
+    if ! timeout "$timeout" sh -c \
+        "while kill -0 \"$pid\"; do echo \"waiting for process $pid to exit\"; sleep 1; done"
+    then
+        echo "process $pid did not exit"
+        ps aux
+        exit 1
+    fi
 
     echo "process $pid exited"
 }
@@ -202,7 +212,7 @@ assert_file_not_exists() {
     filename="$1"
 
     if [[ -f $filename ]]; then
-        cat "$filename" | head -n 10 \
+        head -n 10 "$filename" \
         | batslib_decorate "Expected file to not exist. $filename exists and starts with:" \
         | fail
     fi
@@ -212,7 +222,11 @@ assert_file_eventually_exists() {
     filename="$1"
     timeout="$2"
 
-    timeout $timeout sh -c \
-      "until [ -f $filename ]; do echo waiting for $filename; sleep 1; done" \
-      || (echo "file $filename was never created" && ls && exit 1)
+    if ! timeout "$timeout" sh -c \
+        "until [ -f \"$filename\" ]; do echo \"waiting for $filename\"; sleep 1; done"
+    then
+        echo "file $filename was never created"
+        ls
+        exit 1
+    fi
 }

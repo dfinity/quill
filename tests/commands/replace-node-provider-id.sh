@@ -1,1 +1,1 @@
-${CARGO_TARGET_DIR:-../target}/debug/quill replace-node-provider-id --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae | ${CARGO_TARGET_DIR:-../target}/debug/quill send --dry-run -
+"$QUILL" replace-node-provider-id --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae | "$QUILL" send --dry-run -
