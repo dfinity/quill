@@ -2,7 +2,7 @@ use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
 use candid::Principal;
 use clap::Parser;
-use ledger_canister::AccountIdentifier;
+use icp_ledger::AccountIdentifier;
 
 #[derive(Parser)]
 pub struct PublicOpts {

@@ -11,7 +11,6 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.34"
 base64 = "0.13.0"
-bip39 = "1.0.1"
 bip32 = "0.4.0"
 candid = "0.8.2"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
@@ -19,12 +18,13 @@ flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
 ic-identity-hsm = "0.21.0"
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
 ic-types = "0.4.1"
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+icp-ledger = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
 num-bigint = "0.4.3"
 openssl = "0.10.38"
 pem = "1.0.1"
@@ -35,6 +35,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
 serde_cbor = "0.11.2"
 serde_json = "1.0.57"
+tiny-bip39 = "1.0.0"
 tokio = { version = "1.15.0", features = [ "fs" ] }
 rpassword = "6.0.0"
 

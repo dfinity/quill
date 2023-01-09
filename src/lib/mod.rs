@@ -1,7 +1,7 @@
 //! All the common functionality.
 
 use anyhow::{anyhow, bail, Context};
-use bip39::Mnemonic;
+use bip39::{Mnemonic, Seed};
 use candid::{
     parser::typing::{check_prog, TypeEnv},
     types::Function,
@@ -16,6 +16,7 @@ use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
+use icp_ledger::AccountIdentifier;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
@@ -274,14 +275,11 @@ pub fn parse_query_response(
     Err(anyhow!("Invalid cbor content"))
 }
 
-pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::AccountIdentifier> {
+pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
     use std::convert::TryFrom;
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
-    Ok(ledger_canister::AccountIdentifier::new(
-        base_types_principal,
-        None,
-    ))
+    Ok(AccountIdentifier::new(base_types_principal, None))
 }
 
 /// Converts menmonic to PEM format
@@ -310,8 +308,8 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
         to_der(&data).context("Failed to encode secp256k1 secret key to DER")
     }
 
-    let seed = mnemonic.to_seed("");
-    let ext = bip32::XPrv::derive_from_path(&seed, &"m/44'/223'/0'/0/0".parse()?)
+    let seed = Seed::new(mnemonic, "");
+    let ext = bip32::XPrv::derive_from_path(seed, &"m/44'/223'/0'/0/0".parse()?)
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();

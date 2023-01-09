@@ -10,7 +10,7 @@ use anyhow::anyhow;
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use ledger_canister::{AccountIdentifier, Subaccount};
+use icp_ledger::{AccountIdentifier, Subaccount};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
