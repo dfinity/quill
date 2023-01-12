@@ -1,0 +1,239 @@
+// Represents an account on the ckBTC ledger.
+type Account = record { owner : principal; subaccount : opt blob };
+
+type RetrieveBtcArgs = record {
+    // The address to which ckBTC minter should deposit BTC.
+    // Currently, the minter understands only the following types of addresses:
+    //   * P2WPKH addresses (they start with the "bc1q" prefix on the Bitcoin mainnet).
+    //   * P2PKH addresses (they start with the "1" prefix on the Bitcoin mainnet).
+    //   * P2SH addresses (they start with the "3" prefix on the Bitcoin mainnet).
+    address : text;
+    // The amount of BTC in Satoshis that client wants to withdraw.
+    amount : nat64;
+};
+
+type RetrieveBtcError = variant {
+    // The minter failed to parse the destination address.
+    MalformedAddress : text;
+    // The minter is already processing another retrieval request for the same
+    // principal.
+    AlreadyProcessing;
+    // The withdrawal amount is too low.
+    // The payload contains the minimal withdrawal amount.
+    AmountTooLow : nat64;
+    // The withdrawal account does not hold requested ckBTC amount.
+    InsufficientFunds : record { balance : nat64 };
+    // The minter is overloaded, retry the request.
+    // The payload contains a human-readable message explaining what caused the unavailability.
+    TemporarilyUnavailable : text;
+    // A generic error reserved for future extensions.
+    GenericError : record { error_message : text; error_code : nat64 };
+};
+
+type RetrieveBtcOk = record {
+    // Returns the burn transaction index on ckBTC minter corresponding to the withdrawal.
+    // You can use this index to query the withdrawal status.
+    block_index : nat64
+};
+
+// The result of an [update_balance] call.
+type UpdateBalanceResult = record {
+    // Returns the identifier of the mint transaction on the ckBTC ledger.
+    block_index : nat64;
+    // Returns the amount of newly minted ckBTC tokens.
+    amount : nat64;
+};
+
+type UpdateBalanceError = variant {
+    // There are no new UTXOs to process.
+    NoNewUtxos;
+    // The minter already processes another update balance request for the caller.
+    AlreadyProcessing;
+    // The minter is overloaded, retry the request.
+    // The payload contains a human-readable message explaining what caused the unavailability.
+    TemporarilyUnavailable : text;
+    // A generic error reserved for future extensions.
+    GenericError : record { error_message : text; error_code : nat64 };
+};
+
+type BtcNetwork = variant {
+    // The public Bitcoin mainnet.
+    Mainnet;
+    // The public Bitcoin testnet.
+    Testnet;
+    // A local Bitcoin regtest installation.
+    Regtest;
+};
+
+// The initialization parameters of the minter canister.
+type InitArgs = record {
+    // The minter will interact with this Bitcoin network to wrap/unwrap BTC.
+    btc_network : BtcNetwork;
+
+    // The principal of the ledger that handles the ckBTC transfers.
+    // You must configure ledger to recognize the default account of
+    // ckBTC minter canister as the minting account.
+    ledger_id : principal;
+
+    // The name of the ECDSA key to use.
+    // E.g., "dfx_test_key" on the local replica.
+    ecdsa_key_name : text;
+
+    // The minimal amount of ckBTC that we allow to convert to BTC.
+    retrieve_btc_min_amount : nat64;
+
+    /// Maximum time of nanoseconds that a transaction should spend in the queue
+    /// before being sent.
+    max_time_in_queue_nanos : nat64;
+
+    /// The minimum number of confirmations required for the minter to
+    /// accept a Bitcoin transaction.
+    min_confirmations : opt nat32;
+
+    /// Flag that indicates if the minter is in read-only mode.
+    is_read_only : bool;
+};
+
+// The upgrade parameters of the minter canister.
+type UpgradeArgs = record {
+    // The minimal amount of ckBTC that we allow to convert to BTC.
+    retrieve_btc_min_amount : opt nat64;
+
+    /// Maximum time of nanoseconds that a transaction should spend in the queue
+    /// before being sent.
+    max_time_in_queue_nanos : opt nat64;
+
+    /// The minimum number of confirmations required for the minter to
+    /// accept a Bitcoin transaction.
+    min_confirmations : opt nat32;
+
+    /// Flag that indicates if the minter is in read-only mode.
+    is_read_only : opt bool;
+};
+
+type RetrieveBtcStatus = variant {
+    // The minter does not have any information on the specified
+    // retrieval request.  It can be that nobody submitted the
+    // request, or the minter pruned the relevant information from the
+    // history to save space.
+    Unknown;
+
+    // The minter did not send a Bitcoin transaction for this request yet.
+    Pending;
+
+    // The minter is obtaining all required ECDSA signatures on the
+    // Bitcoin transaction for this request.
+    Signing;
+
+    // The minter signed the transaction and is waiting for a reply
+    // from the Bitcoin canister.
+    Sending : record { txid : blob };
+
+    // The minter sent a transaction for the retrieve request.
+    // The payload contains the identifier of the transaction on the Bitcoin network.
+    Submitted : record { txid : blob };
+
+    // The amount was too low to cover the transaction fees.
+    AmountTooLow;
+
+    // The minter received enough confirmations for the Bitcoin
+    // transaction for this request.  The payload contains the
+    // identifier of the transaction on the Bitcoin network.
+    Confirmed : record { txid : blob };
+};
+
+type Utxo = record {
+    outpoint : record { txid : blob; vout : nat32 };
+    value : nat64;
+    height : nat32;
+};
+
+type BitcoinAddress = variant {
+    p2wpkh_v0 : blob;
+    p2pkh : blob;
+    p2sh : blob;
+};
+
+type Event = variant {
+    init : InitArgs;
+    upgrade : UpgradeArgs;
+    received_utxos : record { to_account : Account; utxos : vec Utxo };
+    accepted_retrieve_btc_request : record {
+        amount : nat64;
+        address : BitcoinAddress;
+        block_index : nat64;
+        received_at : nat64;
+    };
+    removed_retrieve_btc_request : record { block_index : nat64 };
+    sent_transaction : record {
+        requests : vec nat64;
+        txid : blob;
+        utxos : vec Utxo;
+        change_output : opt record { vout : nat32; value : nat32 };
+        submitted_at : nat64;
+    };
+    confirmed_transaction : record { txid : blob };
+};
+
+service : (InitArgs) -> {
+    // Section "Wrap BTC" {{{
+
+    // Returns the bitcoin address to which the owner should send BTC
+    // before converting the amount to ckBTC using the update_balance
+    // endpoint.
+    //
+    // If the owner is not set, it defaults to the caller's principal.
+    get_btc_address : (record { owner: opt principal; subaccount : opt blob }) -> (text);
+
+    // Mints ckBTC for newly deposited UTXOs.
+    //
+    // If the owner is not set, it defaults to the caller's principal.
+    //
+    // # Preconditions
+    //
+    // * The owner deposited some BTC to the address that the
+    //   [get_btc_address] endpoint returns.
+    update_balance : (record { owner: opt principal; subaccount : opt blob }) -> (variant { Ok : UpdateBalanceResult; Err : UpdateBalanceError });
+
+    // }}} Section "Wrap BTC"
+
+    // Section "Unwrap BTC" {{{
+
+    // Returns the account to which the caller should deposit ckBTC
+    // before withdrawing BTC using the retrieve_btc endpoint.
+    get_withdrawal_account : () -> (Account);
+
+    // Submits a request to convert ckBTC to BTC.
+    //
+    // # Note
+    //
+    // Finalizing BTC retrieval can take up to an hour.  Instead of
+    // synchronously waiting for a BTC transaction to settle, this
+    // method returns a request ([block_index]) that the caller can use
+    // to query the request status.
+    //
+    // # Preconditions
+    //
+    // * The caller deposited the requested amount in ckBTC to the account
+    //   that the [get_withdrawal_account] endpoint returns.
+    retrieve_btc : (RetrieveBtcArgs) -> (variant { Ok : RetrieveBtcOk; Err : RetrieveBtcError });
+
+    /// Returns the status of a [retrieve_btc] request.
+    retrieve_btc_status : (record { block_index : nat64 }) -> (RetrieveBtcStatus) query;
+
+    // }}} Section "Unwrap BTC"
+
+    // Section "Event log" {{{
+
+    // The minter keeps track of all state modifications in an internal event log.
+    //
+    // This method returns an list of events in the specified range.
+    // The minter can return less events than requested. The result is
+    // an empty vector if the start position is greater than the total
+    // number of events.
+    //
+    // NOTE: this method exists for debugging purposes.
+    // The ckBTC minter authors do not guarantee backward compatibility for this method.
+    get_events : (record { start: nat64; length : nat64 }) -> (vec Event) query;
+    // }}} Section "Event log"
+}

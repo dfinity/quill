@@ -112,6 +112,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dea908e7347a8c64e378c17e30ef880ad73e3b4498346b055c2c00ea342f3179"
 
 [[package]]
+name = "bech32"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
+
+[[package]]
 name = "beef"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -467,8 +473,18 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0c137568cc60b904a7724001b35ce2630fd00d5d84805fbb608ab89509d788f"
 dependencies = [
- "ciborium-io",
- "ciborium-ll",
+ "ciborium-io 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ciborium-ll 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde",
+]
+
+[[package]]
+name = "ciborium"
+version = "0.2.0"
+source = "git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46#e719537c99b564c3674a56defe53713c702c6f46"
+dependencies = [
+ "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46)",
+ "ciborium-ll 0.2.0 (git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46)",
  "serde",
 ]
 
@@ -479,12 +495,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "346de753af073cc87b52b2083a506b38ac176a44cfb05497b622e27be899b369"
 
 [[package]]
+name = "ciborium-io"
+version = "0.2.0"
+source = "git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46#e719537c99b564c3674a56defe53713c702c6f46"
+
+[[package]]
 name = "ciborium-ll"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213030a2b5a4e0c0892b6652260cf6ccac84827b83a85a534e178e3906c4cf1b"
 dependencies = [
- "ciborium-io",
+ "ciborium-io 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "half",
+]
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.0"
+source = "git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46#e719537c99b564c3674a56defe53713c702c6f46"
+dependencies = [
+ "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46)",
  "half",
 ]
 
@@ -1585,6 +1615,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-canister-log"
+version = "0.8.0"
+source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+
+[[package]]
+name = "ic-canisters-http-types"
+version = "0.8.0"
+source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+dependencies = [
+ "candid",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "ic-cdk"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1621,9 +1666,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-ckbtc-minter"
+version = "0.1.0"
+source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+dependencies = [
+ "async-trait",
+ "bech32",
+ "bs58",
+ "candid",
+ "ciborium 0.2.0 (git+https://github.com/enarx/ciborium?rev=e719537c99b564c3674a56defe53713c702c6f46)",
+ "hex",
+ "ic-base-types",
+ "ic-btc-types",
+ "ic-canister-log",
+ "ic-canisters-http-types",
+ "ic-cdk",
+ "ic-cdk-macros",
+ "ic-crypto-extended-bip32",
+ "ic-crypto-getrandom-for-wasm",
+ "ic-crypto-sha",
+ "ic-ic00-types",
+ "ic-icrc1",
+ "ic-icrc1-client-cdk",
+ "ic-ledger-core",
+ "ic-metrics-encoder",
+ "ic-stable-structures",
+ "lazy_static",
+ "num-traits",
+ "ripemd",
+ "scopeguard",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "ic-constants"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+
+[[package]]
+name = "ic-crypto-extended-bip32"
+version = "0.1.0"
+source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+dependencies = [
+ "ic-crypto-internal-threshold-sig-ecdsa",
+]
 
 [[package]]
 name = "ic-crypto-getrandom-for-wasm"
@@ -1943,7 +2030,7 @@ version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
 dependencies = [
  "candid",
- "ciborium",
+ "ciborium 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "ic-base-types",
  "ic-crypto-sha",
@@ -1969,13 +2056,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-icrc1-client-cdk"
+version = "0.8.0"
+source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
+dependencies = [
+ "async-trait",
+ "ic-cdk",
+ "ic-icrc1-client",
+]
+
+[[package]]
 name = "ic-icrc1-index"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
 dependencies = [
  "async-trait",
  "candid",
- "ciborium",
+ "ciborium 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dfn_core",
  "dfn_http_metrics",
  "ic-base-types",
@@ -1995,7 +2092,7 @@ source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19
 dependencies = [
  "async-trait",
  "candid",
- "ciborium",
+ "ciborium 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dfn_http_metrics",
  "hex",
  "ic-base-types",
@@ -2446,6 +2543,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-stable-structures"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c8ded18fe296ff693ba8d8fd9890189ea28df4fc75d8b009523e15918452d8b"
+
+[[package]]
 name = "ic-sys"
 version = "0.8.0"
 source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19da7612eb#a6ae48d2a5273d595bc113e0d28aba19da7612eb"
@@ -2743,7 +2846,7 @@ source = "git+https://github.com/dfinity/ic?rev=a6ae48d2a5273d595bc113e0d28aba19
 dependencies = [
  "async-trait",
  "candid",
- "ciborium",
+ "ciborium 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dfn_candid",
  "dfn_core",
  "dfn_http_metrics",
@@ -3559,6 +3662,8 @@ dependencies = [
  "hex",
  "ic-agent",
  "ic-base-types",
+ "ic-ckbtc-minter",
+ "ic-icrc1",
  "ic-identity-hsm",
  "ic-nns-common",
  "ic-nns-constants",
@@ -3574,6 +3679,7 @@ dependencies = [
  "rand",
  "reqwest",
  "rpassword",
+ "rust_decimal",
  "serde",
  "serde_bytes",
  "serde_cbor",
@@ -4147,6 +4253,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "signature"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4493,9 +4608,23 @@ dependencies = [
  "mio",
  "num_cpus",
  "once_cell",
+ "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
+ "tokio-macros",
  "winapi",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "1.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d266c00fde287f55d3f1c3e96c500c362a2b8c695076ec180f27918820bc6df8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

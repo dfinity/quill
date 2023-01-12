@@ -12,11 +12,12 @@ use ic_agent::{
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
+use ic_icrc1::Account;
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
-use icp_ledger::AccountIdentifier;
+use icp_ledger::{AccountIdentifier, Subaccount};
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
@@ -24,8 +25,8 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::path::PathBuf;
 use std::{env::VarError, path::Path};
+use std::{path::PathBuf, str::FromStr};
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -93,20 +94,28 @@ pub fn registry_canister_id() -> Principal {
     Principal::from_slice(REGISTRY_CANISTER_ID.as_ref())
 }
 
+pub fn ckbtc_canister_id() -> Principal {
+    todo!()
+}
+
+pub fn ckbtc_minter_canister_id() -> Principal {
+    todo!()
+}
+
 // Returns the candid for the specified canister id, if there is one.
-pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
+pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<&'static str> {
     if canister_id == governance_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
-            .context("Cannot load governance.did")
+        Ok(include_str!("../../candid/governance.did"))
     } else if canister_id == ledger_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
-            .context("Cannot load ledger.did")
+        Ok(include_str!("../../candid/ledger.did"))
     } else if canister_id == genesis_token_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
-            .context("Cannot load gtc.did")
+        Ok(include_str!("../../candid/gtc.did"))
     } else if canister_id == registry_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/registry.did").to_vec())
-            .context("Cannot load registry.did")
+        Ok(include_str!("../../candid/registry.did"))
+    } else if canister_id == ckbtc_canister_id() {
+        Ok(include_str!("../../candid/icrc1.did"))
+    } else if canister_id == ckbtc_minter_canister_id() {
+        Ok(include_str!("../../candid/ckbtc_minter.did"))
     } else {
         bail!(
             "\
@@ -116,11 +125,15 @@ Should be one of:
 - Ledger: {ledger}
 - Governance: {governance}
 - Genesis: {genesis}
-- Registry: {registry}",
+- Registry: {registry}
+- ckBTC minter: {ckbtc_minter}
+- ckBTC ledger: {ckbtc}",
             ledger = ledger_canister_id(),
             governance = governance_canister_id(),
             genesis = genesis_token_canister_id(),
-            registry = registry_canister_id()
+            registry = registry_canister_id(),
+            ckbtc_minter = ckbtc_minter_canister_id(),
+            ckbtc = ckbtc_canister_id(),
         );
     }
 }
@@ -151,8 +164,8 @@ pub fn get_idl_string(
 
 /// Returns the candid type of a specifed method and correspondig idl
 /// description.
-pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
-    let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
+pub fn get_candid_type(idl: &str, method_name: &str) -> Option<(TypeEnv, Function)> {
+    let ast = candid::pretty_parse::<IDLProg>("/dev/null", idl).ok()?;
     let mut env = TypeEnv::new();
     let actor = check_prog(&mut env, &ast).ok()?;
     let method = env.get_method(&actor?, method_name).ok()?.clone();
@@ -167,7 +180,7 @@ pub fn read_from_file(path: impl AsRef<Path>) -> AnyhowResult<String> {
     if path == Path::new("-") {
         std::io::stdin().read_to_string(&mut content)?;
     } else {
-        let mut file = std::fs::File::open(&path).context("Cannot open the message file.")?;
+        let mut file = std::fs::File::open(path).context("Cannot open the message file.")?;
         file.read_to_string(&mut content)
             .context("Cannot read the message file.")?;
     }
@@ -276,7 +289,6 @@ pub fn parse_query_response(
 }
 
 pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
-    use std::convert::TryFrom;
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
     Ok(AccountIdentifier::new(base_types_principal, None))
@@ -332,4 +344,31 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     Ok((parameters_pem + &key_pem)
         .replace('\r', "")
         .replace("\n\n", "\n"))
+}
+
+pub struct ParsedSubaccount(pub Subaccount);
+
+impl FromStr for ParsedSubaccount {
+    type Err = hex::FromHexError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut array = [0; 32];
+        hex::decode_to_slice(s, &mut array)?;
+        Ok(ParsedSubaccount(Subaccount(array)))
+    }
+}
+
+pub struct ParsedAccount(pub Account);
+
+impl FromStr for ParsedAccount {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains(':') {
+            bail!("The textual format for ICRC-1 addresses is not yet supported");
+        }
+        let principal = Principal::from_str(s)?;
+        Ok(Self(Account {
+            owner: principal.into(),
+            subaccount: None,
+        }))
+    }
 }

@@ -22,10 +22,10 @@ pub struct CliOpts {
 #[derive(Args)]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long)]
+    #[clap(long, group = "auth")]
     pem_file: Option<PathBuf>,
 
-    #[clap(long)]
+    #[clap(long, group = "auth")]
     hsm: bool,
 
     #[clap(long)]
