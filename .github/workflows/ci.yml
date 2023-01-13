@@ -27,7 +27,7 @@ jobs:
           VCPKG_ROOT: 'C:\vcpkg'
 
       - name: Install dependencies (macos only)
-        if: matrix.name == 'macos'
+        if: matrix.os == 'macos-latest'
         shell: bash
         run: |
           export OPENSSL_STATIC=yes
