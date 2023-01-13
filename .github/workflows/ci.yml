@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust: [1.60.0]
-        task: [check, fmt, clippy, test]
+        task: [check, fmt, clippy, test, build]
     steps:
       - uses: actions/checkout@master
 
