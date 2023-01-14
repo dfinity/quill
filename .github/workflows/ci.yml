@@ -57,7 +57,8 @@ jobs:
         run: |
           # see # see https://github.dev/sfackler/rust-openssl/blob/2e986986784f0136d6666a0ef354ff6bafee63eb/openssl/src/lib.rs#L62-L63
           export OPENSSL_STATIC=1
-          export OPENSSL_DIR=/usr/local
+          export OPENSSL_INCLUDE_DIR=/usr/local/include
+          export OPENSSL_LIB_DIR=/usr/local/lib
 
       - uses: actions-rs/toolchain@v1
         with:
