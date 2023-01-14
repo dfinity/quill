@@ -71,19 +71,11 @@ jobs:
           # configure, make, install
           perl ./Configure --prefix=/usr/local --openssldir=/usr/local/openssl no-ssl3 no-ssl3-method no-zlib darwin64-x86_64-cc enable-ec_nistp_64_gcc_128
           make
-          make test
           sudo make install MANDIR=/usr/local/openssl/share/man MANSUFFIX=ssl
           
           # verify
           openssl version
           which -a openssl
-          
-          # clean up
-          make clean
-          make distclean
-          cd ..
-          rm -fr openssl-1.1.1d
-          rm openssl-1.1.1d.tar.gz
   
           # set OPENSSL_DIR for cargo build
           export OPENSSL_DIR=/usr/local/openssl
