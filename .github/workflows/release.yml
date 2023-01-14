@@ -76,7 +76,7 @@ jobs:
           which -a openssl
 
       - name: Link OpenSSL (macOS only)
-        if: matrix.name == 'macos-latest'
+        if: matrix.name == 'macos'
         run: |
           # see https://github.dev/sfackler/rust-openssl/blob/2e986986784f0136d6666a0ef354ff6bafee63eb/openssl/src/lib.rs#L62-L63
           export OPENSSL_STATIC=1
