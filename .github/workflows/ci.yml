@@ -26,7 +26,7 @@ jobs:
         env:
           VCPKG_ROOT: 'C:\vcpkg'
 
-      - name: Install dependencies (macos only)
+      - name: Install dependencies (macOS only)
         if: matrix.os == 'macos-latest' && matrix.task == 'build'
         shell: bash
         run: |
@@ -54,6 +54,13 @@ jobs:
           which -a openssl
 
           # set OPENSSL_DIR for cargo build
+          export OPENSSL_DIR=/usr/local/openssl
+
+      - name: Link OpenSSL (macOS only)
+        if: matrix.os == 'macos-latest' && matrix.task == 'build'
+        shell: bash
+        run: |
+          export OPENSSL_STATIC=yes
           export OPENSSL_DIR=/usr/local/openssl
 
       - uses: actions-rs/toolchain@v1
