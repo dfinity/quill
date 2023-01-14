@@ -27,29 +27,22 @@ pub use public::get_ids;
 
 #[derive(Parser)]
 pub enum Command {
-    /// Prints the principal id and the account id.
     PublicIds(BaseOpts<public::PublicOpts>),
     Send(BaseOpts<send::SendOpts>),
     Transfer(BaseOpts<transfer::TransferOpts>),
-    /// Claim seed neurons from the Genesis Token Canister.
-    ClaimNeurons(BaseOpts<Empty>),
+    ClaimNeurons(BaseOpts<claim_neurons::ClaimNeuronOpts>),
     NeuronStake(BaseOpts<neuron_stake::StakeOpts>),
     NeuronManage(BaseOpts<neuron_manage::ManageOpts>),
-    /// Signs the query for all neurons belonging to the signing principal.
     ListNeurons(BaseOpts<list_neurons::ListNeuronsOpts>),
     ListProposals(BaseOpts<list_proposals::ListProposalsOpts>),
     GetProposalInfo(BaseOpts<get_proposal_info::GetProposalInfoOpts>),
     GetNeuronInfo(BaseOpts<get_neuron_info::GetNeuronInfoOpts>),
-    /// Queries a ledger account balance.
     AccountBalance(BaseOpts<account_balance::AccountBalanceOpts>),
-    /// Update node provider details
     UpdateNodeProvider(BaseOpts<update_node_provider::UpdateNodeProviderOpts>),
     ReplaceNodeProviderId(BaseOpts<replace_node_provide_id::ReplaceNodeProviderIdOpts>),
-    /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
-    /// Print QR code for data e.g. principal id.
     QRCode(BaseOpts<qrcode::QRCodeOpts>),
 }
 

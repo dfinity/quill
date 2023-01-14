@@ -4,6 +4,7 @@ use crate::lib::{read_from_file, AnyhowResult};
 use clap::Parser;
 use qrcodegen::{QrCode, QrCodeEcc};
 
+/// Print QR code for data e.g. principal id.
 #[derive(Parser)]
 pub struct QRCodeOpts {
     /// File the contents of which to be output as a QRCode.

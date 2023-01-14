@@ -5,6 +5,7 @@ use clap::Parser;
 use ledger_canister::AccountIdentifier;
 
 #[derive(Parser)]
+/// Prints the principal id and the account id.
 pub struct PublicOpts {
     /// Principal for which to get the account_id.
     #[clap(long)]

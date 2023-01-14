@@ -15,7 +15,7 @@ pub struct UpdateNodeProvider {
     pub reward_account: Option<AccountIdentifier>,
 }
 
-/// Signs a neuron configuration change.
+/// Update node provider details.
 #[derive(Parser)]
 pub struct UpdateNodeProviderOpts {
     /// The account identifier of the reward account.

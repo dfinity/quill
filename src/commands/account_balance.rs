@@ -10,7 +10,7 @@ pub struct AccountBalanceArgs {
     pub account: String,
 }
 
-/// Signs a neuron configuration change.
+/// Queries a ledger account balance.
 #[derive(Parser)]
 pub struct AccountBalanceOpts {
     /// The id of the account to query.
