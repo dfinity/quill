@@ -6,6 +6,7 @@ use candid::Encode;
 use clap::Parser;
 use ic_nns_governance::pb::v1::ListProposalInfo;
 
+/// Queries for a list of pending proposals.
 #[derive(Parser)]
 pub struct ListProposalsOpts {
     #[clap(long)]
