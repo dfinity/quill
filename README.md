@@ -136,55 +136,6 @@ example:
 
     IC_URL=https://nnsdapp.dfinity.network quill --insecure-local-dev-mode --pem-file <path> list-neurons
 
-## Building OpenSSL from Source on macOS
-Quill depends on OpenSSL v1.1. When building Quill from source, you can choose to
-statically link OpenSSL using the openssl crate's `vendored` flag, or build it from
-source. Below are instructions for how to build OpenSSL version 1.1 from source on macOS.
-
-Prepare workspace
-
-```shell
-mkdir -p ~/openssl-build/ && cd $_
-```
-
-Download source code
-
-```shell
-curl -LO https://www.openssl.org/source/openssl-1.1.1d.tar.gz
-```
-
-Expand tar
-
-```shell
-tar -xzvf openssl-1.1.1d.tar.gz
-cd openssl-1.1.1d
-```
-
-Configure, make, install
-
-```shell
-perl ./Configure --prefix=/usr/local --openssldir=/usr/local/openssl no-ssl3 no-ssl3-method no-zlib darwin64-x86_64-cc enable-ec_nistp_64_gcc_128
-make
-sudo make install MANDIR=/usr/local/openssl/share/man MANSUFFIX=ssl
-```
-
-Verify
-
-```shell
-openssl version
-which -a openssl
-```
-
-Clean up
-
-```shell
-make clean
-make distclean
-cd ..
-rm -fr openssl-1.1.1d
-rm openssl-1.1.1d.tar.gz
-```
-
 ## Contribution
 
 `quill` is a very critical link in the workflow of the management of valuable assets.
