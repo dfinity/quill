@@ -6,7 +6,7 @@ build:
 	cargo build
 
 release:
-	cargo build --release --locked
+	cargo build --release --locked --features openssl/vendored
 
 musl-static:
 	cargo build --target x86_64-unknown-linux-musl --release --locked

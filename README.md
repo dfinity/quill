@@ -54,12 +54,6 @@ Use pre-built binaries from the latest [release](https://github.com/dfinity/quil
 
 ### MacOS (Intel Chip & Apple Silicon)
 
-#### Prerequisite - OpenSSL
-
-You must have `openssl` version 1.1 installed on your mac to use `quill`. One
-way to achieve this is to build it from source.
-See [Building OpenSSL from Source](#building-openssl-from-source-on-macos) below.
-
 #### Install quill
 1. Download the file named `quill-macos-x86_64`
 2. Move the file to your `/usr/local/bin` directory to make it available system-wide
@@ -71,7 +65,7 @@ sudo mv quill-macos-x86_64 /usr/local/bin/quill
 3. Make the file executable
 
 ```shell
-chmod +x /usr/local/bin/quill 
+chmod +x /usr/local/bin/quill
 ```
 
 4. Run quill
@@ -143,6 +137,9 @@ example:
     IC_URL=https://nnsdapp.dfinity.network quill --insecure-local-dev-mode --pem-file <path> list-neurons
 
 ## Building OpenSSL from Source on macOS
+Quill depends on OpenSSL v1.1. When building Quill from source, you can choose to
+statically link OpenSSL using the openssl crate's `vendored` flag, or build it from
+source. Below are instructions for how to build OpenSSL version 1.1 from source on macOS.
 
 Prepare workspace
 
