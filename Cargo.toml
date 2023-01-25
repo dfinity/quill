@@ -1,6 +1,6 @@
 [package]
 name = "quill"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["DFINITY Team"]
 edition = "2018"
 
@@ -26,7 +26,7 @@ ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a
 ic-types = "0.4.1"
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
 num-bigint = "0.4.3"
-openssl = "0.10.38"
+openssl = "0.10.45"
 pem = "1.0.1"
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
@@ -47,3 +47,4 @@ tempfile = "3.3.0"
 
 [features]
 static-ssl = ["openssl/vendored"]
+default = ["static-ssl"]
