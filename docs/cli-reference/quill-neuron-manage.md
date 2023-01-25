@@ -23,7 +23,9 @@ quill neuron-manage [option] <neuron id>
 | `--clear-manage-neuron-followees` | Remove all followees for the NeuronManagement topic. |
 | `--disburse` | Disburse the entire staked amount to the controller's account. |
 | `-h`, `--help`       | Displays usage information.                     |
-| `--join-community-fund` | Join the Internet Computer's community fund with this neuron's entire stake. Caution: this operation is not reversible. |
+| `--join-community-fund` | Join the Internet Computer's community fund with this neuron's entire stake. |
+| `--leave-community-fund` | Leave the Internet Computer's community fund. |
+| `--reject` | Reject the proposal(s) specified with `--register-vote`. |
 | `--spawn` | Spawn rewards to a new neuron under the controller's account. |
 | `--start-dissolving` | Start dissolving. |
 | `--stop-dissolving` | Stop dissolving. |
@@ -34,6 +36,7 @@ quill neuron-manage [option] <neuron id>
 |----------|-------------|
 | `-a`, `--additional-dissolve-delay-seconds <ADDITIONAL_DISSOLVE_DELAY_SECONDS>` | Number of dissolve seconds to add. |
 | `--add-hot-key <ADD_HOT_KEY>` | Principal to be used as a hot key. |
+| `--auto-stake-maturity enabled|disabled` | Set whether new maturity should be automatically staked. |
 | `--follow-neurons <FOLLOW_NEURONS>...` | Defines the neuron ids of a follow rule. |
 | `--follow-topic <FOLLOW_TOPIC>` | Defines the topic of a follow rule as defined [here](https://github.com/dfinity/ic/blob/4c9e71499d90d00da986dbe7b985d861fd031c4e/rs/nns/governance/gen/ic_nns_governance.pb.v1.rs#L1571-L1632). |
 | `--merge-from-neuron <MERGE_FROM_NEURON>` | Merge stake, maturity and age from the neuron specified by this option into the neuron being managed. |
