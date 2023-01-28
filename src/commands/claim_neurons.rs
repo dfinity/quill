@@ -19,7 +19,7 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
             PointConversionForm::UNCOMPRESSED,
             &mut context,
         )?;
-        let sig = Encode!(&hex::encode(&bytes))?;
+        let sig = Encode!(&hex::encode(bytes))?;
 
         Ok(vec![sign_ingress_with_request_status_query(
             auth,
