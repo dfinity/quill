@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [1.60.0]
+        rust: [1.66.1]
         task: [check, fmt, clippy, test]
     steps:
       - uses: actions/checkout@master
