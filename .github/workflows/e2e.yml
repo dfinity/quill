@@ -15,7 +15,7 @@ jobs:
       matrix:
         # windows not supported by dfx
         os: [ubuntu-latest, macos-latest]
-        rust: [1.60.0]
+        rust: [1.66.1]
         binary_path: ["target/release"]
     steps:
       - uses: actions/checkout@master

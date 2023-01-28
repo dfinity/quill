@@ -23,19 +23,19 @@ jobs:
             target_file: target/release/quill.exe
             asset_name: quill-windows-x86_64.exe
             make_target: release
-            rust: 1.60.0
+            rust: 1.66.1
           - os: macos-latest
             name: macos
             target_file: target/release/quill
             asset_name: quill-macos-x86_64
             make_target: release
-            rust: 1.60.0
+            rust: 1.66.1
           - os: ubuntu-latest
             name: arm
             target_file: target/arm-unknown-linux-gnueabihf/release/quill
             asset_name: quill-arm_32
             make_target: unused
-            rust: 1.60.0
+            rust: 1.66.1
     steps:
       - uses: actions/checkout@master
 
