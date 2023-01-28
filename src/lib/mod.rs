@@ -382,7 +382,7 @@ pub struct ParsedAccount(pub Account);
 impl FromStr for ParsedAccount {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut base32 = s.replace("-", "");
+        let mut base32 = s.replace('-', "");
         base32.make_ascii_uppercase();
         let decoded = BASE32_NOPAD.decode(base32.as_bytes())?;
         let (crc_bytes, addr) = decoded.split_at(4);
