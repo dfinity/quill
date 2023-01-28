@@ -1,6 +1,6 @@
 //! All the common functionality.
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use bip39::{Mnemonic, Seed};
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -365,10 +365,14 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
 pub struct ParsedSubaccount(pub Subaccount);
 
 impl FromStr for ParsedSubaccount {
-    type Err = hex::FromHexError;
+    type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut array = [0; 32];
-        hex::decode_to_slice(s, &mut array)?;
+        ensure!(
+            s.len() <= 64,
+            "Too long: subaccounts are 64 characters or less"
+        );
+        hex::decode_to_slice(s, &mut array[32 - s.len() / 2..])?;
         Ok(ParsedSubaccount(Subaccount(array)))
     }
 }
@@ -378,13 +382,38 @@ pub struct ParsedAccount(pub Account);
 impl FromStr for ParsedAccount {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.contains(':') {
-            bail!("The textual format for ICRC-1 addresses is not yet supported");
+        let mut base32 = s.replace("-", "");
+        base32.make_ascii_uppercase();
+        let decoded = BASE32_NOPAD.decode(base32.as_bytes())?;
+        let (crc_bytes, addr) = decoded.split_at(4);
+        let crc = crc32fast::hash(addr);
+        if crc.to_be_bytes() != *crc_bytes {
+            bail!("Principal CRC doesn't match - was it copied correctly?");
         }
-        let principal = Principal::from_str(s)?;
+        if addr.last() != Some(&0x7f) {
+            let principal = Principal::try_from_slice(addr)?;
+            return Ok(Self(Account {
+                owner: principal.into(),
+                subaccount: None,
+            }));
+        }
+        let subaccount_length = *addr
+            .get(addr.len() - 2)
+            .context("Invalid ICRC-1 address (subaccount length missing)")?
+            as usize;
+        ensure!(
+            subaccount_length <= 32,
+            "Invalid ICRC-1 address (subaccount too long)"
+        );
+        let subaccount = addr
+            .get(addr.len() - subaccount_length - 2..addr.len() - 2)
+            .context("Invalid ICRC-1 address (subaccount too small)")?;
+        let mut subaccount_padded = [0; 32];
+        subaccount_padded[32 - subaccount_length..].copy_from_slice(subaccount);
+        let principal = Principal::try_from_slice(&addr[..addr.len() - subaccount_length - 2])?;
         Ok(Self(Account {
             owner: principal.into(),
-            subaccount: None,
+            subaccount: Some(subaccount_padded),
         }))
     }
 }
@@ -421,5 +450,52 @@ impl Display for ParsedAccount {
                 )
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ParsedAccount, ParsedSubaccount};
+    use candid::Principal;
+    use std::str::FromStr;
+
+    #[test]
+    fn account() {
+        let account = ParsedAccount::from_str("q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6").unwrap();
+        assert_eq!(
+            account.0.owner.0,
+            Principal::from_str("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
+        );
+        assert_eq!(account.0.subaccount, Some(*b"*\x0aw\xb2\xb0\x98\xe7V\xe6\x07iU\x13FU~1-\x84\xccu\xae\xfe\x9c\xa8\x8bGU\xd2\x84\xfe\xe4"));
+        assert_eq!(account.to_string(), "q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6")
+    }
+
+    #[test]
+    fn simple_account() {
+        let mut account = ParsedAccount::from_str("2vxsx-fae").unwrap();
+        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.subaccount, None);
+        assert_eq!(account.to_string(), "2vxsx-fae");
+        let mut subacct1 = [0; 32];
+        subacct1[31] = 1;
+        account.0.subaccount = Some(subacct1);
+        assert_eq!(account.to_string(), "ozcx7-eaeae-ax6");
+        let account = ParsedAccount::from_str("ozcx7-eaeae-ax6").unwrap();
+        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.subaccount, Some(subacct1));
+    }
+
+    #[test]
+    fn subaccount() {
+        let subacct = ParsedSubaccount::from_str(
+            "2a0a77b2b098e756e60769551346557e312d84cc75aefe9ca88b4755d284fee4",
+        )
+        .unwrap();
+        assert_eq!(subacct.0 .0, *b"\x2a\x0a\x77\xb2\xb0\x98\xe7\x56\xe6\x07\x69\x55\x13\x46\x55\x7e\x31\x2d\x84\xcc\x75\xae\xfe\x9c\xa8\x8b\x47\x55\xd2\x84\xfe\xe4");
+        let short = ParsedSubaccount::from_str("0102").unwrap();
+        assert_eq!(
+            short.0 .0,
+            *b"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x02"
+        );
     }
 }

@@ -99,3 +99,15 @@ fn ckbtc_withdrawal_address(user: &Principal, testnet: bool) -> Account {
         subaccount: Some(hasher.finish()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Btc;
+    use std::str::FromStr;
+
+    #[test]
+    fn btc() {
+        let btc = Btc::from_str("73.25").unwrap();
+        assert_eq!(btc.0, 7_325_000_000_u64)
+    }
+}
