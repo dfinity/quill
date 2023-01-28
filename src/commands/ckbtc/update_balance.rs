@@ -17,6 +17,9 @@ pub struct UpdateBalanceOpts {
     /// The subaccount to mint ckBTC to.
     #[clap(long)]
     subaccount: Option<ParsedSubaccount>,
+    /// Uses ckTESTBTC instead of ckBTC.
+    #[clap(long)]
+    testnet: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: UpdateBalanceOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -29,7 +32,7 @@ pub fn exec(auth: &AuthInfo, opts: UpdateBalanceOpts) -> AnyhowResult<Vec<Ingres
     let args = UpdateBalanceArgs { owner, subaccount };
     let message = sign_ingress_with_request_status_query(
         auth,
-        ckbtc_minter_canister_id(),
+        ckbtc_minter_canister_id(opts.testnet),
         "update_balance",
         Encode!(&args)?,
     )?;

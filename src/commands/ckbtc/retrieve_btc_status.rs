@@ -20,6 +20,9 @@ pub struct RetrieveBtcStatusOpts {
     /// Skips confirmation and sends the message immediately.
     #[clap(long, short)]
     yes: bool,
+    /// Uses ckTESTBTC instead of ckBTC.
+    #[clap(long)]
+    testnet: bool,
 }
 
 #[tokio::main]
@@ -28,7 +31,7 @@ pub async fn exec(opts: RetrieveBtcStatusOpts, fetch_root_key: bool) -> AnyhowRe
         block_index: opts.block_index,
     };
     submit_unsigned_ingress(
-        ckbtc_minter_canister_id(),
+        ckbtc_minter_canister_id(opts.testnet),
         "retrieve_btc_status",
         Encode!(&args)?,
         opts.yes,

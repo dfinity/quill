@@ -27,6 +27,10 @@ pub struct BalanceOpts {
     /// Will display the signed message, but not send it.
     #[clap(long)]
     dry_run: bool,
+
+    /// Uses ckTESTBTC instead of ckBTC.
+    #[clap(long)]
+    testnet: bool,
 }
 
 #[tokio::main]
@@ -44,8 +48,8 @@ pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> A
         account.subaccount = Some(subaccount.0 .0);
     }
     submit_unsigned_ingress(
-        ckbtc_canister_id(),
-        "icrc1_balance",
+        ckbtc_canister_id(opts.testnet),
+        "icrc1_balance_of",
         Encode!(&account)?,
         opts.yes,
         opts.dry_run,

@@ -48,10 +48,13 @@ pub struct RetrieveBtcOpts {
     #[clap(
         long,
         conflicts_with = "memo",
-        conflicts_with = "from_subaccount",
+        conflicts_with = "from-subaccount",
         conflicts_with = "fee"
     )]
     already_transferred: bool,
+    /// Uses ckTESTBTC instead of ckBTC.
+    #[clap(long)]
+    testnet: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -68,11 +71,11 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
                 subaccount: opts.from_subaccount.map(|x| x.0 .0),
             },
             memo: opts.memo.map(Memo::from),
-            to: ckbtc_withdrawal_address(&principal),
+            to: ckbtc_withdrawal_address(&principal, opts.testnet),
         };
         messages.push(sign_ingress_with_request_status_query(
             auth,
-            ckbtc_canister_id(),
+            ckbtc_canister_id(opts.testnet),
             "icrc1_transfer",
             Encode!(&transfer_args)?,
         )?);
@@ -83,7 +86,7 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
     };
     messages.push(sign_ingress_with_request_status_query(
         auth,
-        ckbtc_minter_canister_id(),
+        ckbtc_minter_canister_id(opts.testnet),
         "retrieve_btc",
         Encode!(&retrieve_args)?,
     )?);

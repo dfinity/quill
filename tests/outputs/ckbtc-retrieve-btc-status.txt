@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: mqygn-kiaaa-aaaar-qaadq-cai
+  Method name: retrieve_btc_status
+  Arguments:   (record { block_index = 77 : nat64 })

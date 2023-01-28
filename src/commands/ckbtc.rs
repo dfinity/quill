@@ -16,11 +16,11 @@ use crate::{
 use super::print_vec;
 
 mod balance;
-mod get_withdrawal_account;
 mod retrieve_btc;
 mod retrieve_btc_status;
 mod transfer;
 mod update_balance;
+mod withdrawal_address;
 
 /// Commands for chain-key bitcoin (ckBTC)
 #[derive(Subcommand)]
@@ -30,7 +30,7 @@ pub enum CkbtcCommand {
     Transfer(BaseOpts<transfer::TransferOpts>),
     RetrieveBtc(BaseOpts<retrieve_btc::RetrieveBtcOpts>),
     RetrieveBtcStatus(BaseOpts<retrieve_btc_status::RetrieveBtcStatusOpts>),
-    BtcDepositAddress(BaseOpts<get_withdrawal_account::GetWithdrawalAddressOpts>),
+    WithdrawalAddress(BaseOpts<withdrawal_address::GetWithdrawalAddressOpts>),
 }
 
 pub fn dispatch(command: CkbtcCommand) -> AnyhowResult {
@@ -61,8 +61,8 @@ pub fn dispatch(command: CkbtcCommand) -> AnyhowResult {
                 fetch_root_key,
             )?;
         }
-        CkbtcCommand::BtcDepositAddress(opts) => {
-            get_withdrawal_account::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+        CkbtcCommand::WithdrawalAddress(opts) => {
+            withdrawal_address::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
         }
     }
     Ok(())
@@ -87,7 +87,7 @@ impl FromStr for Btc {
 
 // Corresponds to ckbtc_minter.get_withdrawal_address(). We do not actually need to make the call
 // because the algorithm is considered stable.
-fn ckbtc_withdrawal_address(user: &Principal) -> Account {
+fn ckbtc_withdrawal_address(user: &Principal, testnet: bool) -> Account {
     const DOMAIN: &str = "ckbtc";
     let mut hasher = Sha256::new();
     hasher.update(&[DOMAIN.len() as u8]);
@@ -95,7 +95,7 @@ fn ckbtc_withdrawal_address(user: &Principal) -> Account {
     hasher.update(user.as_slice());
     hasher.update(&[0; 8]);
     Account {
-        owner: ckbtc_minter_canister_id().into(),
+        owner: ckbtc_minter_canister_id(testnet).into(),
         subaccount: Some(hasher.finish()),
     }
 }

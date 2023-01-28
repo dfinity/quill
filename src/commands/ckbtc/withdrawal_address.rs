@@ -3,7 +3,7 @@ use clap::Parser;
 
 use crate::{
     commands::get_ids,
-    lib::{AnyhowResult, AuthInfo},
+    lib::{AnyhowResult, AuthInfo, ParsedAccount},
 };
 
 use super::ckbtc_withdrawal_address;
@@ -19,6 +19,10 @@ pub struct GetWithdrawalAddressOpts {
     /// The principal to get the withdrawal address for.
     #[clap(long, required_unless_present = "auth")]
     of: Option<Principal>,
+
+    /// Uses ckTESTBTC instead of ckBTC.
+    #[clap(long)]
+    testnet: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: GetWithdrawalAddressOpts) -> AnyhowResult {
@@ -27,7 +31,7 @@ pub fn exec(auth: &AuthInfo, opts: GetWithdrawalAddressOpts) -> AnyhowResult {
     } else {
         get_ids(auth)?.0
     };
-    let address = ckbtc_withdrawal_address(&principal);
+    let address = ParsedAccount(ckbtc_withdrawal_address(&principal, opts.testnet));
     println!("{address}");
     eprintln!("Use the --already-transferred flag with `quill ckbtc retrieve-btc` to register any transfers.");
     Ok(())

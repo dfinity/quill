@@ -7,6 +7,7 @@ use candid::{
     types::Function,
     IDLProg, Principal,
 };
+use data_encoding::BASE32_NOPAD;
 use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
@@ -18,6 +19,7 @@ use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
+use itertools::Itertools;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
@@ -25,7 +27,11 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::{env::VarError, path::Path};
+use std::{
+    env::VarError,
+    fmt::{self, Display, Formatter},
+    path::Path,
+};
 use std::{path::PathBuf, str::FromStr};
 
 pub const IC_URL: &str = "https://ic0.app";
@@ -94,12 +100,20 @@ pub fn registry_canister_id() -> Principal {
     Principal::from_slice(REGISTRY_CANISTER_ID.as_ref())
 }
 
-pub fn ckbtc_canister_id() -> Principal {
-    todo!()
+pub fn ckbtc_canister_id(testnet: bool) -> Principal {
+    if testnet {
+        Principal::from_text("mc6ru-gyaaa-aaaar-qaaaq-cai").unwrap()
+    } else {
+        Principal::from_text("mxzaz-hqaaa-aaaar-qaada-cai").unwrap()
+    }
 }
 
-pub fn ckbtc_minter_canister_id() -> Principal {
-    todo!()
+pub fn ckbtc_minter_canister_id(testnet: bool) -> Principal {
+    if testnet {
+        Principal::from_text("ml52i-qqaaa-aaaar-qaaba-cai").unwrap()
+    } else {
+        Principal::from_text("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
+    }
 }
 
 // Returns the candid for the specified canister id, if there is one.
@@ -112,9 +126,11 @@ pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<&'static str> {
         Ok(include_str!("../../candid/gtc.did"))
     } else if canister_id == registry_canister_id() {
         Ok(include_str!("../../candid/registry.did"))
-    } else if canister_id == ckbtc_canister_id() {
+    } else if canister_id == ckbtc_canister_id(false) || canister_id == ckbtc_canister_id(true) {
         Ok(include_str!("../../candid/icrc1.did"))
-    } else if canister_id == ckbtc_minter_canister_id() {
+    } else if canister_id == ckbtc_minter_canister_id(false)
+        || canister_id == ckbtc_minter_canister_id(true)
+    {
         Ok(include_str!("../../candid/ckbtc_minter.did"))
     } else {
         bail!(
@@ -132,8 +148,8 @@ Should be one of:
             governance = governance_canister_id(),
             genesis = genesis_token_canister_id(),
             registry = registry_canister_id(),
-            ckbtc_minter = ckbtc_minter_canister_id(),
-            ckbtc = ckbtc_canister_id(),
+            ckbtc_minter = ckbtc_minter_canister_id(false),
+            ckbtc = ckbtc_canister_id(false),
         );
     }
 }
@@ -370,5 +386,40 @@ impl FromStr for ParsedAccount {
             owner: principal.into(),
             subaccount: None,
         }))
+    }
+}
+
+impl Display for ParsedAccount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        const EMPTY: [u8; 32] = [0; 32];
+        match self.0.subaccount {
+            None | Some(EMPTY) if self.0.owner.as_slice().last() != Some(&0x7f) => {
+                self.0.owner.fmt(f)
+            }
+            _ => {
+                let mut principal_bytes = self.0.owner.as_slice().to_owned();
+                let subaccount = self.0.subaccount.unwrap_or_default();
+                let first_digit = subaccount.iter().position(|x| *x != 0);
+                let shrunk = if let Some(first_digit) = first_digit {
+                    &subaccount[first_digit..]
+                } else {
+                    &[]
+                };
+                principal_bytes.extend_from_slice(shrunk);
+                principal_bytes.extend_from_slice(&[shrunk.len() as u8, 0x7f]);
+                let crc = crc32fast::hash(&principal_bytes);
+                principal_bytes.splice(0..0, crc.to_be_bytes());
+                let hex_encoding = BASE32_NOPAD.encode(&principal_bytes);
+                let chunks = hex_encoding.chars().chunks(5);
+                write!(
+                    f,
+                    "{}",
+                    chunks
+                        .into_iter()
+                        .map(|ck| ck.map(|ch| ch.to_ascii_lowercase()).format(""))
+                        .format("-")
+                )
+            }
+        }
     }
 }

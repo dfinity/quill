@@ -1,1 +1,0 @@
-"$QUILL" ckbtc btc-deposit-address --pem-file -
