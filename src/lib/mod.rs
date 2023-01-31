@@ -28,10 +28,6 @@ use std::{env::VarError, path::Path};
 
 pub const IC_URL: &str = "https://ic0.app";
 
-// The OID of secp256k1 curve is `1.3.132.0.10`.
-// Encoding in DER results in following bytes.
-const EC_PARAMETERS: [u8; 7] = [6, 5, 43, 129, 4, 0, 10];
-
 pub fn get_ic_url() -> String {
     std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
@@ -322,16 +318,9 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
         secret_key.to_be_bytes().to_vec(),
     )?;
     let pem = Pem {
-        tag: String::from("EC PARAMETERS"),
-        contents: EC_PARAMETERS.to_vec(),
-    };
-    let parameters_pem = encode(&pem);
-    let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),
         contents: der,
     };
     let key_pem = encode(&pem);
-    Ok((parameters_pem + &key_pem)
-        .replace('\r', "")
-        .replace("\n\n", "\n"))
+    Ok(key_pem.replace('\r', "").replace("\n\n", "\n"))
 }
