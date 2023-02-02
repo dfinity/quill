@@ -1,9 +1,10 @@
 #![warn(unused_extern_crates)]
+#![allow(special_module_name)]
 use std::path::{Path, PathBuf};
 
 use crate::lib::AnyhowResult;
 use anyhow::Context;
-use bip39::Mnemonic;
+use bip39::{Language, Mnemonic};
 use clap::{crate_version, Args, Parser};
 use lib::AuthInfo;
 
@@ -21,10 +22,10 @@ pub struct CliOpts {
 #[derive(Args)]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long)]
+    #[clap(long, group = "auth")]
     pem_file: Option<PathBuf>,
 
-    #[clap(long)]
+    #[clap(long, group = "auth")]
     hsm: bool,
 
     #[clap(long)]
@@ -114,7 +115,8 @@ fn read_pem(pem_file: Option<&Path>, seed_file: Option<&Path>) -> AnyhowResult<O
 }
 
 fn parse_mnemonic(phrase: &str) -> AnyhowResult<Mnemonic> {
-    Mnemonic::parse(phrase).context("Couldn't parse the seed phrase as a valid mnemonic. {:?}")
+    Mnemonic::from_phrase(phrase, Language::English)
+        .context("Couldn't parse the seed phrase as a valid mnemonic. {:?}")
 }
 
 fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
@@ -135,7 +137,7 @@ fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
 #[cfg(test)]
 mod tests {
     use crate::read_pem;
-    use bip39::Mnemonic;
+    use bip39::{Language, Mnemonic};
 
     #[test]
     fn test_read_pem_none_none() {
@@ -169,7 +171,9 @@ mod tests {
         seed_file
             .write_all(phrase.as_bytes())
             .expect("Cannot write to temp file");
-        let mnemonic = crate::lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
+        let mnemonic =
+            crate::lib::mnemonic_to_pem(&Mnemonic::from_phrase(phrase, Language::English).unwrap())
+                .unwrap();
 
         let pem = read_pem(None, Some(seed_file.path()))
             .expect("Unable to read seed_file")

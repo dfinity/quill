@@ -49,18 +49,17 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         _ => return Err(anyhow!("Words must be 12 or 24.")),
     };
     let mnemonic = match opts.phrase {
-        Some(phrase) => Mnemonic::parse(phrase).context("Failed to parse mnemonic")?,
+        Some(phrase) => {
+            Mnemonic::from_phrase(&phrase, Language::English).context("Failed to parse mnemonic")?
+        }
         None => {
             let mut key = vec![0u8; bytes];
             OsRng.fill_bytes(&mut key);
-            Mnemonic::from_entropy_in(Language::English, &key).unwrap()
+            Mnemonic::from_entropy(&key, Language::English).unwrap()
         }
     };
     let pem = mnemonic_to_pem(&mnemonic).context("Failed to convert mnemonic to PEM")?;
-    let mut phrase = mnemonic
-        .word_iter()
-        .collect::<Vec<&'static str>>()
-        .join(" ");
+    let mut phrase = mnemonic.into_phrase();
     phrase.push('\n');
     std::fs::write(opts.seed_file, phrase)?;
     if let Some(path) = opts.pem_file {

@@ -7,6 +7,7 @@ use std::io::{self, Write};
 use tokio::runtime::Runtime;
 
 mod account_balance;
+mod ckbtc;
 mod claim_neurons;
 mod generate;
 mod get_neuron_info;
@@ -45,6 +46,8 @@ pub enum Command {
     /// Update node provider details
     UpdateNodeProvider(BaseOpts<update_node_provider::UpdateNodeProviderOpts>),
     ReplaceNodeProviderId(BaseOpts<replace_node_provide_id::ReplaceNodeProviderIdOpts>),
+    #[clap(subcommand)]
+    Ckbtc(ckbtc::CkbtcCommand),
     /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
@@ -110,6 +113,7 @@ pub fn dispatch(cmd: Command) -> AnyhowResult {
             send::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
         })?,
         Command::Generate(opts) => generate::exec(opts)?,
+        Command::Ckbtc(subcmd) => ckbtc::dispatch(subcmd)?,
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner
         Command::ScannerQRCode => {

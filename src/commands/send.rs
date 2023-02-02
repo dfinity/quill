@@ -9,7 +9,7 @@ use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
-use ledger_canister::{Subaccount, Tokens};
+use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;

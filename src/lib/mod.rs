@@ -1,21 +1,25 @@
 //! All the common functionality.
 
-use anyhow::{anyhow, bail, Context};
-use bip39::Mnemonic;
+use anyhow::{anyhow, bail, ensure, Context};
+use bip39::{Mnemonic, Seed};
 use candid::{
     parser::typing::{check_prog, TypeEnv},
     types::Function,
     IDLProg, Principal,
 };
+use data_encoding::BASE32_NOPAD;
 use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
+use ic_icrc1::Account;
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
 };
+use icp_ledger::{AccountIdentifier, Subaccount};
+use itertools::Itertools;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
@@ -23,8 +27,12 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::path::PathBuf;
-use std::{env::VarError, path::Path};
+use std::{
+    env::VarError,
+    fmt::{self, Display, Formatter},
+    path::Path,
+};
+use std::{path::PathBuf, str::FromStr};
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -88,20 +96,38 @@ pub fn registry_canister_id() -> Principal {
     Principal::from_slice(REGISTRY_CANISTER_ID.as_ref())
 }
 
+pub fn ckbtc_canister_id(testnet: bool) -> Principal {
+    if testnet {
+        Principal::from_text("mc6ru-gyaaa-aaaar-qaaaq-cai").unwrap()
+    } else {
+        Principal::from_text("mxzaz-hqaaa-aaaar-qaada-cai").unwrap()
+    }
+}
+
+pub fn ckbtc_minter_canister_id(testnet: bool) -> Principal {
+    if testnet {
+        Principal::from_text("ml52i-qqaaa-aaaar-qaaba-cai").unwrap()
+    } else {
+        Principal::from_text("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
+    }
+}
+
 // Returns the candid for the specified canister id, if there is one.
-pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<String> {
+pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<&'static str> {
     if canister_id == governance_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/governance.did").to_vec())
-            .context("Cannot load governance.did")
+        Ok(include_str!("../../candid/governance.did"))
     } else if canister_id == ledger_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/ledger.did").to_vec())
-            .context("Cannot load ledger.did")
+        Ok(include_str!("../../candid/ledger.did"))
     } else if canister_id == genesis_token_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/gtc.did").to_vec())
-            .context("Cannot load gtc.did")
+        Ok(include_str!("../../candid/gtc.did"))
     } else if canister_id == registry_canister_id() {
-        String::from_utf8(include_bytes!("../../candid/registry.did").to_vec())
-            .context("Cannot load registry.did")
+        Ok(include_str!("../../candid/registry.did"))
+    } else if canister_id == ckbtc_canister_id(false) || canister_id == ckbtc_canister_id(true) {
+        Ok(include_str!("../../candid/icrc1.did"))
+    } else if canister_id == ckbtc_minter_canister_id(false)
+        || canister_id == ckbtc_minter_canister_id(true)
+    {
+        Ok(include_str!("../../candid/ckbtc_minter.did"))
     } else {
         bail!(
             "\
@@ -111,11 +137,15 @@ Should be one of:
 - Ledger: {ledger}
 - Governance: {governance}
 - Genesis: {genesis}
-- Registry: {registry}",
+- Registry: {registry}
+- ckBTC minter: {ckbtc_minter}
+- ckBTC ledger: {ckbtc}",
             ledger = ledger_canister_id(),
             governance = governance_canister_id(),
             genesis = genesis_token_canister_id(),
-            registry = registry_canister_id()
+            registry = registry_canister_id(),
+            ckbtc_minter = ckbtc_minter_canister_id(false),
+            ckbtc = ckbtc_canister_id(false),
         );
     }
 }
@@ -146,8 +176,8 @@ pub fn get_idl_string(
 
 /// Returns the candid type of a specifed method and correspondig idl
 /// description.
-pub fn get_candid_type(idl: String, method_name: &str) -> Option<(TypeEnv, Function)> {
-    let ast = candid::pretty_parse::<IDLProg>("/dev/null", &idl).ok()?;
+pub fn get_candid_type(idl: &str, method_name: &str) -> Option<(TypeEnv, Function)> {
+    let ast = candid::pretty_parse::<IDLProg>("/dev/null", idl).ok()?;
     let mut env = TypeEnv::new();
     let actor = check_prog(&mut env, &ast).ok()?;
     let method = env.get_method(&actor?, method_name).ok()?.clone();
@@ -162,7 +192,7 @@ pub fn read_from_file(path: impl AsRef<Path>) -> AnyhowResult<String> {
     if path == Path::new("-") {
         std::io::stdin().read_to_string(&mut content)?;
     } else {
-        let mut file = std::fs::File::open(&path).context("Cannot open the message file.")?;
+        let mut file = std::fs::File::open(path).context("Cannot open the message file.")?;
         file.read_to_string(&mut content)
             .context("Cannot read the message file.")?;
     }
@@ -270,14 +300,10 @@ pub fn parse_query_response(
     Err(anyhow!("Invalid cbor content"))
 }
 
-pub fn get_account_id(principal_id: Principal) -> AnyhowResult<ledger_canister::AccountIdentifier> {
-    use std::convert::TryFrom;
+pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
-    Ok(ledger_canister::AccountIdentifier::new(
-        base_types_principal,
-        None,
-    ))
+    Ok(AccountIdentifier::new(base_types_principal, None))
 }
 
 /// Converts menmonic to PEM format
@@ -306,8 +332,8 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
         to_der(&data).context("Failed to encode secp256k1 secret key to DER")
     }
 
-    let seed = mnemonic.to_seed("");
-    let ext = bip32::XPrv::derive_from_path(&seed, &"m/44'/223'/0'/0/0".parse()?)
+    let seed = Seed::new(mnemonic, "");
+    let ext = bip32::XPrv::derive_from_path(seed, &"m/44'/223'/0'/0/0".parse()?)
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();
@@ -323,4 +349,142 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     };
     let key_pem = encode(&pem);
     Ok(key_pem.replace('\r', "").replace("\n\n", "\n"))
+}
+
+pub struct ParsedSubaccount(pub Subaccount);
+
+impl FromStr for ParsedSubaccount {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut array = [0; 32];
+        ensure!(
+            s.len() <= 64,
+            "Too long: subaccounts are 64 characters or less"
+        );
+        hex::decode_to_slice(s, &mut array[32 - s.len() / 2..])?;
+        Ok(ParsedSubaccount(Subaccount(array)))
+    }
+}
+
+pub struct ParsedAccount(pub Account);
+
+impl FromStr for ParsedAccount {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut base32 = s.replace('-', "");
+        base32.make_ascii_uppercase();
+        let decoded = BASE32_NOPAD.decode(base32.as_bytes())?;
+        let (crc_bytes, addr) = decoded.split_at(4);
+        let crc = crc32fast::hash(addr);
+        if crc.to_be_bytes() != *crc_bytes {
+            bail!("Principal CRC doesn't match - was it copied correctly?");
+        }
+        if addr.last() != Some(&0x7f) {
+            let principal = Principal::try_from_slice(addr)?;
+            return Ok(Self(Account {
+                owner: principal.into(),
+                subaccount: None,
+            }));
+        }
+        let subaccount_length = *addr
+            .get(addr.len() - 2)
+            .context("Invalid ICRC-1 address (subaccount length missing)")?
+            as usize;
+        ensure!(
+            subaccount_length <= 32,
+            "Invalid ICRC-1 address (subaccount too long)"
+        );
+        let subaccount = addr
+            .get(addr.len() - subaccount_length - 2..addr.len() - 2)
+            .context("Invalid ICRC-1 address (subaccount too small)")?;
+        let mut subaccount_padded = [0; 32];
+        subaccount_padded[32 - subaccount_length..].copy_from_slice(subaccount);
+        let principal = Principal::try_from_slice(&addr[..addr.len() - subaccount_length - 2])?;
+        Ok(Self(Account {
+            owner: principal.into(),
+            subaccount: Some(subaccount_padded),
+        }))
+    }
+}
+
+impl Display for ParsedAccount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        const EMPTY: [u8; 32] = [0; 32];
+        match self.0.subaccount {
+            None | Some(EMPTY) if self.0.owner.as_slice().last() != Some(&0x7f) => {
+                self.0.owner.fmt(f)
+            }
+            _ => {
+                let mut principal_bytes = self.0.owner.as_slice().to_owned();
+                let subaccount = self.0.subaccount.unwrap_or_default();
+                let first_digit = subaccount.iter().position(|x| *x != 0);
+                let shrunk = if let Some(first_digit) = first_digit {
+                    &subaccount[first_digit..]
+                } else {
+                    &[]
+                };
+                principal_bytes.extend_from_slice(shrunk);
+                principal_bytes.extend_from_slice(&[shrunk.len() as u8, 0x7f]);
+                let crc = crc32fast::hash(&principal_bytes);
+                principal_bytes.splice(0..0, crc.to_be_bytes());
+                let hex_encoding = BASE32_NOPAD.encode(&principal_bytes);
+                let chunks = hex_encoding.chars().chunks(5);
+                write!(
+                    f,
+                    "{}",
+                    chunks
+                        .into_iter()
+                        .map(|ck| ck.map(|ch| ch.to_ascii_lowercase()).format(""))
+                        .format("-")
+                )
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ParsedAccount, ParsedSubaccount};
+    use candid::Principal;
+    use std::str::FromStr;
+
+    #[test]
+    fn account() {
+        let account = ParsedAccount::from_str("q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6").unwrap();
+        assert_eq!(
+            account.0.owner.0,
+            Principal::from_str("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
+        );
+        assert_eq!(account.0.subaccount, Some(*b"*\x0aw\xb2\xb0\x98\xe7V\xe6\x07iU\x13FU~1-\x84\xccu\xae\xfe\x9c\xa8\x8bGU\xd2\x84\xfe\xe4"));
+        assert_eq!(account.to_string(), "q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6")
+    }
+
+    #[test]
+    fn simple_account() {
+        let mut account = ParsedAccount::from_str("2vxsx-fae").unwrap();
+        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.subaccount, None);
+        assert_eq!(account.to_string(), "2vxsx-fae");
+        let mut subacct1 = [0; 32];
+        subacct1[31] = 1;
+        account.0.subaccount = Some(subacct1);
+        assert_eq!(account.to_string(), "ozcx7-eaeae-ax6");
+        let account = ParsedAccount::from_str("ozcx7-eaeae-ax6").unwrap();
+        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.subaccount, Some(subacct1));
+    }
+
+    #[test]
+    fn subaccount() {
+        let subacct = ParsedSubaccount::from_str(
+            "2a0a77b2b098e756e60769551346557e312d84cc75aefe9ca88b4755d284fee4",
+        )
+        .unwrap();
+        assert_eq!(subacct.0 .0, *b"\x2a\x0a\x77\xb2\xb0\x98\xe7\x56\xe6\x07\x69\x55\x13\x46\x55\x7e\x31\x2d\x84\xcc\x75\xae\xfe\x9c\xa8\x8b\x47\x55\xd2\x84\xfe\xe4");
+        let short = ParsedSubaccount::from_str("0102").unwrap();
+        assert_eq!(
+            short.0 .0,
+            *b"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x02"
+        );
+    }
 }

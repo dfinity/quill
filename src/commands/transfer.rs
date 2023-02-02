@@ -7,7 +7,7 @@ use crate::lib::{
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
-use ledger_canister::{Tokens, DEFAULT_TRANSFER_FEE};
+use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
 
 /// Signs an ICP transfer transaction.
 #[derive(Default, Parser)]

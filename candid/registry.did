@@ -37,9 +37,11 @@ type BitcoinFeature = record {
 };
 type BitcoinFeatureStatus = variant { Paused; Enabled; Disabled; Syncing };
 type BlessReplicaVersionPayload = record {
+  release_package_urls : opt vec text;
   node_manager_sha256_hex : text;
   release_package_url : text;
   sha256_hex : text;
+  guest_launch_measurement_sha256_hex : opt text;
   replica_version_id : text;
   release_package_sha256_hex : text;
   node_manager_binary_url : text;
@@ -72,7 +74,6 @@ type CreateSubnetPayload = record {
   max_number_of_canisters : nat64;
   ecdsa_config : opt EcdsaInitialConfig;
   gossip_max_artifact_streams_per_peer : nat32;
-  advert_best_effort_percentage : opt nat32;
   replica_version_id : text;
   gossip_max_duplicity : nat32;
   gossip_max_chunk_wait_ms : nat32;
@@ -100,6 +101,7 @@ type EcdsaConfig = record {
   max_queue_size : opt nat32;
   key_ids : vec EcdsaKeyId;
   signature_request_timeout_ns : opt nat64;
+  idkg_key_rotation_period_ms : opt nat64;
 };
 type EcdsaCurve = variant { secp256k1 };
 type EcdsaInitialConfig = record {
@@ -107,6 +109,7 @@ type EcdsaInitialConfig = record {
   max_queue_size : opt nat32;
   keys : vec EcdsaKeyRequest;
   signature_request_timeout_ns : opt nat64;
+  idkg_key_rotation_period_ms : opt nat64;
 };
 type EcdsaKeyId = record { name : text; curve : EcdsaCurve };
 type EcdsaKeyRequest = record {
@@ -179,13 +182,22 @@ type Result_2 = variant {
   Err : text;
 };
 type Result_3 = variant { Ok : NodeProvidersMonthlyXdrRewards; Err : text };
+type RetireReplicaVersionPayload = record { replica_version_ids : vec text };
 type SetFirewallConfigPayload = record {
   ipv4_prefixes : vec text;
   firewall_config : text;
   ipv6_prefixes : vec text;
 };
+type SevFeatureStatus = variant {
+  SecureEnabled;
+  Disabled;
+  InsecureIntegrityEnabled;
+  SecureNoUpgradeEnabled;
+  InsecureEnabled;
+};
 type SubnetFeatures = record {
   canister_sandboxing : bool;
+  sev_status : opt SevFeatureStatus;
   http_requests : bool;
   bitcoin : opt BitcoinFeature;
 };
@@ -228,7 +240,6 @@ type UpdateSubnetPayload = record {
   max_ingress_messages_per_block : opt nat64;
   max_number_of_canisters : opt nat64;
   ecdsa_config : opt EcdsaConfig;
-  advert_best_effort_percentage : opt nat32;
   retransmission_request_ms : opt nat32;
   dkg_interval_length : opt nat64;
   registry_poll_period_ms : opt nat32;
@@ -275,6 +286,7 @@ service : {
   remove_nodes : (RemoveNodesPayload) -> ();
   remove_nodes_from_subnet : (RemoveNodesPayload) -> ();
   reroute_canister_ranges : (RerouteCanisterRangesPayload) -> (Result_1);
+  retire_replica_version : (RetireReplicaVersionPayload) -> ();
   set_firewall_config : (SetFirewallConfigPayload) -> ();
   update_firewall_rules : (AddFirewallRulesPayload) -> ();
   update_node_directly : (UpdateNodeDirectlyPayload) -> (Result_1);
