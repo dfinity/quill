@@ -11,7 +11,7 @@ use crate::{
     lib::{
         ckbtc_canister_id, ckbtc_minter_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo, ParsedSubaccount,
+        AnyhowResult, AuthInfo, ParsedSubaccount, ROLE_CKBTC_MINTER, ROLE_ICRC1_LEDGER,
     },
 };
 
@@ -76,6 +76,7 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
         messages.push(sign_ingress_with_request_status_query(
             auth,
             ckbtc_canister_id(opts.testnet),
+            ROLE_ICRC1_LEDGER,
             "icrc1_transfer",
             Encode!(&transfer_args)?,
         )?);
@@ -87,6 +88,7 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
     messages.push(sign_ingress_with_request_status_query(
         auth,
         ckbtc_minter_canister_id(opts.testnet),
+        ROLE_CKBTC_MINTER,
         "retrieve_btc",
         Encode!(&retrieve_args)?,
     )?);

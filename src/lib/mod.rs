@@ -17,6 +17,7 @@ use ic_icrc1::Account;
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
+    SNS_WASM_CANISTER_ID,
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
 use itertools::Itertools;
@@ -96,6 +97,10 @@ pub fn registry_canister_id() -> Principal {
     Principal::from_slice(REGISTRY_CANISTER_ID.as_ref())
 }
 
+pub fn sns_wasm_canister_id() -> Principal {
+    Principal::from_slice(SNS_WASM_CANISTER_ID.as_ref())
+}
+
 pub fn ckbtc_canister_id(testnet: bool) -> Principal {
     if testnet {
         Principal::from_text("mc6ru-gyaaa-aaaar-qaaaq-cai").unwrap()
@@ -112,52 +117,85 @@ pub fn ckbtc_minter_canister_id(testnet: bool) -> Principal {
     }
 }
 
-// Returns the candid for the specified canister id, if there is one.
-pub fn get_local_candid(canister_id: Principal) -> AnyhowResult<&'static str> {
+pub const ROLE_NNS_GOVERNANCE: &str = "nns:governance";
+pub const ROLE_NNS_LEDGER: &str = "nns:ledger";
+pub const ROLE_NNS_GTC: &str = "nns:gtc";
+pub const ROLE_NNS_REGISTRY: &str = "nns:registry";
+pub const ROLE_SNS_WASM: &str = "nns:sns-wasm";
+pub const ROLE_ICRC1_LEDGER: &str = "icrc1:ledger";
+pub const ROLE_CKBTC_MINTER: &str = "ckbtc:minter";
+pub const ROLE_SNS_GOVERNANCE: &str = "sns:governance";
+pub const ROLE_SNS_ROOT: &str = "sns:root";
+pub const ROLE_SNS_SWAP: &str = "sns:swap";
+
+pub fn get_default_role(canister_id: Principal) -> Option<&'static str> {
     if canister_id == governance_canister_id() {
-        Ok(include_str!("../../candid/governance.did"))
+        Some(ROLE_NNS_GOVERNANCE)
     } else if canister_id == ledger_canister_id() {
-        Ok(include_str!("../../candid/ledger.did"))
+        Some(ROLE_NNS_LEDGER)
     } else if canister_id == genesis_token_canister_id() {
-        Ok(include_str!("../../candid/gtc.did"))
+        Some(ROLE_NNS_GTC)
     } else if canister_id == registry_canister_id() {
-        Ok(include_str!("../../candid/registry.did"))
+        Some(ROLE_NNS_REGISTRY)
     } else if canister_id == ckbtc_canister_id(false) || canister_id == ckbtc_canister_id(true) {
-        Ok(include_str!("../../candid/icrc1.did"))
+        Some(ROLE_ICRC1_LEDGER)
     } else if canister_id == ckbtc_minter_canister_id(false)
         || canister_id == ckbtc_minter_canister_id(true)
     {
-        Ok(include_str!("../../candid/ckbtc_minter.did"))
+        Some(ROLE_CKBTC_MINTER)
     } else {
-        bail!(
+        None
+    }
+}
+
+pub fn get_local_candid(canister_id: Principal, role: &str) -> AnyhowResult<&'static str> {
+    Ok(match role {
+        ROLE_NNS_GOVERNANCE => include_str!("../../candid/governance.did"),
+        ROLE_NNS_LEDGER => include_str!("../../candid/ledger.did"),
+        ROLE_NNS_GTC => include_str!("../../candid/gtc.did"),
+        ROLE_NNS_REGISTRY => include_str!("../../candid/registry.did"),
+        ROLE_ICRC1_LEDGER => include_str!("../../candid/icrc1.did"),
+        ROLE_CKBTC_MINTER => include_str!("../../candid/ckbtc_minter.did"),
+        ROLE_SNS_WASM => include_str!("../../candid/snsw.did"),
+        ROLE_SNS_GOVERNANCE => include_str!("../../candid/sns-governance.did"),
+        ROLE_SNS_ROOT => include_str!("../../candid/sns-root.did"),
+        ROLE_SNS_SWAP => include_str!("../../candid/sns-swap.did"),
+        _ => bail!(
             "\
-Unknown recipient in message!
+Unknown recipient '{role}' in message!
 Recipient: {canister_id}
-Should be one of:
-- Ledger: {ledger}
+Should be one of: 
+- NNS Ledger: {ledger}
 - Governance: {governance}
 - Genesis: {genesis}
 - Registry: {registry}
 - ckBTC minter: {ckbtc_minter}
-- ckBTC ledger: {ckbtc}",
+- ckBTC ledger: {ckbtc}
+- SNS-WASM: {sns_wasm}
+- SNS Governance
+- SNS Ledger
+- SNS Root
+- SNS Swap",
             ledger = ledger_canister_id(),
             governance = governance_canister_id(),
             genesis = genesis_token_canister_id(),
             registry = registry_canister_id(),
             ckbtc_minter = ckbtc_minter_canister_id(false),
             ckbtc = ckbtc_canister_id(false),
-        );
-    }
+            sns_wasm = sns_wasm_canister_id(),
+        ),
+    })
 }
 
 /// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
     blob: &[u8],
     canister_id: Principal,
+    role: &str,
     method_name: &str,
     part: &str,
 ) -> AnyhowResult<String> {
-    let spec = get_local_candid(canister_id)?;
+    let spec = get_local_candid(canister_id, role)?;
     let method_type = get_candid_type(spec, method_name);
     let result = match method_type {
         None => candid::IDLArgs::from_bytes(blob),
@@ -270,6 +308,7 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
 pub fn parse_query_response(
     response: Vec<u8>,
     canister_id: Principal,
+    role: &str,
     method_name: &str,
 ) -> AnyhowResult<String> {
     let cbor: Value = serde_cbor::from_slice(&response)
@@ -293,7 +332,7 @@ pub fn parse_query_response(
             m.get(&Value::Text("reply".to_string())),
         ) {
             if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
-                return get_idl_string(reply, canister_id, method_name, "rets");
+                return get_idl_string(reply, canister_id, role, method_name, "rets");
             }
         }
     }

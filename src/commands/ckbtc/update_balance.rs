@@ -5,7 +5,7 @@ use ic_ckbtc_minter::updates::update_balance::UpdateBalanceArgs;
 use crate::lib::{
     ckbtc_minter_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
+    AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_CKBTC_MINTER,
 };
 
 /// Signs a message to mint ckBTC from previously deposited BTC.
@@ -33,6 +33,7 @@ pub fn exec(auth: &AuthInfo, opts: UpdateBalanceOpts) -> AnyhowResult<Vec<Ingres
     let message = sign_ingress_with_request_status_query(
         auth,
         ckbtc_minter_canister_id(opts.testnet),
+        ROLE_CKBTC_MINTER,
         "update_balance",
         Encode!(&args)?,
     )?;

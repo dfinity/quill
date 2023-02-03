@@ -18,15 +18,20 @@ flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
 ic-identity-hsm = "0.21.0"
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ic-icrc1 = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-icrc1 = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
 ic-types = "0.4.1"
-icp-ledger = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "a6ae48d2a5273d595bc113e0d28aba19da7612eb" }
+icp-ledger = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "0fc243cb16fbe9d45fd39b0bc6bd7a30dfc0aa77" }
 num-bigint = "0.4.3"
 openssl = "0.10.45"
 pem = "1.0.1"

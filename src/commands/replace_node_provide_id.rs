@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     lib::signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    lib::{registry_canister_id, AnyhowResult, AuthInfo},
+    lib::{registry_canister_id, AnyhowResult, AuthInfo, ROLE_NNS_REGISTRY},
 };
 use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
@@ -56,6 +56,7 @@ pub fn exec(
     Ok(vec![sign_ingress_with_request_status_query(
         auth,
         registry_canister_id(),
+        ROLE_NNS_REGISTRY,
         "update_node_operator_config_directly",
         args,
     )?])

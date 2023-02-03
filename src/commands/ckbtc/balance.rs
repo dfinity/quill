@@ -4,7 +4,10 @@ use ic_icrc1::Account;
 
 use crate::{
     commands::{get_ids, send::submit_unsigned_ingress},
-    lib::{ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount},
+    lib::{
+        ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
+        ROLE_ICRC1_LEDGER,
+    },
 };
 
 /// Sends a message to check the provided user's ckBTC balance.
@@ -49,6 +52,7 @@ pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> A
     }
     submit_unsigned_ingress(
         ckbtc_canister_id(opts.testnet),
+        ROLE_ICRC1_LEDGER,
         "icrc1_balance_of",
         Encode!(&account)?,
         opts.yes,

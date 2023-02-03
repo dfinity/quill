@@ -60,6 +60,7 @@ pub struct SendOpts {
     yes: bool,
 }
 
+#[tokio::main]
 pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
     let json = read_from_file(&opts.file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
@@ -80,6 +81,7 @@ pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
 
 pub async fn submit_unsigned_ingress(
     canister_id: Principal,
+    role: &str,
     method_name: &str,
     args: Vec<u8>,
     yes: bool,
@@ -89,6 +91,7 @@ pub async fn submit_unsigned_ingress(
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
         &AuthInfo::NoAuth,
         canister_id,
+        role,
         method_name,
         args,
     )?;
@@ -113,10 +116,11 @@ async fn submit_ingress_and_check_status(
     if opts.dry_run {
         return Ok(());
     }
-    let (_, _, method_name, _) = &message.ingress.parse()?;
+    let (_, _, method_name, _, role) = &message.ingress.parse()?;
     match request_status::submit(
         &message.request_status,
         Some(method_name.to_string()),
+        role,
         fetch_root_key,
     )
     .await
@@ -128,7 +132,7 @@ async fn submit_ingress_and_check_status(
 }
 
 async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
-    let (sender, canister_id, method_name, args) = message.parse()?;
+    let (sender, canister_id, method_name, args, role) = message.parse()?;
 
     println!("Sending message with\n");
     println!("  Call type:   {}", message.call_type);
@@ -159,6 +163,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                 ic_agent::agent::ReplicaV2Transport::query(&transport, canister_id, content)
                     .await?,
                 canister_id,
+                &role,
                 &method_name,
             )?;
             println!("Response: {}", response);

@@ -1,16 +1,19 @@
 use crate::{
-    commands::{send::Memo, transfer},
+    commands::{
+        send::Memo,
+        transfer::{self, parse_tokens},
+    },
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo,
+        AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
     },
 };
 use anyhow::anyhow;
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use icp_ledger::{AccountIdentifier, Subaccount};
+use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
@@ -22,8 +25,8 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 #[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
-    #[clap(long)]
-    amount: Option<String>,
+    #[clap(long, value_parser = parse_tokens)]
+    amount: Option<Tokens>,
 
     /// The name of the neuron (up to 8 ASCII characters).
     #[clap(long, validator(neuron_name_validator))]
@@ -33,9 +36,9 @@ pub struct StakeOpts {
     #[clap(long, validator(neuron_name_validator), conflicts_with("name"))]
     nonce: Option<u64>,
 
-    /// Transaction fee, default is 10000 e8s.
-    #[clap(long)]
-    fee: Option<String>,
+    /// Transaction fee, default is 0.0001 ICP.
+    #[clap(long, value_parser = parse_tokens)]
+    fee: Option<Tokens>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -54,7 +57,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
                 to: account.to_hex(),
                 amount,
                 fee: opts.fee,
-                memo: Some(nonce.to_string()),
+                memo: Some(nonce),
             },
         )?,
         _ => Vec::new(),
@@ -67,6 +70,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     messages.push(sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "claim_or_refresh_neuron_from_account",
         args,
     )?);

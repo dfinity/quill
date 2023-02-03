@@ -4,7 +4,7 @@ use ic_ckbtc_minter::queries::RetrieveBtcStatusRequest;
 
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{ckbtc_minter_canister_id, AnyhowResult},
+    lib::{ckbtc_minter_canister_id, AnyhowResult, ROLE_CKBTC_MINTER},
 };
 
 /// Sends a message to check the status of a ckBTC-to-BTC conversion.
@@ -32,6 +32,7 @@ pub async fn exec(opts: RetrieveBtcStatusOpts, fetch_root_key: bool) -> AnyhowRe
     };
     submit_unsigned_ingress(
         ckbtc_minter_canister_id(opts.testnet),
+        ROLE_CKBTC_MINTER,
         "retrieve_btc_status",
         Encode!(&args)?,
         opts.yes,
