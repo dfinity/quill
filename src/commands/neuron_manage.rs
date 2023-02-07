@@ -1,7 +1,7 @@
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo,
+    AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
 };
 use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
@@ -370,6 +370,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         generated.push(sign_ingress_with_request_status_query(
             auth,
             governance_canister_id(),
+            ROLE_NNS_GOVERNANCE,
             "manage_neuron",
             args,
         )?);

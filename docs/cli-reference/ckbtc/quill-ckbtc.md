@@ -6,10 +6,10 @@ The `quill ckbtc` family of commands is used for minting, burning, and transferr
 
 ## Basic usage
 
-The basic syntax for running `quill` commands is:
+The basic syntax for running `quill ckbtc` commands is:
 
 ``` bash
-quill [subcommand] [option] [flag]
+quill ckbtc [subcommand] [option] [flag]
 ```
 
 To see the available subcommands, please refer to the [index page](../index.md) of the quill reference.

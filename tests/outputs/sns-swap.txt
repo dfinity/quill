@@ -1,0 +1,27 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: send_dfx
+  Arguments:   (
+  record {
+    to = "bff3218e708b09187a586a1f397edf081964e560a5a0f6435fac044c7f4a25e9";
+    fee = record { e8s = 10_000 : nat64 };
+    memo = 4 : nat64;
+    from_subaccount = null;
+    created_at_time = null;
+    amount = record { e8s = 50_000_000_000 : nat64 };
+  },
+)
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rkp4c-7iaaa-aaaaa-aaaca-cai
+  Method name: refresh_buyer_tokens
+  Arguments:   (
+  record {
+    buyer = "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+  },
+)

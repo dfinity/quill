@@ -7,7 +7,7 @@ use crate::{
     lib::{
         ckbtc_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
+        AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER,
     },
 };
 
@@ -63,6 +63,7 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     let message = sign_ingress_with_request_status_query(
         auth,
         ckbtc_canister_id(opts.testnet),
+        ROLE_ICRC1_LEDGER,
         "icrc1_transfer",
         Encode!(&args)?,
     )?;
