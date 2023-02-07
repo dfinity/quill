@@ -22,6 +22,7 @@ mod list_deployed_snses;
 mod make_proposal;
 mod make_upgrade_canister_proposal;
 mod neuron_permission;
+mod new_sale_ticket;
 mod register_vote;
 mod stake_maturity;
 mod stake_neuron;
@@ -58,6 +59,7 @@ pub enum SnsCommand {
     MakeProposal(make_proposal::MakeProposalOpts),
     MakeUpgradeCanisterProposal(make_upgrade_canister_proposal::MakeUpgradeCanisterProposalOpts),
     NeuronPermission(neuron_permission::NeuronPermissionOpts),
+    NewSaleTicket(new_sale_ticket::NewSaleTicketOpts),
     RegisterVote(register_vote::RegisterVoteOpts),
     StakeMaturity(stake_maturity::StakeMaturityOpts),
     StakeNeuron(stake_neuron::StakeNeuronOpts),
@@ -93,6 +95,10 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
         }
         SnsCommand::NeuronPermission(opts) => {
             let out = neuron_permission::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::NewSaleTicket(opts) => {
+            let out = new_sale_ticket::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::RegisterVote(opts) => {
