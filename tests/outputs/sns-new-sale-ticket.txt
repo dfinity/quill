@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rkp4c-7iaaa-aaaaa-aaaca-cai
+  Method name: new_sale_ticket
+  Arguments:   (
+  record {
+    subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\e0\00\d8\01\01";
+    amount_icp_e8s = 100_000 : nat64;
+  },
+)
