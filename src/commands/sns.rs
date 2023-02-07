@@ -27,7 +27,7 @@ mod register_vote;
 mod stake_maturity;
 mod stake_neuron;
 mod status;
-mod swap;
+mod pay;
 mod transfer;
 
 /// Commands for interacting with a Service Nervous System's Ledger & Governance canisters.
@@ -64,7 +64,7 @@ pub enum SnsCommand {
     StakeMaturity(stake_maturity::StakeMaturityOpts),
     StakeNeuron(stake_neuron::StakeNeuronOpts),
     Status(status::StatusOpts),
-    Swap(swap::SwapOpts),
+    Pay(pay::PayOpts),
     Transfer(transfer::TransferOpts),
 }
 
@@ -114,8 +114,8 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             print_vec(qr, &out)?;
         }
         SnsCommand::Status(opts) => status::exec(&canister_ids?, opts, fetch_root_key)?,
-        SnsCommand::Swap(opts) => {
-            let out = swap::exec(auth, &canister_ids?, opts)?;
+        SnsCommand::Pay(opts) => {
+            let out = pay::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::Transfer(opts) => {

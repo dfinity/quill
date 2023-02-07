@@ -13,12 +13,15 @@ use crate::lib::{
 
 use super::SnsCanisterIds;
 
-/// Signs messages needed to participate in the initial token swap. This operation consists of two messages:
-/// First, `amount` ICP is transferred to the swap canister on the NNS ledger, under the subaccount for your principal.
-/// Second, the swap canister is notified that the transfer has been made.
-/// Once the swap has been finalized, if it was successful, you will receive your neurons automatically.
+/// Signs messages needed to pay for an open sale ticket that you can create using `quill sns new-sale-ticket`.
+/// This operation consists of two messages:
+/// First, `amount` ICP is transferred to the sale canister on the NNS ledger, under the subaccount for your principal.
+/// Please make sure that the ICP amount and the subaccount are aligned with what you specified in `quill sns new-sale-ticket`.
+/// 
+/// Second, the sale canister is notified that the transfer has been made.
+/// Once the payment has been finalized, if it was successful, you will receive your neurons automatically.
 #[derive(Parser)]
-pub struct SwapOpts {
+pub struct PayOpts {
     /// The amount of ICP to transfer. Your neuron's share of the governance tokens at sale finalization will be proportional to your share of the contributed ICP.
     #[clap(long, requires("memo"), required_unless_present("notify-only"), value_parser = parse_tokens)]
     amount: Option<Tokens>,
@@ -36,7 +39,7 @@ pub struct SwapOpts {
 pub fn exec(
     auth: &AuthInfo,
     sns_canister_ids: &SnsCanisterIds,
-    opts: SwapOpts,
+    opts: PayOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (controller, _) = crate::commands::public::get_ids(auth)?;
     let mut messages = vec![];
