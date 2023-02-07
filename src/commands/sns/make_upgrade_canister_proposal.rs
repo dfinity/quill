@@ -8,8 +8,8 @@ use crate::{
     AnyhowResult,
 };
 use anyhow::{Context, Error};
-use candid::Encode;
 use candid::Principal;
+use candid::{Encode, IDLArgs};
 use clap::Parser;
 use ic_sns_governance::pb::v1::{
     manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister,
@@ -46,9 +46,14 @@ pub struct MakeUpgradeCanisterProposalOpts {
     #[clap(long)]
     wasm_path: PathBuf,
 
-    /// Path to the file containing argument to post-upgrade method of the new canister WASM.
+    /// Argument to post-upgrade method of the new canister WASM. The argument must be formatted as a string
+    /// wrapped candid record.
     #[clap(long)]
-    canister_upgrade_arg_path: Option<PathBuf>,
+    canister_upgrade_arg: Option<String>,
+
+    /// Path to the binary file containing argument to post-upgrade method of the new canister WASM.
+    #[clap(long, conflicts_with("canister-upgrade-arg"))]
+    canister_upgrade_arg_path: Option<String>,
 }
 
 pub fn exec(
@@ -63,15 +68,20 @@ pub fn exec(
         summary,
         target_canister_id,
         wasm_path,
+        canister_upgrade_arg,
         canister_upgrade_arg_path,
     } = opts;
 
     let wasm = std::fs::read(wasm_path).context("Unable to read --wasm-path.")?;
-    let canister_upgrade_arg = match canister_upgrade_arg_path {
-        Some(path) => {
+    let canister_upgrade_arg = match (canister_upgrade_arg, canister_upgrade_arg_path) {
+        (Some(arg), _) => {
+            let parsed_arg: IDLArgs = arg.parse()?;
+            Some(parsed_arg.to_bytes()?)
+        }
+        (_, Some(path)) => {
             Some(std::fs::read(path).context("Unable to read --canister-upgrade-arg-path.")?)
         }
-        None => None,
+        (None, None) => None,
     };
 
     // (Dynamically) come up with a summary if one wasn't provided.

@@ -1,0 +1,25 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    subaccount = blob "\83\a7\d2\b1/eO\f5\835\e5\a2Q,\ca\e0\d7\83\9ctK\18\07\a4|\96\f5\b9\f3\96\90i";
+    command = opt variant {
+      MakeProposal = record {
+        url = "";
+        title = "Upgrade Canister";
+        action = opt variant {
+          UpgradeSnsControlledCanister = record {
+            new_canister_wasm = blob "\00asm\01\00\00\00";
+            canister_id = opt principal "pycv5-3jbbb-ccccc-ddddd-cai";
+            canister_upgrade_arg = opt blob "DIDL\01l\02\b9\fa\ee\18y\b5\f6\a1Cy\01\00\02\00\00\00\03\00\00\00";
+          }
+        };
+        summary = "Upgrade canister:\n\n  ID: pycv5-3jbbb-ccccc-ddddd-cai\n\n  WASM:\n    length: 8\n    fingerprint: 93a44bbb96c751218e4c00d479e4c14358122a389acca16205b1e4d0dc5f9476";
+      }
+    };
+  },
+)
