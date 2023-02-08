@@ -2,9 +2,9 @@ use candid::Encode;
 use clap::Parser;
 use ic_base_types::PrincipalId;
 use ic_sns_swap::pb::v1::RefreshBuyerTokensRequest;
-use icp_ledger::{AccountIdentifier, Memo, SendArgs, Subaccount, Tokens};
+use icp_ledger::{AccountIdentifier, Memo, SendArgs, Subaccount, TimeStamp, Tokens};
 
-use crate::commands::transfer::parse_tokens;
+use crate::lib::ParsedSubaccount;
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -13,22 +13,28 @@ use crate::lib::{
 
 use super::SnsCanisterIds;
 
-/// Signs messages needed to pay for an open sale ticket that you can create using `quill sns new-sale-ticket`.
+/// Signs messages to pay for an open sale ticket that you can create using `quill sns new-sale-ticket`.
 /// This operation consists of two messages:
-/// First, `amount` ICP is transferred to the sale canister on the NNS ledger, under the subaccount for your principal.
-/// Please make sure that the ICP amount and the subaccount are aligned with what you specified in `quill sns new-sale-ticket`.
-/// 
+/// First, transfer ICP to the sale canister on the NNS ledger, under the subaccount for your principal.
 /// Second, the sale canister is notified that the transfer has been made.
-/// Once the payment has been finalized, if it was successful, you will receive your neurons automatically.
 #[derive(Parser)]
 pub struct PayOpts {
-    /// The amount of ICP to transfer. Your neuron's share of the governance tokens at sale finalization will be proportional to your share of the contributed ICP.
-    #[clap(long, requires("memo"), required_unless_present("notify-only"), value_parser = parse_tokens)]
-    amount: Option<Tokens>,
+    /// The amount of ICP to transfer. This should be the same as the "amount_icp_e8s" of the sale ticket.
+    /// Please note that a 10000 e8s transaction fee will be charged on top of this amount.
+    #[clap(long, required_unless_present("notify-only"))]
+    amount_icp_e8s: Option<u64>,
 
-    /// An arbitrary number used to identify the NNS block this transfer was made in.
+    /// Pay from this subaccount. For example: e000d80101. This should be aligned with the "account" of the sale ticket.
     #[clap(long)]
-    memo: Option<u64>,
+    subaccount: Option<ParsedSubaccount>,
+
+    /// The creation_time of the sale ticket. This should be the same as the "creation_time" of the sale ticket.
+    #[clap(long, required_unless_present("notify-only"))]
+    ticket_creation_time: Option<u64>,
+
+    /// The tocket_id of the sale ticket. This should be the same as the "ticket_id" of the sale ticket.
+    #[clap(long, required_unless_present("notify-only"))]
+    ticket_id: Option<u64>,
 
     /// If this flag is specified, then no transfer will be made, and only the notification message will be generated.
     /// This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
@@ -48,11 +54,13 @@ pub fn exec(
         let account_id =
             AccountIdentifier::new(sns_canister_ids.swap_canister_id.into(), Some(subaccount));
         let request = SendArgs {
-            amount: opts.amount.unwrap(),
-            created_at_time: None,
-            from_subaccount: None,
+            amount: Tokens::from_e8s(opts.amount_icp_e8s.unwrap()),
+            created_at_time: Some(TimeStamp::from_nanos_since_unix_epoch(
+                opts.ticket_creation_time.unwrap(),
+            )),
+            from_subaccount: opts.subaccount.map(|x| x.0),
             fee: Tokens::from_e8s(10_000),
-            memo: Memo(opts.memo.unwrap()),
+            memo: Memo(opts.ticket_id.unwrap()),
             to: account_id,
         };
         messages.push(sign_ingress_with_request_status_query(
