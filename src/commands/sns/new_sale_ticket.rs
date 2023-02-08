@@ -9,14 +9,14 @@ use crate::lib::{
 
 use super::SnsCanisterIds;
 
-/// Get the sale ticket of the caller. If there is no open ticket yet, create a new ticket with specified arguments.
+/// Attempt to reate a new sale ticket. If there is already an open ticket, it will return the details of the existing ticket.
 #[derive(Parser)]
 pub struct NewSaleTicketOpts {
-    /// The amount of ICP tokens in e8s.
+    /// The amount of ICP tokens to participate in this sns sale. You will need to make the transfer later.
     #[clap(long)]
     amount_icp_e8s: u64,
 
-    /// The subaccount of the account to create sale ticket. For example: e000d80101
+    /// The subaccount you will use to pay for this ticket. For example: e000d80101.
     #[clap(long)]
     subaccount: Option<ParsedSubaccount>,
 }
