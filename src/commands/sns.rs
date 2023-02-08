@@ -23,11 +23,11 @@ mod make_proposal;
 mod make_upgrade_canister_proposal;
 mod neuron_permission;
 mod new_sale_ticket;
+mod pay;
 mod register_vote;
 mod stake_maturity;
 mod stake_neuron;
 mod status;
-mod pay;
 mod transfer;
 
 /// Commands for interacting with a Service Nervous System's Ledger & Governance canisters.
