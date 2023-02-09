@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.3.3] - 2023-02-09
+
 ### Changed
 
-- remove the `EC PARAMETERS` section in the PEM file to match dfx
+- Remove the `EC PARAMETERS` section in the PEM file to match dfx. (#152)
 
 ### Added
 
