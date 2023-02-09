@@ -10,7 +10,7 @@ Sending message with
     fee = record { e8s = 10_000 : nat64 };
     memo = 100 : nat64;
     from_subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\e0\00\d8\01\01";
-    created_at_time = opt record { timestamp_nanos = 1_675_815_621 : nat64 };
+    created_at_time = null;
     amount = record { e8s = 100_000 : nat64 };
   },
 )
