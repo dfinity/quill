@@ -30,7 +30,7 @@ jobs:
             asset_name: quill-macos-x86_64
             make_target: release
             rust: 1.66.1
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             name: arm
             target_file: target/arm-unknown-linux-gnueabihf/release/quill
             asset_name: quill-arm_32
