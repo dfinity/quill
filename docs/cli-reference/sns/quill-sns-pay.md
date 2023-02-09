@@ -13,7 +13,7 @@ Second, the sale canister is notified that the transfer has been made.
 The basic syntax for running `quill sns pay` commands is:
 
 ```bash
-quill sns pay [option]
+quill sns pay --amount-icp-e8s <AMOUNT_ICP_E8S> --ticket-id <TICKET_ID> [option]
 ```
 
 ## Flags
@@ -29,7 +29,7 @@ quill sns pay [option]
 |-------------------------------------------------|---------------------------------------|
 | `--amount-icp-e8s <AMOUNT>`                     | The amount of ICP to transfer.        |
 | `--subaccount <SUBACCOUNT>`                     | Pay from this subaccount.             |
-| `--ticket-id`                                   | The tocket_id of the sale ticket.     |
+| `--ticket-id`                                   | The ticket_id of the sale ticket.     |
 
 ## Remarks
 
