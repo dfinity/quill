@@ -2,7 +2,7 @@ use candid::Encode;
 use clap::Parser;
 use ic_base_types::PrincipalId;
 use ic_sns_swap::pb::v1::RefreshBuyerTokensRequest;
-use icp_ledger::{AccountIdentifier, Memo, SendArgs, Subaccount, TimeStamp, Tokens};
+use icp_ledger::{AccountIdentifier, Memo, SendArgs, Subaccount, Tokens};
 
 use crate::lib::ParsedSubaccount;
 use crate::lib::{
@@ -28,10 +28,6 @@ pub struct PayOpts {
     #[clap(long)]
     subaccount: Option<ParsedSubaccount>,
 
-    /// The creation_time of the sale ticket. This should be the same as the "creation_time" of the sale ticket.
-    #[clap(long, required_unless_present("notify-only"))]
-    ticket_creation_time: Option<u64>,
-
     /// The tocket_id of the sale ticket. This should be the same as the "ticket_id" of the sale ticket.
     #[clap(long, required_unless_present("notify-only"))]
     ticket_id: Option<u64>,
@@ -55,9 +51,7 @@ pub fn exec(
             AccountIdentifier::new(sns_canister_ids.swap_canister_id.into(), Some(subaccount));
         let request = SendArgs {
             amount: Tokens::from_e8s(opts.amount_icp_e8s.unwrap()),
-            created_at_time: Some(TimeStamp::from_nanos_since_unix_epoch(
-                opts.ticket_creation_time.unwrap(),
-            )),
+            created_at_time: None,
             from_subaccount: opts.subaccount.map(|x| x.0),
             fee: Tokens::from_e8s(10_000),
             memo: Memo(opts.ticket_id.unwrap()),

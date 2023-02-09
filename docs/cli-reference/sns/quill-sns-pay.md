@@ -29,7 +29,6 @@ quill sns pay [option]
 |-------------------------------------------------|---------------------------------------|
 | `--amount-icp-e8s <AMOUNT>`                     | The amount of ICP to transfer.        |
 | `--subaccount <SUBACCOUNT>`                     | Pay from this subaccount.             |
-| `--ticket-creation-time <TICKET_CREATION_TIME>` | The creation_time of the sale ticket. |
 | `--ticket-id`                                   | The tocket_id of the sale ticket.     |
 
 ## Remarks
