@@ -41,8 +41,8 @@ pub struct MakeProposalOpts {
     #[clap(long)]
     proposal: Option<String>,
 
-    /// Path to a file containing the proposal. The proposal must be formatted as a string
-    /// wrapped candid record.
+    /// Path to a file containing the proposal. The proposal must be the binary encoding of
+    /// the proposal candid record.
     #[clap(
         long,
         conflicts_with = "proposal",
@@ -60,13 +60,11 @@ pub fn exec(
     let neuron_subaccount = neuron_id.subaccount().map_err(Error::msg)?;
     let governance_canister_id = sns_canister_ids.governance_canister_id;
 
-    let proposal_string = if let Some(proposal) = opts.proposal {
-        proposal
+    let proposal = if let Some(proposal) = opts.proposal {
+        parse_proposal_from_candid_string(proposal)?
     } else {
-        fs::read_to_string(opts.proposal_path.unwrap())?
+        Decode!(&fs::read(opts.proposal_path.unwrap())?, Proposal)?
     };
-
-    let proposal = parse_proposal_from_candid_string(proposal_string)?;
 
     let args = Encode!(&ManageNeuron {
         subaccount: neuron_subaccount.to_vec(),
