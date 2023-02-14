@@ -32,7 +32,7 @@ jobs:
             rust: 1.66.1
           - os: ubuntu-latest
             name: arm
-            target_file: target/arm-unknown-linux-gnueabihf/release/quill
+            target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-arm_32
             make_target: unused
             rust: 1.66.1
