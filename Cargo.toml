@@ -1,6 +1,6 @@
 [package]
 name = "quill"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["DFINITY Team"]
 edition = "2021"
 
@@ -60,3 +60,7 @@ tempfile = "3.3.0"
 [features]
 static-ssl = ["openssl/vendored"]
 default = ["static-ssl"]
+
+[profile.release-arm]
+inherits = "release"
+opt-level=2
