@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- `--proposal-path` in the `sns make-proposal` command expects the binary encoding
+  of the proposal candid record.
+
 ## [0.3.3] - 2023-02-09
 
 ### Changed
