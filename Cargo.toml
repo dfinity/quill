@@ -60,3 +60,7 @@ tempfile = "3.3.0"
 [features]
 static-ssl = ["openssl/vendored"]
 default = ["static-ssl"]
+
+[profile.release-arm]
+inherits = "release"
+opt-level=2

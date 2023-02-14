@@ -77,7 +77,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target arm-unknown-linux-gnueabihf --features static-ssl --release --locked
+          args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
 
       - name: Make
         if: matrix.name != 'linux' && matrix.name != 'arm'
