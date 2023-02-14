@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Changed
+
+- Require `--ticket-creation-time` in `quill sns pay`. (#159)
 - `--proposal-path` in the `sns make-proposal` command expects the binary encoding
-  of the proposal candid record.
+  of the proposal candid record. (#160)
 
 ## [0.3.3] - 2023-02-09
 
