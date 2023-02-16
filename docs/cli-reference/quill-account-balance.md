@@ -12,17 +12,17 @@ quill account-balance [flag] <account id>
 
 ## Arguments
 
-| Argument | Description |
-|----------|-------------|
+| Argument       | Description                     |
+|----------------|---------------------------------|
 | `<account id>` | The id of the account to query. |
 
 ## Flags
 
-| Flag                 | Description                                     |
-|----------------------|-------------------------------------------------|
-| `--dry-run`          | Will display the query, but not send it. |
-| `-h`, `--help`       | Displays usage information.                     |
-| `--yes`              | Skips confirmation and sends the message directly. |
+| Flag           | Description                                        |
+|----------------|----------------------------------------------------|
+| `--dry-run`    | Will display the query, but not send it.           |
+| `-h`, `--help` | Displays usage information.                        |
+| `--yes`        | Skips confirmation and sends the message directly. |
 
 ## Examples
 

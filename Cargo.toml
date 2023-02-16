@@ -1,8 +1,8 @@
 [package]
 name = "quill"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["DFINITY Team"]
-edition = "2018"
+edition = "2021"
 
 [[bin]]
 name = "quill"
@@ -11,7 +11,6 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.34"
 base64 = "0.13.0"
-bip39 = "1.0.1"
 bip32 = "0.4.0"
 candid = "0.8.2"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
@@ -19,31 +18,49 @@ flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
 ic-identity-hsm = "0.21.0"
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
-ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-icrc1 = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 ic-types = "0.4.1"
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "7fb55980481a526cda59e538114e7c3282d38f22" }
+icp-ledger = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 num-bigint = "0.4.3"
-openssl = "0.10.38"
+openssl = "0.10.45"
 pem = "1.0.1"
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
+rust_decimal = "1.26"
 simple_asn1 = "0.6.1"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
 serde_cbor = "0.11.2"
 serde_json = "1.0.57"
-tokio = { version = "1.15.0", features = [ "fs" ] }
+tiny-bip39 = "1.0.0"
+tokio = { version = "1.15.0", features = [ "full" ] }
 rpassword = "6.0.0"
 
 # forces reqwest to be >0.11.6 to avoid issues in agent-rs
 reqwest = "0.11.10"
 k256 = "0.11.4"
+crc32fast = "1.3.2"
+data-encoding = "2.3.3"
+itertools = "0.10.5"
 
 [dev-dependencies]
 tempfile = "3.3.0"
 
 [features]
 static-ssl = ["openssl/vendored"]
+default = ["static-ssl"]
+
+[profile.release-arm]
+inherits = "release"
+opt-level=2

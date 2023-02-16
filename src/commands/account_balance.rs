@@ -1,6 +1,6 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{ledger_canister_id, AnyhowResult},
+    lib::{ledger_canister_id, AnyhowResult, ROLE_NNS_LEDGER},
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -26,12 +26,14 @@ pub struct AccountBalanceOpts {
 }
 
 // We currently only support a subset of the functionality.
+#[tokio::main]
 pub async fn exec(opts: AccountBalanceOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&AccountBalanceArgs {
         account: opts.account_id,
     })?;
     submit_unsigned_ingress(
         ledger_canister_id(),
+        ROLE_NNS_LEDGER,
         "account_balance_dfx",
         args,
         opts.yes,

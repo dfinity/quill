@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.4.0] - 2023-02-14
+
+## Changed
+
+- Require `--ticket-creation-time` in `quill sns pay`. (#159)
+- `--proposal-path` in the `sns make-proposal` command expects the binary encoding
+  of the proposal candid record. (#160)
+
+## [0.3.3] - 2023-02-09
+
+### Changed
+
+- Remove the `EC PARAMETERS` section in the PEM file to match dfx. (#152)
+
+### Added
+
+- ckBTC commands and support. (#153)
+- SNS commands and support (replaces sns-quill). (#154)
+- Support the new sns sale payment flow for the ticketing system. (#156)
+
+## [0.3.2] - 2023-01-13
+
+### Changed
+- Bump `openssl` crate to 0.10.45
 
 ## [0.3.1] - 2022-12-20
 

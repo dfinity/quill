@@ -1,12 +1,12 @@
 //! This module implements the command-line API.
 
-use crate::{get_auth, lib::AnyhowResult, BaseOpts};
+use crate::lib::{AnyhowResult, AuthInfo};
 use anyhow::Context;
-use clap::{Args, Parser};
+use clap::Parser;
 use std::io::{self, Write};
-use tokio::runtime::Runtime;
 
 mod account_balance;
+mod ckbtc;
 mod claim_neurons;
 mod generate;
 mod get_neuron_info;
@@ -20,6 +20,7 @@ mod qrcode;
 mod replace_node_provide_id;
 mod request_status;
 mod send;
+mod sns;
 mod transfer;
 mod update_node_provider;
 
@@ -27,82 +28,76 @@ pub use public::get_ids;
 
 #[derive(Parser)]
 pub enum Command {
-    PublicIds(BaseOpts<public::PublicOpts>),
-    Send(BaseOpts<send::SendOpts>),
-    Transfer(BaseOpts<transfer::TransferOpts>),
-    ClaimNeurons(BaseOpts<claim_neurons::ClaimNeuronOpts>),
-    NeuronStake(BaseOpts<neuron_stake::StakeOpts>),
-    NeuronManage(BaseOpts<neuron_manage::ManageOpts>),
-    ListNeurons(BaseOpts<list_neurons::ListNeuronsOpts>),
-    ListProposals(BaseOpts<list_proposals::ListProposalsOpts>),
-    GetProposalInfo(BaseOpts<get_proposal_info::GetProposalInfoOpts>),
-    GetNeuronInfo(BaseOpts<get_neuron_info::GetNeuronInfoOpts>),
-    AccountBalance(BaseOpts<account_balance::AccountBalanceOpts>),
-    UpdateNodeProvider(BaseOpts<update_node_provider::UpdateNodeProviderOpts>),
-    ReplaceNodeProviderId(BaseOpts<replace_node_provide_id::ReplaceNodeProviderIdOpts>),
+    PublicIds(public::PublicOpts),
+    Send(send::SendOpts),
+    Transfer(transfer::TransferOpts),
+    ClaimNeurons(claim_neurons::ClaimNeuronOpts),
+    NeuronStake(neuron_stake::StakeOpts),
+    NeuronManage(neuron_manage::ManageOpts),
+    ListNeurons(list_neurons::ListNeuronsOpts),
+    ListProposals(list_proposals::ListProposalsOpts),
+    GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
+    GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
+    AccountBalance(account_balance::AccountBalanceOpts),
+    UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
+    ReplaceNodeProviderId(replace_node_provide_id::ReplaceNodeProviderIdOpts),
+    #[clap(subcommand)]
+    Ckbtc(ckbtc::CkbtcCommand),
+    Sns(sns::SnsOpts),
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
-    QRCode(BaseOpts<qrcode::QRCodeOpts>),
+    QRCode(qrcode::QRCodeOpts),
 }
 
-#[derive(Args)]
-pub struct Empty;
-
-pub fn dispatch(cmd: Command) -> AnyhowResult {
-    let runtime = Runtime::new().expect("Unable to create a runtime");
+pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -> AnyhowResult {
     match cmd {
-        Command::PublicIds(opts) => public::exec(&get_auth(opts.global_opts)?, opts.command_opts)?,
+        Command::PublicIds(opts) => public::exec(auth, opts)?,
         Command::Transfer(opts) => {
-            let qr = opts.global_opts.qr;
-            let out = transfer::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = transfer::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::NeuronStake(opts) => {
-            let qr = opts.global_opts.qr;
-            let out = neuron_stake::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = neuron_stake::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::NeuronManage(opts) => {
-            let qr = opts.global_opts.qr;
-            let out = neuron_manage::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = neuron_manage::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::ListNeurons(opts) => {
-            let qr = opts.global_opts.qr;
-            let out = list_neurons::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = list_neurons::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
-        Command::ClaimNeurons(opts) => {
-            let qr = opts.global_opts.qr;
-            claim_neurons::exec(&get_auth(opts.global_opts)?)
-                .and_then(|out| print_vec(qr, &out))?;
+        Command::ClaimNeurons(_) => {
+            claim_neurons::exec(auth).and_then(|out| print_vec(qr, &out))?;
         }
-        Command::ListProposals(opts) => runtime.block_on(async {
-            list_proposals::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
-        })?,
-        Command::GetProposalInfo(opts) => runtime.block_on(async {
-            get_proposal_info::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
-        })?,
-        Command::GetNeuronInfo(opts) => runtime.block_on(async {
-            get_neuron_info::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
-        })?,
-        Command::AccountBalance(opts) => runtime.block_on(async {
-            account_balance::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
-        })?,
+        Command::ListProposals(opts) => {
+            list_proposals::exec(opts, fetch_root_key)?;
+        }
+        Command::GetProposalInfo(opts) => {
+            get_proposal_info::exec(opts, fetch_root_key)?;
+        }
+        Command::GetNeuronInfo(opts) => {
+            get_neuron_info::exec(opts, fetch_root_key)?;
+        }
+        Command::AccountBalance(opts) => {
+            account_balance::exec(opts, fetch_root_key)?;
+        }
         Command::UpdateNodeProvider(opts) => {
-            let out = update_node_provider::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = update_node_provider::exec(auth, opts)?;
             print(&out)?;
         }
         Command::ReplaceNodeProviderId(opts) => {
-            let out =
-                replace_node_provide_id::exec(&get_auth(opts.global_opts)?, opts.command_opts)?;
+            let out = replace_node_provide_id::exec(auth, opts)?;
             print(&out)?;
         }
-        Command::Send(opts) => runtime.block_on(async {
-            send::exec(opts.command_opts, opts.global_opts.fetch_root_key).await
-        })?,
+        Command::Send(opts) => {
+            send::exec(opts, fetch_root_key)?;
+        }
         Command::Generate(opts) => generate::exec(opts)?,
+        Command::Ckbtc(subcmd) => ckbtc::dispatch(auth, subcmd, qr, fetch_root_key)?,
+        Command::Sns(opts) => sns::dispatch(auth, opts, qr, fetch_root_key)?,
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/
         // Source code: https://github.com/ninegua/ic-qr-scanner
         Command::ScannerQRCode => {
@@ -129,7 +124,7 @@ pub fn dispatch(cmd: Command) -> AnyhowResult {
 █████████████████████████████████████"
             );
         }
-        Command::QRCode(opts) => qrcode::exec(opts.command_opts)?,
+        Command::QRCode(opts) => qrcode::exec(opts)?,
     }
     Ok(())
 }

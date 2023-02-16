@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             name: linux
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64
@@ -23,19 +23,19 @@ jobs:
             target_file: target/release/quill.exe
             asset_name: quill-windows-x86_64.exe
             make_target: release
-            rust: 1.60.0
+            rust: 1.66.1
           - os: macos-latest
             name: macos
             target_file: target/release/quill
             asset_name: quill-macos-x86_64
             make_target: release
-            rust: 1.60.0
+            rust: 1.66.1
           - os: ubuntu-latest
             name: arm
-            target_file: target/arm-unknown-linux-gnueabihf/release/quill
+            target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-arm_32
             make_target: unused
-            rust: 1.60.0
+            rust: 1.66.1
     steps:
       - uses: actions/checkout@master
 
@@ -77,7 +77,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target arm-unknown-linux-gnueabihf --features static-ssl --release --locked
+          args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
 
       - name: Make
         if: matrix.name != 'linux' && matrix.name != 'arm'

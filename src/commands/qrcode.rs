@@ -19,7 +19,7 @@ pub struct QRCodeOpts {
 /// Prints the account and the principal ids.
 pub fn exec(opts: QRCodeOpts) -> AnyhowResult {
     if let Some(file) = opts.file {
-        let data = read_from_file(&file)?;
+        let data = read_from_file(file)?;
         print_qr(&data);
     }
     if let Some(string) = opts.string {

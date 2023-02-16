@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: r7inp-6aaaa-aaaaa-aaabq-cai
+  Method name: get_sns_canisters_summary
+  Arguments:   (record { update_canister_list = null })

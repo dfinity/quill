@@ -1,7 +1,7 @@
 use crate::lib::{
     genesis_token_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo,
+    AnyhowResult, AuthInfo, ROLE_NNS_GTC,
 };
 use anyhow::anyhow;
 use candid::Encode;
@@ -24,11 +24,12 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
             PointConversionForm::UNCOMPRESSED,
             &mut context,
         )?;
-        let sig = Encode!(&hex::encode(&bytes))?;
+        let sig = Encode!(&hex::encode(bytes))?;
 
         Ok(vec![sign_ingress_with_request_status_query(
             auth,
             genesis_token_canister_id(),
+            ROLE_NNS_GTC,
             "claim_neurons",
             sig,
         )?])

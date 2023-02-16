@@ -13,6 +13,7 @@ use std::sync::Arc;
 pub async fn submit(
     req: &RequestStatus,
     method_name: Option<String>,
+    role: &str,
     fetch_root_key: bool,
 ) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
@@ -62,8 +63,14 @@ pub async fn submit(
         }
     }
     .await?;
-    get_idl_string(&blob, canister_id, &method_name.unwrap_or_default(), "rets")
-        .context("Invalid IDL blob.")
+    get_idl_string(
+        &blob,
+        canister_id,
+        role,
+        &method_name.unwrap_or_default(),
+        "rets",
+    )
+    .context("Invalid IDL blob.")
 }
 
 pub(crate) struct ProxySignReplicaV2Transport {

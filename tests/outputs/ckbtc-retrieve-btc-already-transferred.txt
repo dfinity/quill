@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: mqygn-kiaaa-aaaar-qaadq-cai
+  Method name: retrieve_btc
+  Arguments:   (
+  record {
+    address = "3L2Uyh1eHpfPyPayqrh5WjfnTzWiG4xPLu";
+    amount = 314_000_000 : nat64;
+  },
+)

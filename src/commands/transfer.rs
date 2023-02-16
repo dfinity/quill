@@ -1,4 +1,5 @@
 use crate::commands::send::{Memo, SendArgs};
+use crate::lib::ROLE_NNS_LEDGER;
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -7,7 +8,7 @@ use crate::lib::{
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
-use ledger_canister::{Tokens, DEFAULT_TRANSFER_FEE};
+use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
 
 /// Signs an ICP transfer transaction.
 #[derive(Default, Parser)]
@@ -16,29 +17,22 @@ pub struct TransferOpts {
     pub to: String,
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
-    #[clap(long, validator(token_amount_validator))]
-    pub amount: String,
+    #[clap(long, value_parser = parse_tokens)]
+    pub amount: Tokens,
 
     /// Reference number, default is 0.
-    #[clap(long, validator(memo_validator))]
-    pub memo: Option<String>,
+    #[clap(long)]
+    pub memo: Option<u64>,
 
-    /// Transaction fee, default is 10000 e8s.
-    #[clap(long, validator(token_amount_validator))]
-    pub fee: Option<String>,
+    /// Transaction fee, default is 0.0001 ICP.
+    #[clap(long, value_parser = parse_tokens)]
+    pub fee: Option<Tokens>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let amount = parse_tokens(&opts.amount).context("Cannot parse amount")?;
-    let fee = opts.fee.map_or(Ok(DEFAULT_TRANSFER_FEE), |v| {
-        parse_tokens(&v).context("Cannot parse fee")
-    })?;
-    let memo = Memo(
-        opts.memo
-            .unwrap_or_else(|| "0".to_string())
-            .parse::<u64>()
-            .context("Failed to parse memo as unsigned integer")?,
-    );
+    let amount = opts.amount;
+    let fee = opts.fee.unwrap_or(DEFAULT_TRANSFER_FEE);
+    let memo = Memo(opts.memo.unwrap_or(0));
     let to = opts.to;
 
     let args = Encode!(&SendArgs {
@@ -50,7 +44,13 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
         created_at_time: None,
     })?;
 
-    let msg = sign_ingress_with_request_status_query(auth, ledger_canister_id(), "send_dfx", args)?;
+    let msg = sign_ingress_with_request_status_query(
+        auth,
+        ledger_canister_id(),
+        ROLE_NNS_LEDGER,
+        "send_dfx",
+        args,
+    )?;
     Ok(vec![msg])
 }
 
@@ -60,7 +60,7 @@ fn new_tokens(tokens: u64, e8s: u64) -> AnyhowResult<Tokens> {
         .context("Cannot create new tokens structure")
 }
 
-fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
+pub fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
     let parse = |s: &str| {
         s.parse::<u64>()
             .context("Failed to parse tokens as unsigned integer")
@@ -77,15 +77,4 @@ fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
         }
         _ => bail!("Cannot parse amount {}", amount),
     }
-}
-
-fn token_amount_validator(tokens: &str) -> AnyhowResult<()> {
-    parse_tokens(tokens).map(|_| ())
-}
-
-fn memo_validator(memo: &str) -> Result<(), String> {
-    if memo.parse::<u64>().is_ok() {
-        return Ok(());
-    }
-    Err("Memo must be an unsigned integer".to_string())
 }

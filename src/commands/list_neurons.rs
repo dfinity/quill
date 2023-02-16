@@ -1,7 +1,7 @@
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo,
+    AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -32,6 +32,7 @@ pub fn exec(auth: &AuthInfo, opts: ListNeuronsOpts) -> AnyhowResult<Vec<IngressW
     Ok(vec![sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "list_neurons",
         args,
     )?])

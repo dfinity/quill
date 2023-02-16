@@ -1,6 +1,6 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{governance_canister_id, AnyhowResult},
+    lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
 use candid::Encode;
 use clap::Parser;
@@ -23,6 +23,7 @@ pub struct ListProposalsOpts {
 }
 
 // We currently only support a subset of the functionality.
+#[tokio::main]
 pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&ListProposalInfo {
         limit: opts.limit.unwrap_or(100),
@@ -33,6 +34,7 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
     })?;
     submit_unsigned_ingress(
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "list_proposals",
         args,
         opts.yes,
