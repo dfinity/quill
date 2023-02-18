@@ -40,8 +40,12 @@ This will produce a response like
 (record { e8s = 800_000_000 : nat64 })
 ```
 
-"e8s" is a shorthand for meaning the number of 1e-8s, or one-hundred-millionths, of an ICP in integer form; this response must be multiplied by 100,000,000 to get the real balance, which in this case would be 8.0 ICP.
+"e8s" is a shorthand for meaning the number of 1e-8s, or one-hundred-millionths, of an ICP in integer form; this response must be divided by 100,000,000 to get the real balance, which in this case would be 8.0 ICP.
+
+## Remarks
 
 As this is a query call, it cannot be executed on an air-gapped machine, but does not require access to your keys. You can use the `quill public-ids` command to get your account ID. 
 
-For more information about the ICP ledger, see [The Ledger Canister](https://internetcomputer.org/docs/current/references/ledger).
+For more information about the ICP ledger, see [The Ledger Canister].
+
+[The Ledger Canister]: https://internetcomputer.org/docs/current/references/ledger

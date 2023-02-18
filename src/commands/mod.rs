@@ -17,7 +17,7 @@ mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod qrcode;
-mod replace_node_provide_id;
+mod replace_node_provider_id;
 mod request_status;
 mod send;
 mod sns;
@@ -40,7 +40,7 @@ pub enum Command {
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     AccountBalance(account_balance::AccountBalanceOpts),
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
-    ReplaceNodeProviderId(replace_node_provide_id::ReplaceNodeProviderIdOpts),
+    ReplaceNodeProviderId(replace_node_provider_id::ReplaceNodeProviderIdOpts),
     #[clap(subcommand)]
     Ckbtc(ckbtc::CkbtcCommand),
     Sns(sns::SnsOpts),
@@ -89,7 +89,7 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             print(&out)?;
         }
         Command::ReplaceNodeProviderId(opts) => {
-            let out = replace_node_provide_id::exec(auth, opts)?;
+            let out = replace_node_provider_id::exec(auth, opts)?;
             print(&out)?;
         }
         Command::Send(opts) => {
