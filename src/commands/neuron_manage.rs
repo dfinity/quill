@@ -108,7 +108,7 @@ pub struct ManageOpts {
     register_vote: Option<Vec<u64>>,
 
     /// Reject the proposal(s) specified with --register-vote.
-    #[clap(long, requires = "register_vote")]
+    #[clap(long, requires = "register-vote")]
     reject: bool,
 
     /// Set whether new maturity should be automatically staked.
