@@ -12,7 +12,7 @@ pub struct ListNeurons {
     pub include_neurons_readable_by_caller: bool,
 }
 
-/// Signs a neuron configuration change.
+/// Signs the query for all neurons belonging to the signing principal.
 #[derive(Parser)]
 pub struct ListNeuronsOpts {
     /// The optional ids of the specific neuron to query. Note that these ids

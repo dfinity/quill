@@ -6,8 +6,10 @@ use candid::Encode;
 use clap::Parser;
 use ic_nns_governance::pb::v1::ListProposalInfo;
 
+/// Queries for a list of pending proposals.
 #[derive(Parser)]
 pub struct ListProposalsOpts {
+    /// Only displays <LIMIT> proposals.
     #[clap(long)]
     pub limit: Option<u32>,
 

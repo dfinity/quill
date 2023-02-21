@@ -13,12 +13,16 @@ quill update-node-provider --reward-account <REWARD_ACCOUNT>
 
 ## Flags
 
-| Flag                 | Description                                     |
-|----------------------|-------------------------------------------------|
-| `-h`, `--help`       | Displays usage information.                     |
+| Flag           | Description                 |
+|----------------|-----------------------------|
+| `-h`, `--help` | Displays usage information. |
 
 ## Options
 
-| Option | Description |
-|----------|-------------|
+| Option                              | Description                                   |
+|-------------------------------------|-----------------------------------------------|
 | `--reward-account <REWARD_ACCOUNT>` | The account identifier of the reward account. |
+
+## Remarks
+
+This command is only used by node operators; most users will never need it.

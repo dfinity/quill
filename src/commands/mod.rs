@@ -17,7 +17,7 @@ mod neuron_manage;
 mod neuron_stake;
 mod public;
 mod qrcode;
-mod replace_node_provide_id;
+mod replace_node_provider_id;
 mod request_status;
 mod send;
 mod sns;
@@ -28,32 +28,25 @@ pub use public::get_ids;
 
 #[derive(Parser)]
 pub enum Command {
-    /// Prints the principal id and the account id.
     PublicIds(public::PublicOpts),
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
-    /// Claim seed neurons from the Genesis Token Canister.
-    ClaimNeurons,
+    ClaimNeurons(claim_neurons::ClaimNeuronOpts),
     NeuronStake(neuron_stake::StakeOpts),
     NeuronManage(neuron_manage::ManageOpts),
-    /// Signs the query for all neurons belonging to the signing principal.
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
-    /// Queries a ledger account balance.
     AccountBalance(account_balance::AccountBalanceOpts),
-    /// Update node provider details
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
-    ReplaceNodeProviderId(replace_node_provide_id::ReplaceNodeProviderIdOpts),
+    ReplaceNodeProviderId(replace_node_provider_id::ReplaceNodeProviderIdOpts),
     #[clap(subcommand)]
     Ckbtc(ckbtc::CkbtcCommand),
     Sns(sns::SnsOpts),
-    /// Generate a mnemonic seed phrase and generate or recover PEM.
     Generate(generate::GenerateOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
-    /// Print QR code for data e.g. principal id.
     QRCode(qrcode::QRCodeOpts),
 }
 
@@ -76,7 +69,7 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             let out = list_neurons::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
-        Command::ClaimNeurons => {
+        Command::ClaimNeurons(_) => {
             claim_neurons::exec(auth).and_then(|out| print_vec(qr, &out))?;
         }
         Command::ListProposals(opts) => {
@@ -96,7 +89,7 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             print(&out)?;
         }
         Command::ReplaceNodeProviderId(opts) => {
-            let out = replace_node_provide_id::exec(auth, opts)?;
+            let out = replace_node_provider_id::exec(auth, opts)?;
             print(&out)?;
         }
         Command::Send(opts) => {

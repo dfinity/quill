@@ -96,19 +96,19 @@ pub struct ManageOpts {
     leave_community_fund: bool,
 
     /// Defines the topic of a follow rule.
-    #[clap(long)]
+    #[clap(long, requires = "follow-neurons")]
     follow_topic: Option<i32>,
 
     /// Defines the neuron ids of a follow rule.
-    #[clap(long, multiple_values(true))]
+    #[clap(long, multiple_values(true), requires = "follow-topic")]
     follow_neurons: Option<Vec<u64>>,
 
-    /// Vote on proposal(s) (approve by default).
+    /// Vote on proposal(s) (approve by default, or use --reject).
     #[clap(long, multiple_values(true))]
     register_vote: Option<Vec<u64>>,
 
-    /// Reject proposal(s).
-    #[clap(long)]
+    /// Reject the proposal(s) specified with --register-vote.
+    #[clap(long, requires = "register-vote")]
     reject: bool,
 
     /// Set whether new maturity should be automatically staked.
@@ -328,8 +328,8 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         }
     };
 
-    if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons.as_ref()) {
-        let followees = neuron_ids.iter().map(|x| NeuronId { id: *x }).collect();
+    if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons) {
+        let followees = neuron_ids.into_iter().map(|x| NeuronId { id: x }).collect();
         let args = Encode!(&ManageNeuron {
             id: id.clone(),
             command: Some(Command::Follow(Follow {
@@ -339,10 +339,6 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             neuron_id_or_subaccount: None,
         })?;
         msgs.push(args);
-    } else if opts.follow_topic.is_some() {
-        return Err(anyhow!("Follow topic specified without followees."));
-    } else if opts.follow_neurons.is_some() {
-        return Err(anyhow!("Followees specified without topic."));
     }
 
     if let Some(enable) = opts.auto_stake_maturity {

@@ -5,8 +5,10 @@ use crate::{
 use candid::Encode;
 use clap::Parser;
 
+/// Queries for information about a neuron, such as its voting power and age.
 #[derive(Parser)]
 pub struct GetNeuronInfoOpts {
+    /// The neuron identifier.
     pub ident: u64,
 
     /// Skips confirmation and sends the message directly.

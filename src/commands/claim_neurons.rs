@@ -5,8 +5,13 @@ use crate::lib::{
 };
 use anyhow::anyhow;
 use candid::Encode;
+use clap::Parser;
 use openssl::bn::BigNumContext;
 use openssl::ec::{EcKey, PointConversionForm};
+
+/// Claim seed neurons from the Genesis Token Canister.
+#[derive(Parser)]
+pub struct ClaimNeuronOpts;
 
 pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
     if let AuthInfo::PemFile(pem) = auth {

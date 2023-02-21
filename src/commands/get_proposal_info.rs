@@ -7,6 +7,7 @@ use clap::Parser;
 
 #[derive(Parser)]
 pub struct GetProposalInfoOpts {
+    /// The proposal identifier.
     pub ident: u64,
 
     /// Skips confirmation and sends the message directly.

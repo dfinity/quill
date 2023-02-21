@@ -33,7 +33,7 @@ pub struct StakeOpts {
     name: Option<String>,
 
     /// The nonce of the neuron.
-    #[clap(long, validator(neuron_name_validator), conflicts_with("name"))]
+    #[clap(long, conflicts_with("name"), required_unless_present("name"))]
     nonce: Option<u64>,
 
     /// Transaction fee, default is 0.0001 ICP.
@@ -101,8 +101,7 @@ fn convert_name_to_nonce(name: &str) -> u64 {
 }
 
 fn neuron_name_validator(name: &str) -> Result<(), String> {
-    // Convert to bytes before checking the length to restrict it to ASCII only
-    if name.as_bytes().len() > 8 {
+    if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
         return Err("The neuron name must be 8 character or less".to_string());
     }
     Ok(())

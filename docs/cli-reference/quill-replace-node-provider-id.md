@@ -12,14 +12,18 @@ quill replace-node-provider-id --node-operator-id <NODE_OPERATOR_ID> --node-prov
 
 ## Flags
 
-| Flag                 | Description                                     |
-|----------------------|-------------------------------------------------|
-| `-h`, `--help`       | Displays usage information.                     |
+| Flag           | Description                 |
+|----------------|-----------------------------|
+| `-h`, `--help` | Displays usage information. |
 
 ## Options
 
-| Option | Description |
-|----------|-------------|
+| Option                                  | Description                                                                                               |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `--node-operator-id <NODE_OPERATOR_ID>` | The Principal id of the node operator. This principal is the entity that is able to add and remove nodes. |
-| `--node-provider-id <NODE_PROVIDER_ID>` | The new Principal id of the node provider. |
+| `--node-provider-id <NODE_PROVIDER_ID>` | The new Principal id of the node provider.                                                                |
+
+## Remarks
+
+This command is only used by node operators; most users will never need it.
 

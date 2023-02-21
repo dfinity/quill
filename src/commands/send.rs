@@ -48,7 +48,7 @@ pub struct SendArgs {
 /// Sends a signed message or a set of messages.
 #[derive(Parser)]
 pub struct SendOpts {
-    /// Path to the signed message
+    /// Path to the signed message (`-` for stdin)
     file_name: PathBuf,
 
     /// Will display the signed message, but not send it.

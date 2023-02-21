@@ -5,6 +5,7 @@ use clap::Parser;
 use rand::{rngs::OsRng, RngCore};
 use std::path::PathBuf;
 
+/// Generate a mnemonic seed phrase and generate or recover PEM.
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
 pub struct GenerateOpts {
