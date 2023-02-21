@@ -18,7 +18,7 @@ quill scanner-qr-code
 
 ## Remarks
 
-The `quill scanner-qr-code` command is used to provide an always-accessible shortcut to a QR scanner that can send the messages that Quill generates; you can also [click here to go there directly][qr]. Quill commands that sign update calls take a `--qr` parameter to ouptut such a QR code; another tool's messages, if output in JSON format, can be turned into a QR code via [`quill qr-code`].
+The `quill scanner-qr-code` command is used to provide an always-accessible shortcut to a QR scanner that can send the messages that Quill generates; you can also [click here to go there directly][qr]. Quill commands that sign update calls take a `--qr` parameter to output such a QR code; another tool's messages, if output in JSON format, can be turned into a QR code via [`quill qr-code`].
 
 The QR code reader may not show field names of the response, but rather show field numbers, obscuring the meaning of the response. You can use the [didc] tool's `hash` command to convert a field name to a field number, in order to make sense of the output; for example, `didc hash 'voting_power'` produces 3871395629.
 
