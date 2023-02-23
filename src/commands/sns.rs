@@ -17,6 +17,7 @@ use super::print_vec;
 
 mod balance;
 mod configure_dissolve_delay;
+mod get_sale_participation;
 mod get_swap_refund;
 mod list_deployed_snses;
 mod make_proposal;
@@ -61,6 +62,7 @@ pub enum SnsCommand {
     NeuronPermission(neuron_permission::NeuronPermissionOpts),
     NewSaleTicket(new_sale_ticket::NewSaleTicketOpts),
     RegisterVote(register_vote::RegisterVoteOpts),
+    GetSaleParticipation(get_sale_participation::GetSaleParticipationOpts),
     StakeMaturity(stake_maturity::StakeMaturityOpts),
     StakeNeuron(stake_neuron::StakeNeuronOpts),
     Status(status::StatusOpts),
@@ -104,6 +106,9 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
         SnsCommand::RegisterVote(opts) => {
             let out = register_vote::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
+        }
+        SnsCommand::GetSaleParticipation(opts) => {
+            get_sale_participation::exec(auth, &canister_ids?, opts, fetch_root_key)?
         }
         SnsCommand::StakeMaturity(opts) => {
             let out = stake_maturity::exec(auth, &canister_ids?, opts)?;

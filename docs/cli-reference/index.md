@@ -40,6 +40,7 @@ When you have quill installed, you can use the following commands to specify the
     -   [quill sns balance](./sns/quill-sns-balance.md)
     -   [quill sns configure-dissolve-delay](./sns/quill-sns-configure-dissolve-delay.md)
     -   [quill sns get-swap-refund](./sns/quill-sns-get-swap-refund.md)
+    -   [quill sns get-sale-participation](./sns/quill-sns-get-sale-participation.md)
     -   [quill sns list-deployed-snses](./sns/quill-sns-list-deployed-snses.md)
     -   [quill sns make-proposal](./sns/quill-sns-make-proposal.md)
     -   [quill sns make-upgrade-canister-proposal](./sns/quill-sns-make-upgrade-canister-proposal.md)
