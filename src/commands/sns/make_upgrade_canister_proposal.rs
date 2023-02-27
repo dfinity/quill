@@ -33,10 +33,17 @@ pub struct MakeUpgradeCanisterProposalOpts {
     #[clap(long, default_value_t = String::new())]
     url: String,
 
-    /// Summary of the proposal. If empty, a somewhat generic summary will be
+    /// Summary of the proposal.
+    /// If neither summary nor summary-path is provided, a somewhat generic summary will be
     /// constructed dynamically.
-    #[clap(long, default_value_t = String::new())]
-    summary: String,
+    #[clap(long)]
+    summary: Option<String>,
+
+    /// Path to a file containing the summary of the proposal.
+    /// If neither summary nor summary-path is provided, a somewhat generic summary will be
+    /// constructed dynamically.
+    #[clap(long, conflicts_with("summary"))]
+    summary_path: Option<PathBuf>,
 
     /// Canister to be upgraded.
     #[clap(long)]
@@ -66,6 +73,7 @@ pub fn exec(
         title,
         url,
         summary,
+        summary_path,
         target_canister_id,
         wasm_path,
         canister_upgrade_arg,
@@ -85,10 +93,13 @@ pub fn exec(
     };
 
     // (Dynamically) come up with a summary if one wasn't provided.
-    let summary = if !summary.is_empty() {
-        summary
-    } else {
-        summarize(target_canister_id, &wasm)
+    let summary = match (summary, summary_path) {
+        (Some(arg), _) => arg,
+        (_, Some(path)) => {
+            String::from_utf8(std::fs::read(path).context("Unable to read --summary-path.")?)
+                .context("Summary must be valid UTF-8.")?
+        }
+        (None, None) => summarize(target_canister_id, &wasm),
     };
 
     let proposal = Proposal {
