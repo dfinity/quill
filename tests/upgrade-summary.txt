@@ -1,1 +1,1 @@
-This proposal upgrades the SNS-controlled canister.
+--This proposal upgrades the SNS-controlled canister.
