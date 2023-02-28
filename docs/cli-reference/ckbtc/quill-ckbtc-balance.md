@@ -14,12 +14,12 @@ quill ckbtc balance [option]
 
 ## Flags
 
-| Flag                 | Description                                        |
-|----------------------|----------------------------------------------------|
-| `--dry-run`          | Will display the query, but not send it.           |
-| `-h`, `--help`       | Displays usage information.                        |
-| `--testnet`          | Uses ckTESTBTC instead of ckBTC.                   |
-| `--yes`              | Skips confirmation and sends the message directly. |
+| Flag           | Description                                        |
+|----------------|----------------------------------------------------|
+| `--dry-run`    | Will display the query, but not send it.           |
+| `-h`, `--help` | Displays usage information.                        |
+| `--testnet`    | Uses ckTESTBTC instead of ckBTC.                   |
+| `-y`, `--yes`  | Skips confirmation and sends the message directly. |
 
 ## Options
 

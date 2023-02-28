@@ -5,6 +5,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, Context};
+use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
@@ -56,7 +57,7 @@ pub struct SendOpts {
     dry_run: bool,
 
     /// Skips confirmation and sends the message directly.
-    #[clap(long)]
+    #[clap(long, short)]
     yes: bool,
 }
 
@@ -146,6 +147,11 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     }
 
     if message.call_type == "update" && !opts.yes {
+        if !atty::is(Stream::Stdin) {
+            eprintln!("Cannot confirm y/n if the input is being piped.");
+            eprintln!("To confirm sending this message, rerun `quill send` with the `-y` flag.");
+            std::process::exit(1);
+        }
         println!("\nDo you want to send this message? [y/N]");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
