@@ -16,7 +16,7 @@ quill list-proposals [option]
 |----------------|----------------------------------------------------|
 | `--dry-run`    | Will display the query, but not send it.           |
 | `-h`, `--help` | Displays usage information.                        |
-| `--yes`        | Skips confirmation and sends the message directly. |
+| `-y`, `--yes`  | Skips confirmation and sends the message directly. |
 
 ## Options
 

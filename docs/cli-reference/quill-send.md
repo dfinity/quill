@@ -22,7 +22,7 @@ quill send [option] <file name>
 |----------------|----------------------------------------------------|
 | `--dry-run`    | Will display the signed message, but not send it.  |
 | `-h`, `--help` | Displays usage information.                        |
-| `--yes`        | Skips confirmation and sends the message directly. |
+| `-y`, `--yes`  | Skips confirmation and sends the message directly. |
 
 ## Examples
 

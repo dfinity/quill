@@ -11,7 +11,7 @@ pub struct GetProposalInfoOpts {
     pub ident: u64,
 
     /// Skips confirmation and sends the message directly.
-    #[clap(long)]
+    #[clap(long, short)]
     yes: bool,
 
     /// Will display the query, but not send it.

@@ -3663,6 +3663,7 @@ name = "quill"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "atty",
  "base64 0.13.0",
  "bip32",
  "candid",
