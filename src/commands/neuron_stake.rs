@@ -6,7 +6,7 @@ use crate::{
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
+        AnyhowResult, AuthInfo, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
 use anyhow::anyhow;
@@ -39,6 +39,10 @@ pub struct StakeOpts {
     /// Transaction fee, default is 0.0001 ICP.
     #[clap(long, value_parser = parse_tokens)]
     fee: Option<Tokens>,
+
+    /// The subaccount to transfer from.
+    #[clap(long)]
+    from_subaccount: Option<ParsedSubaccount>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -58,6 +62,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
                 amount,
                 fee: opts.fee,
                 memo: Some(nonce),
+                from_subaccount: opts.from_subaccount,
             },
         )?,
         _ => Vec::new(),

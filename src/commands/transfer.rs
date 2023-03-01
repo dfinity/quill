@@ -1,10 +1,10 @@
 use crate::commands::send::{Memo, SendArgs};
-use crate::lib::ROLE_NNS_LEDGER;
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
+use crate::lib::{ParsedSubaccount, ROLE_NNS_LEDGER};
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
@@ -27,6 +27,10 @@ pub struct TransferOpts {
     /// Transaction fee, default is 0.0001 ICP.
     #[clap(long, value_parser = parse_tokens)]
     pub fee: Option<Tokens>,
+
+    /// The subaccount to transfer from.
+    #[clap(long)]
+    pub from_subaccount: Option<ParsedSubaccount>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -39,7 +43,7 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
         memo,
         amount,
         fee,
-        from_subaccount: None,
+        from_subaccount: opts.from_subaccount.map(|x| x.0),
         to,
         created_at_time: None,
     })?;
