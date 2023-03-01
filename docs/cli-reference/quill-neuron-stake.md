@@ -18,12 +18,13 @@ quill neuron-stake [option]
 
 ## Options
 
-| Option              | Description                                        |
-|---------------------|----------------------------------------------------|
-| `--amount <AMOUNT>` | ICPs to be staked on the newly created neuron.     |
-| `--fee <FEE>`       | Transaction fee, default is 10000 e8s.             |
-| `--name <NAME>`     | The name of the neuron (up to 8 ASCII characters). |
-| `--nonce <NONCE>`   | The nonce of the neuron.                           |
+| Option                           | Description                                        |
+|----------------------------------|----------------------------------------------------|
+| `--amount <AMOUNT>`              | ICPs to be staked on the newly created neuron.     |
+| `--fee <FEE>`                    | Transaction fee, default is 10000 e8s.             |
+| `--from-subaccount <SUBACCOUNT>` | The subaccount to transfer from.                   |
+| `--name <NAME>`                  | The name of the neuron (up to 8 ASCII characters). |
+| `--nonce <NONCE>`                | The nonce of the neuron.                           |
 
 ## Examples
 
