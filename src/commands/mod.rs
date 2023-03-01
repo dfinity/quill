@@ -82,7 +82,7 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             get_neuron_info::exec(opts, fetch_root_key)?;
         }
         Command::AccountBalance(opts) => {
-            account_balance::exec(opts, fetch_root_key)?;
+            account_balance::exec(auth, opts, fetch_root_key)?;
         }
         Command::UpdateNodeProvider(opts) => {
             let out = update_node_provider::exec(auth, opts)?;

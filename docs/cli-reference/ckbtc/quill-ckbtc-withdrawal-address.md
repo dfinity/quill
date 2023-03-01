@@ -23,6 +23,6 @@ quill ckbtc withdrawal-address [option]
 
 ## Options
 
-| Option      | Description                                      |
-|-------------|--------------------------------------------------|
-| `--of <OF>` | The principal to get the withdrawal address for. |
+| Option      | Description                                                                 |
+|-------------|-----------------------------------------------------------------------------|
+| `--of <OF>` | The principal to get the withdrawal address for. Optional if a key is used. |

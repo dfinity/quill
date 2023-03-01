@@ -22,10 +22,10 @@ quill sns balance [option]
 
 ## Options
 
-| Option                      | Description                            |
-|-----------------------------|----------------------------------------|
-| `--of <OF>`                 | The account to query                   |
-| `--subaccount <SUBACCOUNT>` | The subaccount of the account to query |
+| Option                      | Description                                      |
+|-----------------------------|--------------------------------------------------|
+| `--of <OF>`                 | The account to query. Optional if a key is used. |
+| `--subaccount <SUBACCOUNT>` | The subaccount of the account to query.          |
 
 ## Remarks
 

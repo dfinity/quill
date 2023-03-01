@@ -16,7 +16,7 @@ use super::ckbtc_withdrawal_address;
 /// `quill ckbtc retrieve-btc` to register it.
 #[derive(Parser)]
 pub struct GetWithdrawalAddressOpts {
-    /// The principal to get the withdrawal address for.
+    /// The principal to get the withdrawal address for. Optional if a key is used.
     #[clap(long, required_unless_present = "auth")]
     of: Option<Principal>,
 

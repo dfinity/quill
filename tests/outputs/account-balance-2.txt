@@ -1,0 +1,11 @@
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: account_balance_dfx
+  Arguments:   (
+  record {
+    account = "345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752";
+  },
+)

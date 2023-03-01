@@ -15,7 +15,7 @@ use crate::{
 /// The `--of` parameter is required if a signing key is not provided.
 #[derive(Parser)]
 pub struct BalanceOpts {
-    /// The account to check.
+    /// The account to check. Optional if a key is used.
     #[clap(long, required_unless_present = "auth")]
     of: Option<ParsedAccount>,
 
