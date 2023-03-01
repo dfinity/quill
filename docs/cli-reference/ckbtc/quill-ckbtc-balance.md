@@ -23,7 +23,7 @@ quill ckbtc balance [option]
 
 ## Options
 
-| Argument                          | Description                             |
-|-----------------------------------|-----------------------------------------|
-| `--of <OF>`                       | The account to check.                   |
-| `--of-subaccount <OF_SUBACCOUNT>` | The subaccount of the account to check. |
+| Argument                          | Description                                      |
+|-----------------------------------|--------------------------------------------------|
+| `--of <OF>`                       | The account to check. Optional if a key is used. |
+| `--of-subaccount <OF_SUBACCOUNT>` | The subaccount of the account to check.          |

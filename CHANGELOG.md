@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Allowed omitting the account ID in `quill account-balance`. (#167)
+- Added `--from-subaccount` to `quill transfer` and `quill neuron-stake`. (#166)
 - Added `--summary-path` to `quill sns make-upgrade-canister-proposal`. (#164)
 
 ## [0.4.0] - 2023-02-14

@@ -14,8 +14,8 @@ use super::SnsCanisterIds;
 /// The `--of` parameter is required if a signing key is not provided.
 #[derive(Parser)]
 pub struct BalanceOpts {
-    /// The account to query.
-    #[clap(long)]
+    /// The account to query. Optional if a key is used.
+    #[clap(long, required_unless_present = "auth")]
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to query.

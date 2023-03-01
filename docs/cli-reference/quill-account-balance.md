@@ -12,9 +12,9 @@ quill account-balance [flag] <account id>
 
 ## Arguments
 
-| Argument       | Description                     |
-|----------------|---------------------------------|
-| `<account id>` | The id of the account to query. |
+| Argument       | Description                                                |
+|----------------|------------------------------------------------------------|
+| `<account id>` | The id of the account to query. Optional if a key is used. |
 
 ## Flags
 
