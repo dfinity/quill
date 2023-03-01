@@ -4,17 +4,18 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use crate::lib::{ParsedSubaccount, ROLE_NNS_LEDGER};
+use crate::lib::{ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER};
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
+use ic_icrc1::endpoints::TransferArg;
 use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
 
 /// Signs an ICP transfer transaction.
-#[derive(Default, Parser)]
+#[derive(Parser)]
 pub struct TransferOpts {
     /// Destination account.
-    pub to: String,
+    pub to: ParsedNnsAccount,
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
     #[clap(long, value_parser = parse_tokens)]
@@ -38,24 +39,45 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     let fee = opts.fee.unwrap_or(DEFAULT_TRANSFER_FEE);
     let memo = Memo(opts.memo.unwrap_or(0));
     let to = opts.to;
+    match to {
+        ParsedNnsAccount::Original(to) => {
+            let args = Encode!(&SendArgs {
+                memo,
+                amount,
+                fee,
+                from_subaccount: opts.from_subaccount.map(|x| x.0),
+                to: to.to_hex(),
+                created_at_time: None,
+            })?;
 
-    let args = Encode!(&SendArgs {
-        memo,
-        amount,
-        fee,
-        from_subaccount: opts.from_subaccount.map(|x| x.0),
-        to,
-        created_at_time: None,
-    })?;
-
-    let msg = sign_ingress_with_request_status_query(
-        auth,
-        ledger_canister_id(),
-        ROLE_NNS_LEDGER,
-        "send_dfx",
-        args,
-    )?;
-    Ok(vec![msg])
+            let msg = sign_ingress_with_request_status_query(
+                auth,
+                ledger_canister_id(),
+                ROLE_NNS_LEDGER,
+                "send_dfx",
+                args,
+            )?;
+            Ok(vec![msg])
+        }
+        ParsedNnsAccount::Icrc1(to) => {
+            let args = Encode!(&TransferArg {
+                memo: Some(memo.0.into()),
+                amount: amount.get_e8s().into(),
+                fee: Some(fee.get_e8s().into()),
+                from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
+                to,
+                created_at_time: None,
+            })?;
+            let msg = sign_ingress_with_request_status_query(
+                auth,
+                ledger_canister_id(),
+                ROLE_ICRC1_LEDGER,
+                "icrc1_transfer",
+                args,
+            )?;
+            Ok(vec![msg])
+        }
+    }
 }
 
 fn new_tokens(tokens: u64, e8s: u64) -> AnyhowResult<Tokens> {
