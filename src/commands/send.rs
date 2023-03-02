@@ -70,7 +70,7 @@ pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
     } else {
         bail!("File name must be provided if not being piped")
     };
-    let json = read_from_file(&file_name)?;
+    let json = read_from_file(file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<Ingress>>(&json) {
