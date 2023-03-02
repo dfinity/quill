@@ -4,7 +4,7 @@ use crate::lib::{
     signing::{Ingress, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
@@ -50,7 +50,7 @@ pub struct SendArgs {
 #[derive(Parser)]
 pub struct SendOpts {
     /// Path to the signed message (`-` for stdin)
-    file_name: PathBuf,
+    file_name: Option<PathBuf>,
 
     /// Will display the signed message, but not send it.
     #[clap(long)]
@@ -63,7 +63,14 @@ pub struct SendOpts {
 
 #[tokio::main]
 pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
-    let json = read_from_file(&opts.file_name)?;
+    let file_name = if let Some(file_name) = &opts.file_name {
+        file_name.as_path()
+    } else if atty::isnt(Stream::Stdin) {
+        "-".as_ref()
+    } else {
+        bail!("File name must be provided if not being piped")
+    };
+    let json = read_from_file(&file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<Ingress>>(&json) {
