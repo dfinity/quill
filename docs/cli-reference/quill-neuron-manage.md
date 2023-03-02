@@ -37,6 +37,8 @@ quill neuron-manage [option] <neuron id>
 | `-a`, `--additional-dissolve-delay-seconds <SECONDS>` | Number of dissolve seconds to add.                                               |
 | `--add-hot-key <ADD_HOT_KEY>`                         | Principal to be used as a hot key.                                               |
 | `--auto-stake-maturity enabled|disabled`              | Set whether new maturity should be automatically staked.                         |
+| `--disburse-amount`                                   | Disburse only the selected amount.                                               |
+| `--disburse-to`                                       | Disburse to the selected NNS account instead of the controller.                  |
 | `--follow-neurons <FOLLOW_NEURONS>...`                | Defines the neuron ids of a follow rule.                                         |
 | `--follow-topic <FOLLOW_TOPIC>`                       | Defines the topic of a follow rule as defined [here][follow-rules].              |
 | `--merge-from-neuron <MERGE_FROM_NEURON>`             | Merge stake, maturity and age from the specified neuron into the managed neuron. |

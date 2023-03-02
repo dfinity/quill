@@ -485,6 +485,7 @@ fn fmt_account(account: &Account, f: &mut Formatter<'_>) -> fmt::Result {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ParsedNnsAccount {
     Original(AccountIdentifier),
     Icrc1(Account),
@@ -511,6 +512,17 @@ impl FromStr for ParsedNnsAccount {
                 Err(e) => Ok(Self::Icrc1(
                     ParsedAccount::from_str(s).map_err(|_| anyhow!(e))?.0,
                 )),
+            }
+        }
+    }
+}
+
+impl ParsedNnsAccount {
+    pub fn into_identifier(self) -> AccountIdentifier {
+        match self {
+            Self::Original(ident) => ident,
+            Self::Icrc1(account) => {
+                AccountIdentifier::new(account.owner, account.subaccount.map(Subaccount))
             }
         }
     }

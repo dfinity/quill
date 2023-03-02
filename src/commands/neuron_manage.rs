@@ -1,7 +1,8 @@
+use crate::commands::transfer::parse_tokens;
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
+    AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
 use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
@@ -10,12 +11,13 @@ use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
-        configure::Operation, AddHotKey, ChangeAutoStakeMaturity, Command, Configure, Disburse,
-        Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund, Merge, RegisterVote,
-        RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
+        configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Command,
+        Configure, Disburse, Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund,
+        Merge, RegisterVote, RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
     },
     ManageNeuron,
 };
+use icp_ledger::Tokens;
 
 // These constants are copied from src/governance.rs
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
@@ -62,6 +64,14 @@ pub struct ManageOpts {
     /// Disburse the entire staked amount to the controller's account.
     #[clap(long)]
     disburse: bool,
+
+    /// Disburse only the selected amount, instead of the entire amount, to the controller's account.
+    #[clap(long, value_parser = parse_tokens)]
+    disburse_amount: Option<Tokens>,
+
+    /// Disburse to the selected NNS account instead of the controller.
+    #[clap(long)]
+    disburse_to: Option<ParsedNnsAccount>,
 
     /// Spawn rewards to a new neuron under the controller's account.
     #[clap(long)]
@@ -217,12 +227,14 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         msgs.push(args);
     };
 
-    if opts.disburse {
+    if opts.disburse || opts.disburse_amount.is_some() || opts.disburse_to.is_some() {
         let args = Encode!(&ManageNeuron {
             id: id.clone(),
             command: Some(Command::Disburse(Disburse {
-                to_account: None,
-                amount: None
+                to_account: opts.disburse_to.map(|to| to.into_identifier().into()),
+                amount: opts.disburse_amount.map(|amount| Amount {
+                    e8s: amount.get_e8s()
+                }),
             })),
             neuron_id_or_subaccount: None,
         })?;
