@@ -522,7 +522,7 @@ impl ParsedNnsAccount {
         match self {
             Self::Original(ident) => ident,
             Self::Icrc1(account) => {
-                AccountIdentifier::new(account.owner.into(), account.subaccount.map(Subaccount))
+                AccountIdentifier::new(account.owner, account.subaccount.map(Subaccount))
             }
         }
     }
