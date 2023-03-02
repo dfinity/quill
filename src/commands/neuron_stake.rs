@@ -25,15 +25,24 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 #[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
-    #[clap(long, value_parser = parse_tokens)]
+    #[clap(long, value_parser = parse_tokens, conflicts_with = "already-transferred", required_unless_present = "already-transferred")]
     amount: Option<Tokens>,
 
+    /// Skips signing the transfer of ICP, signing only the staking request.
+    #[clap(long)]
+    already_transferred: bool,
+
     /// The name of the neuron (up to 8 ASCII characters).
-    #[clap(long, validator(neuron_name_validator))]
+    #[clap(
+        long,
+        validator(neuron_name_validator),
+        conflicts_with = "nonce",
+        required_unless_present = "nonce"
+    )]
     name: Option<String>,
 
     /// The nonce of the neuron.
-    #[clap(long, conflicts_with("name"), required_unless_present("name"))]
+    #[clap(long)]
     nonce: Option<u64>,
 
     /// Transaction fee, default is 0.0001 ICP.
@@ -54,18 +63,19 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
-    let mut messages = match opts.amount {
-        Some(amount) => transfer::exec(
+    let mut messages = if !opts.already_transferred {
+        transfer::exec(
             auth,
             transfer::TransferOpts {
                 to: ParsedNnsAccount::Original(account),
-                amount,
+                amount: opts.amount.unwrap(),
                 fee: opts.fee,
                 memo: Some(nonce),
                 from_subaccount: opts.from_subaccount,
             },
-        )?,
-        _ => Vec::new(),
+        )?
+    } else {
+        Vec::new()
     };
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
         memo: Memo(nonce),
