@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Accepts bare principals and ICRC-1 account IDs in `quill account-balance` and `quill transfer`. (#168)
 - Allowed omitting the account ID in `quill account-balance`. (#167)
 - Added `--from-subaccount` to `quill transfer` and `quill neuron-stake`. (#166)
 - Added `--summary-path` to `quill sns make-upgrade-canister-proposal`. (#164)

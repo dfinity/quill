@@ -6,7 +6,7 @@ use crate::{
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
+        AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
 use anyhow::anyhow;
@@ -58,7 +58,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
         Some(amount) => transfer::exec(
             auth,
             transfer::TransferOpts {
-                to: account.to_hex(),
+                to: ParsedNnsAccount::Original(account),
                 amount,
                 fee: opts.fee,
                 memo: Some(nonce),

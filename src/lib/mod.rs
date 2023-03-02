@@ -448,34 +448,69 @@ impl FromStr for ParsedAccount {
 
 impl Display for ParsedAccount {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        const EMPTY: [u8; 32] = [0; 32];
-        match self.0.subaccount {
-            None | Some(EMPTY) if self.0.owner.as_slice().last() != Some(&0x7f) => {
-                self.0.owner.fmt(f)
-            }
-            _ => {
-                let mut principal_bytes = self.0.owner.as_slice().to_owned();
-                let subaccount = self.0.subaccount.unwrap_or_default();
-                let first_digit = subaccount.iter().position(|x| *x != 0);
-                let shrunk = if let Some(first_digit) = first_digit {
-                    &subaccount[first_digit..]
-                } else {
-                    &[]
-                };
-                principal_bytes.extend_from_slice(shrunk);
-                principal_bytes.extend_from_slice(&[shrunk.len() as u8, 0x7f]);
-                let crc = crc32fast::hash(&principal_bytes);
-                principal_bytes.splice(0..0, crc.to_be_bytes());
-                let hex_encoding = BASE32_NOPAD.encode(&principal_bytes);
-                let chunks = hex_encoding.chars().chunks(5);
-                write!(
-                    f,
-                    "{}",
-                    chunks
-                        .into_iter()
-                        .map(|ck| ck.map(|ch| ch.to_ascii_lowercase()).format(""))
-                        .format("-")
-                )
+        fmt_account(&self.0, f)
+    }
+}
+
+fn fmt_account(account: &Account, f: &mut Formatter<'_>) -> fmt::Result {
+    const EMPTY: [u8; 32] = [0; 32];
+    match account.subaccount {
+        None | Some(EMPTY) if account.owner.as_slice().last() != Some(&0x7f) => {
+            account.owner.fmt(f)
+        }
+        _ => {
+            let mut principal_bytes = account.owner.as_slice().to_owned();
+            let subaccount = account.subaccount.unwrap_or_default();
+            let first_digit = subaccount.iter().position(|x| *x != 0);
+            let shrunk = if let Some(first_digit) = first_digit {
+                &subaccount[first_digit..]
+            } else {
+                &[]
+            };
+            principal_bytes.extend_from_slice(shrunk);
+            principal_bytes.extend_from_slice(&[shrunk.len() as u8, 0x7f]);
+            let crc = crc32fast::hash(&principal_bytes);
+            principal_bytes.splice(0..0, crc.to_be_bytes());
+            let hex_encoding = BASE32_NOPAD.encode(&principal_bytes);
+            let chunks = hex_encoding.chars().chunks(5);
+            write!(
+                f,
+                "{}",
+                chunks
+                    .into_iter()
+                    .map(|ck| ck.map(|ch| ch.to_ascii_lowercase()).format(""))
+                    .format("-")
+            )
+        }
+    }
+}
+
+pub enum ParsedNnsAccount {
+    Original(AccountIdentifier),
+    Icrc1(Account),
+}
+
+impl Display for ParsedNnsAccount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Original(ident) => ident.to_hex().fmt(f),
+            Self::Icrc1(account) => fmt_account(account, f),
+        }
+    }
+}
+
+impl FromStr for ParsedNnsAccount {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.as_bytes()[6] == b'-' {
+            Ok(Self::Icrc1(ParsedAccount::from_str(s)?.0))
+        } else {
+            let intended = AccountIdentifier::from_hex(s);
+            match intended {
+                Ok(o) => Ok(Self::Original(o)),
+                Err(e) => Ok(Self::Icrc1(
+                    ParsedAccount::from_str(s).map_err(|_| anyhow!(e))?.0,
+                )),
             }
         }
     }

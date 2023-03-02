@@ -1,6 +1,9 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{ledger_canister_id, AnyhowResult, AuthInfo, ROLE_NNS_LEDGER},
+    lib::{
+        ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_ICRC1_LEDGER,
+        ROLE_NNS_LEDGER,
+    },
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -17,7 +20,7 @@ pub struct AccountBalanceArgs {
 pub struct AccountBalanceOpts {
     /// The id of the account to query. Optional if a key is used.
     #[clap(required_unless_present = "auth")]
-    account_id: Option<String>,
+    account_id: Option<ParsedNnsAccount>,
 
     /// Skips confirmation and sends the message directly.
     #[clap(long, short)]
@@ -35,19 +38,36 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
         id
     } else {
         let (_, id) = get_ids(auth)?;
-        id.to_hex()
+        ParsedNnsAccount::Original(id)
     };
-    let args = Encode!(&AccountBalanceArgs {
-        account: account_id,
-    })?;
-    submit_unsigned_ingress(
-        ledger_canister_id(),
-        ROLE_NNS_LEDGER,
-        "account_balance_dfx",
-        args,
-        opts.yes,
-        opts.dry_run,
-        fetch_root_key,
-    )
-    .await
+    match account_id {
+        ParsedNnsAccount::Original(id) => {
+            let args = Encode!(&AccountBalanceArgs {
+                account: id.to_hex()
+            })?;
+            submit_unsigned_ingress(
+                ledger_canister_id(),
+                ROLE_NNS_LEDGER,
+                "account_balance_dfx",
+                args,
+                opts.yes,
+                opts.dry_run,
+                fetch_root_key,
+            )
+            .await
+        }
+        ParsedNnsAccount::Icrc1(id) => {
+            let args = Encode!(&id)?;
+            submit_unsigned_ingress(
+                ledger_canister_id(),
+                ROLE_ICRC1_LEDGER,
+                "icrc1_balance_of",
+                args,
+                opts.yes,
+                opts.dry_run,
+                fetch_root_key,
+            )
+            .await
+        }
+    }
 }
