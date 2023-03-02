@@ -21,7 +21,7 @@ AUTHORS OF THIS SOFTWARE SHALL NOT BE LIABLE FOR DAMAGES OF ANY TYPE, WHETHER DI
 
 This will sign a transfer transaction and print to STDOUT:
 
-    quill --pem-file <path> transfer <account-id> --amount <amount>
+    quill transfer <account-id> --amount <amount> --pem-file <path>
 
 To display the signed message in human-readable form:
 
@@ -33,17 +33,17 @@ To display the signed message in human-readable form:
 
 To get the principal and the account id:
 
-    quill --pem-file <path> public-ids
+    quill public-ids --pem-file <path>
 
 ### Governance
 
 This is how you’d stake/top-up a neuron:
 
-    quill --pem-file <path> neuron-stake --amount 2.5 --name 1
+    quill neuron-stake --amount 2.5 --name 1 --pem-file <path>
 
 Managing the neuron:
 
-    quill --pem-file <path> neuron-manage <neuron-id> [OPERATIONS]
+    quill neuron-manage <neuron-id> [OPERATIONS] --pem-file <path>
 
 All the commands above will generate signed messages, which can be sent on the online machine using the `send` command
 from above.
