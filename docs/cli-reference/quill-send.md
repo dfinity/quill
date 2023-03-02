@@ -40,3 +40,7 @@ If the provided filename is `-`, the message can be piped in from stdin. The abo
 ```sh
 quill transfer 1c7a48ba6a562aa9eaa2481a9049cdf0433b9738c992d698c31d8abf89cadc79 --amount 5 > transfer.json | quill send --yes -
 ```
+
+## Remarks
+
+As `quill send` is so frequently piped to, `<file name>` will be inferred to be `-` if another command is being piped to it.
