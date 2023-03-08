@@ -84,7 +84,7 @@ fn main() -> AnyhowResult {
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     // Get PEM from the file if provided, or try to convert from the seed file
-    if opts.hsm {
+    if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
         let mut hsm = lib::HSMInfo::new();
         if let Some(path) = opts.hsm_libpath {
             hsm.libpath = path;
@@ -95,13 +95,13 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
         if let Some(id) = opts.hsm_id {
             hsm.ident = id;
         }
-        Ok(lib::AuthInfo::NitroHsm(hsm))
+        Ok(AuthInfo::Pkcs11Hsm(hsm))
     } else {
         let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
         if let Some(pem) = pem {
-            Ok(lib::AuthInfo::PemFile(pem))
+            Ok(AuthInfo::PemFile(pem))
         } else {
-            Ok(lib::AuthInfo::NoAuth)
+            Ok(AuthInfo::NoAuth)
         }
     }
 }

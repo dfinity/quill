@@ -69,18 +69,18 @@ cat identity.pem | quill list-neurons --pem-file -
 Quill can also sign transactions using a hardware key (HSM) such as Nitrokey or Yubikey. It will need to have been configured beforehand with a secp256r1 (aka P-256) key, and you will need OpenSC or an equivalent installed. Assuming the HSM is in slot 0 (`pkcs11-tool --list-slots`), and you are signing with the first key it holds, such a signing command might look like:
 
 ```sh
-quill list-neurons --hsm --hsm-slot 0 --hsm-id 01
+quill list-neurons --hsm-slot 0 --hsm-id 01
 ```
 
 Other PKCS#11 modules than OpenSC can be used as well. For example, to make use of Yubikey slots other than its default four, you would need `yubico-piv-tool`. A command to make use of this might look like:
 
 ```sh
-quill list-neurons --hsm --hsm-slot 0 --hsm-id 05 --hsm-libpath /usr/local/lib/libykcs11.so
+quill list-neurons --hsm-slot 0 --hsm-id 05 --hsm-libpath /usr/local/lib/libykcs11.so
 ```
 
 ## Remarks
 
-HSM commands ask for your PIN interactively, and for security cannot be piped. To use them in a script, you can instead pass the PIN via the `NITROHSM_PIN` environment variable.
+HSM commands ask for your PIN interactively, and for security cannot be piped. To use them in a script, you can instead pass the PIN via the `QUILL_HSM_PIN` environment variable. The other three flags can also be specified via `QUILL_HSM_SLOT`, `QUILL_HSM_LIBPATH`, and `QUILL_HSM_ID`.
 
 Quill will by default use the well-known public key of the Internet Computer. However, for local development of canisters, Quill, or the IC, you may want to run it against a local replica. In such a case, you can use the `--insecure-local-dev-mode` flag to fetch the root key and trust it. Never use this flag if attempting a real transaction; never use this flag with your real keys. The URL that sent messages go to can be set via the `IC_URL` environment variable.
 

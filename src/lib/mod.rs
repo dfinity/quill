@@ -29,16 +29,18 @@ use simple_asn1::ASN1Block::{
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
 use std::{
-    env::VarError,
+    cell::RefCell,
+    env::{self, VarError},
     fmt::{self, Display, Formatter},
     path::Path,
+    time::Duration,
 };
 use std::{path::PathBuf, str::FromStr};
 
 pub const IC_URL: &str = "https://ic0.app";
 
 pub fn get_ic_url() -> String {
-    std::env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
+    env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
 pub mod signing;
@@ -50,7 +52,7 @@ pub struct HSMInfo {
     pub libpath: PathBuf,
     pub slot: usize,
     pub ident: String,
-    pin: std::cell::RefCell<Option<String>>,
+    pin: RefCell<Option<String>>,
 }
 
 #[cfg(target_os = "macos")]
@@ -58,17 +60,24 @@ const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
 #[cfg(target_os = "linux")]
 const PKCS11_LIBPATH: &str = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
 #[cfg(target_os = "windows")]
-const PKCS11_LIBPATH: &str = "C:/Program Files/OpenSC Project/OpenSC/pkcs11/opensc-pkcs11.dll";
+const PKCS11_LIBPATH: &str = r"C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll";
 
 impl HSMInfo {
     pub fn new() -> Self {
         HSMInfo {
-            libpath: std::path::PathBuf::from(
-                std::env::var("NITROHSM_LIBPATH").unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
+            libpath: PathBuf::from(
+                env::var("QUILL_HSM_LIBPATH")
+                    .or_else(|_| env::var("NITROHSM_LIBPATH"))
+                    .unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
             ),
-            slot: std::env::var("NITROHSM_SLOT").map_or(0, |s| s.parse().unwrap()),
-            ident: std::env::var("NITROHSM_ID").unwrap_or_else(|_| "01".to_string()),
-            pin: std::cell::RefCell::new(None),
+            slot: env::var("QUILL_HSM_SLOT")
+                .map(|s| usize::from_str_radix(&s, 16).unwrap())
+                .or_else(|_| env::var("NITROHSM_SLOT").map(|s| s.parse().unwrap()))
+                .unwrap_or(0),
+            ident: env::var("QUILL_HSM_ID")
+                .or_else(|_| env::var("NITROHSM_ID"))
+                .unwrap_or_else(|_| "01".to_string()),
+            pin: RefCell::new(None),
         }
     }
 }
@@ -78,7 +87,7 @@ pub enum AuthInfo {
     NoAuth, // No authentication details were provided;
     // only unsigned queries are allowed.
     PemFile(String), // --private-pem file specified
-    NitroHsm(HSMInfo),
+    Pkcs11Hsm(HSMInfo),
 }
 
 pub fn ledger_canister_id() -> Principal {
@@ -240,7 +249,7 @@ pub fn read_from_file(path: impl AsRef<Path>) -> AnyhowResult<String> {
 /// Returns an agent with an identity derived from a private key if it was
 /// provided.
 pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
-    let timeout = std::time::Duration::from_secs(60 * 5);
+    let timeout = Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create({
@@ -256,15 +265,15 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
         .map_err(|err| anyhow!(err))
 }
 
-fn ask_nitrohsm_pin_via_tty() -> Result<String, String> {
-    rpassword::prompt_password("NitroHSM PIN: ")
-        .context("Cannot read NitroHSM PIN from tty")
+fn ask_pkcs11_pin_via_tty() -> Result<String, String> {
+    rpassword::prompt_password("HSM PIN: ")
+        .context("Cannot read HSM PIN from tty")
         // TODO: better error string
         .map_err(|e| e.to_string())
 }
 
-fn read_nitrohsm_pin_env_var() -> Result<Option<String>, String> {
-    match std::env::var("NITROHSM_PIN") {
+fn read_pkcs11_pin_env_var() -> Result<Option<String>, String> {
+    match env::var("QUILL_HSM_PIN").or_else(|_| env::var("NITROHSM_PIN")) {
         Ok(val) => Ok(Some(val)),
         Err(VarError::NotPresent) => Ok(None),
         Err(e) => Err(format!("{}", e)),
@@ -282,14 +291,14 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
                 Err(e) => Err(e).context("couldn't load identity from PEM file"),
             },
         },
-        AuthInfo::NitroHsm(info) => {
+        AuthInfo::Pkcs11Hsm(info) => {
             let pin_fn = || {
                 let user_set_pin = { info.pin.borrow().clone() };
                 match user_set_pin {
-                    None => match read_nitrohsm_pin_env_var() {
+                    None => match read_pkcs11_pin_env_var() {
                         Ok(Some(pin)) => Ok(pin),
                         Ok(None) => {
-                            let pin = ask_nitrohsm_pin_via_tty()?;
+                            let pin = ask_pkcs11_pin_via_tty()?;
                             *info.pin.borrow_mut() = Some(pin.clone());
                             Ok(pin)
                         }
