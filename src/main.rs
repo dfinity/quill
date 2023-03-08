@@ -27,15 +27,31 @@ struct GlobalOpts {
     #[clap(long, group = "auth", global = true)]
     pem_file: Option<PathBuf>,
 
+    /// Use a hardware key to sign messages.
     #[clap(long, group = "auth", global = true)]
     hsm: bool,
 
+    /// Path to the PKCS#11 module to use.
+    #[cfg_attr(
+        target_os = "windows",
+        doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
+    )]
+    #[cfg_attr(
+        target_os = "macos",
+        doc = "Defaults to /Library/OpenSC/lib/pkcs11/opensc-pkcs11.so"
+    )]
+    #[cfg_attr(
+        target_os = "linux",
+        doc = "Defaults to /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
+    )]
     #[clap(long, global = true)]
     hsm_libpath: Option<PathBuf>,
 
+    /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
     #[clap(long, global = true)]
     hsm_slot: Option<usize>,
 
+    /// The ID of the key to use. Consult your hardware key's documentation.
     #[clap(long, global = true)]
     hsm_id: Option<String>,
 
