@@ -273,7 +273,7 @@ fn ask_pkcs11_pin_via_tty() -> Result<String, String> {
 }
 
 fn read_pkcs11_pin_env_var() -> Result<Option<String>, String> {
-    match env::var("QUILL_HSM_PIN") {
+    match env::var("QUILL_HSM_PIN").or_else(|_| env::var("NITROHSM_PIN")) {
         Ok(val) => Ok(Some(val)),
         Err(VarError::NotPresent) => Ok(None),
         Err(e) => Err(format!("{}", e)),
