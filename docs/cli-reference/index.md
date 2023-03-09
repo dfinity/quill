@@ -17,7 +17,7 @@ When you have quill installed, you can use the following commands to specify the
 -   [quill](./quill-parent.md)
 -   [quill account-balance](./quill-account-balance.md)
 -   [quill claim-neurons](./quill-claim-neurons.md)
--   [quill ckbtc](./ckbtc/index.md)
+-   [quill ckbtc](./ckbtc/quill-ckbtc.md)
     -   [quill ckbtc balance](./ckbtc/quill-ckbtc-balance.md)
     -   [quill ckbtc retrieve-btc](./ckbtc/quill-ckbtc-retrieve-btc.md)
     -   [quill ckbtc retrieve-btc-status](./ckbtc/quill-ckbtc-retrieve-btc-status.md)
