@@ -39,17 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
-      - name: Install dependencies (windows only)
-        if: matrix.name == 'windows'
-        shell: bash
-        run: |
-          vcpkg integrate install
-          vcpkg install openssl:x64-windows-static-md
-          echo "::set-env OPENSSL_DIR 'C:\Tools\vcpkg\installed\x64-windows-static-md'"
-          echo "::set-env OPENSSL_STATIC Yes"
-        env:
-          VCPKG_ROOT: 'C:\vcpkg'
-
       - name: Install toolchain (Linux static)
         if: matrix.name == 'linux'
         uses: mariodfinity/rust-musl-action@master
