@@ -50,7 +50,11 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - id: set-matrix
-        run: echo "matrix='$(scripts/workflows/e2e-matrix.py)'" >> $GITHUB_OUTPUT
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "matrix<<$EOF" >> $GITHUB_OUTPUT
+          scripts/workflows/e2e-matrix.py >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
 
   test:
     runs-on: ${{ matrix.os }}

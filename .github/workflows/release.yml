@@ -56,7 +56,7 @@ jobs:
         run: |
           vcpkg integrate install
           vcpkg install openssl:x64-windows-static-md
-          echo "OPENSSL_DIR='C:\Tools\vcpkg\installed\x64-windows-static-md'" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=C:\Tools\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - name: Install toolchain (Linux static)
