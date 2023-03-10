@@ -9,7 +9,7 @@ release:
 	cargo build --release --locked
 
 musl-static:
-	cargo build --target x86_64-unknown-linux-musl --release --locked
+	cargo build --target x86_64-unknown-linux-musl --no-default-features --features static-ssl --release --locked
 
 check:
 	cargo check --all --all-targets --all-features --tests
