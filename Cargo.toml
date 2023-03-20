@@ -17,7 +17,7 @@ clap = { version = "3.1.18", features = ["derive", "cargo"] }
 flate2 = "1.0.22"
 hex = {version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
-ic-identity-hsm = "0.21.0"
+ic-identity-hsm = { version = "0.21.0", optional = true }
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 ic-icrc1 = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
@@ -60,7 +60,8 @@ tempfile = "3.3.0"
 
 [features]
 static-ssl = ["openssl/vendored"]
-default = ["static-ssl"]
+hsm = ["dep:ic-identity-hsm"]
+default = ["static-ssl", "hsm"]
 
 [profile.release-arm]
 inherits = "release"

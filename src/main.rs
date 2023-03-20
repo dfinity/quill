@@ -28,10 +28,12 @@ struct GlobalOpts {
     pem_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
     #[clap(long, group = "auth", global = true)]
     hsm: bool,
 
     /// Path to the PKCS#11 module to use.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
     #[cfg_attr(
         target_os = "windows",
         doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
@@ -48,10 +50,12 @@ struct GlobalOpts {
     hsm_libpath: Option<PathBuf>,
 
     /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
     #[clap(long, global = true)]
     hsm_slot: Option<usize>,
 
     /// The ID of the key to use. Consult your hardware key's documentation.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
     #[clap(long, global = true)]
     hsm_id: Option<String>,
 
@@ -83,26 +87,48 @@ fn main() -> AnyhowResult {
 }
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
-    // Get PEM from the file if provided, or try to convert from the seed file
-    if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
-        let mut hsm = lib::HSMInfo::new();
-        if let Some(path) = opts.hsm_libpath {
-            hsm.libpath = path;
-        }
-        if let Some(slot) = opts.hsm_slot {
-            hsm.slot = slot;
-        }
-        if let Some(id) = opts.hsm_id {
-            hsm.ident = id;
-        }
-        Ok(AuthInfo::Pkcs11Hsm(hsm))
-    } else {
-        let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
-        if let Some(pem) = pem {
-            Ok(AuthInfo::PemFile(pem))
+    #[cfg(feature = "hsm")]
+    {
+        // Get PEM from the file if provided, or try to convert from the seed file
+        if opts.hsm
+            || opts.hsm_libpath.is_some()
+            || opts.hsm_slot.is_some()
+            || opts.hsm_id.is_some()
+        {
+            let mut hsm = lib::HSMInfo::new();
+            if let Some(path) = opts.hsm_libpath {
+                hsm.libpath = path;
+            }
+            if let Some(slot) = opts.hsm_slot {
+                hsm.slot = slot;
+            }
+            if let Some(id) = opts.hsm_id {
+                hsm.ident = id;
+            }
+            Ok(AuthInfo::Pkcs11Hsm(hsm))
         } else {
-            Ok(AuthInfo::NoAuth)
+            pem_auth(opts)
         }
+    }
+    #[cfg(not(feature = "hsm"))]
+    {
+        if opts.hsm
+            || opts.hsm_libpath.is_some()
+            || opts.hsm_slot.is_some()
+            || opts.hsm_id.is_some()
+        {
+            anyhow::bail!("This build of quill does not support HSM functionality.")
+        }
+        pem_auth(opts)
+    }
+}
+
+fn pem_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
+    let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
+    if let Some(pem) = pem {
+        Ok(AuthInfo::PemFile(pem))
+    } else {
+        Ok(AuthInfo::NoAuth)
     }
 }
 

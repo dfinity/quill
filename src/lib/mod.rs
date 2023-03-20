@@ -14,6 +14,7 @@ use ic_agent::{
 };
 use ic_base_types::PrincipalId;
 use ic_icrc1::Account;
+#[cfg(feature = "hsm")]
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
@@ -28,14 +29,15 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
+use std::str::FromStr;
+#[cfg(feature = "hsm")]
+use std::{cell::RefCell, path::PathBuf};
 use std::{
-    cell::RefCell,
-    env::{self, VarError},
+    env,
     fmt::{self, Display, Formatter},
     path::Path,
     time::Duration,
 };
-use std::{path::PathBuf, str::FromStr};
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -47,6 +49,7 @@ pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
 
+#[cfg(feature = "hsm")]
 #[derive(Debug)]
 pub struct HSMInfo {
     pub libpath: PathBuf,
@@ -55,13 +58,14 @@ pub struct HSMInfo {
     pin: RefCell<Option<String>>,
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "hsm"))]
 const PKCS11_LIBPATH: &str = "/Library/OpenSC/lib/pkcs11/opensc-pkcs11.so";
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "hsm"))]
 const PKCS11_LIBPATH: &str = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "hsm"))]
 const PKCS11_LIBPATH: &str = r"C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll";
 
+#[cfg(feature = "hsm")]
 impl HSMInfo {
     pub fn new() -> Self {
         HSMInfo {
@@ -87,6 +91,7 @@ pub enum AuthInfo {
     NoAuth, // No authentication details were provided;
     // only unsigned queries are allowed.
     PemFile(String), // --private-pem file specified
+    #[cfg(feature = "hsm")]
     Pkcs11Hsm(HSMInfo),
 }
 
@@ -265,6 +270,7 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
         .map_err(|err| anyhow!(err))
 }
 
+#[cfg(feature = "hsm")]
 fn ask_pkcs11_pin_via_tty() -> Result<String, String> {
     rpassword::prompt_password("HSM PIN: ")
         .context("Cannot read HSM PIN from tty")
@@ -272,10 +278,11 @@ fn ask_pkcs11_pin_via_tty() -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
+#[cfg(feature = "hsm")]
 fn read_pkcs11_pin_env_var() -> Result<Option<String>, String> {
     match env::var("QUILL_HSM_PIN").or_else(|_| env::var("NITROHSM_PIN")) {
         Ok(val) => Ok(Some(val)),
-        Err(VarError::NotPresent) => Ok(None),
+        Err(env::VarError::NotPresent) => Ok(None),
         Err(e) => Err(format!("{}", e)),
     }
 }
@@ -291,6 +298,7 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
                 Err(e) => Err(e).context("couldn't load identity from PEM file"),
             },
         },
+        #[cfg(feature = "hsm")]
         AuthInfo::Pkcs11Hsm(info) => {
             let pin_fn = || {
                 let user_set_pin = { info.pin.borrow().clone() };

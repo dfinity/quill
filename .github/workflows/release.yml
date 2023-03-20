@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
-            name: linux
+            name: linux-musl
             target_file: target/x86_64-unknown-linux-musl/release/quill
-            asset_name: quill-linux-x86_64
+            asset_name: quill-linux-x86_64-musl
             make_target: musl-static
           - os: windows-latest
             name: windows
@@ -31,10 +31,16 @@ jobs:
             make_target: release
             rust: 1.66.1
           - os: ubuntu-latest
-            name: arm
+            name: linux-arm32
             target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-arm_32
             make_target: unused
+            rust: 1.66.1
+          - os: ubuntu-latest
+            name: linux
+            target_file: target/x86_64-unknown-linux-gnu/release/quill
+            asset_name: quill-linux-x86_64
+            make_target: release
             rust: 1.66.1
     steps:
       - uses: actions/checkout@master
@@ -60,12 +66,12 @@ jobs:
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - name: Install toolchain (Linux static)
-        if: ${{ matrix.name == 'linux' }}
+        if: ${{ matrix.name == 'linux-musl' }}
         uses: mariodfinity/rust-musl-action@master
         with:
           args: make ${{ matrix.make_target }}
       - name: Install toolchain (ARM)
-        if: ${{ matrix.name == 'arm' }}
+        if: ${{ matrix.name == 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -73,7 +79,7 @@ jobs:
           override: true
           target: arm-unknown-linux-gnueabihf
       - name: Install toolchain (Non-linux)
-        if: ${{ matrix.name != 'linux' && matrix.name != 'arm' }}
+        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -81,7 +87,7 @@ jobs:
           override: true
 
       - name: Cross build
-        if: ${{ matrix.name == 'arm' }}
+        if: ${{ matrix.name == 'linux-arm32' }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
@@ -89,7 +95,7 @@ jobs:
           args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
 
       - name: Make
-        if: ${{ matrix.name != 'linux' && matrix.name != 'arm' }}
+        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         run: make ${{ matrix.make_target }}
 
       - name: Upload binaries to release
