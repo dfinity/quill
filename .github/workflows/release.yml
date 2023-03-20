@@ -45,24 +45,33 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - if: ${{ contains(matrix.os, 'windows') }}
+        shell: bash
+        run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            ${{ env.VCPKG_ROOT }}
+          key: ${{ matrix.os }}-cargo-${{ matrix.rust }}-release-1
+
       - name: Install dependencies (windows only)
-        if: matrix.name == 'windows'
+        if: ${{ contains(matrix.os, 'windows')
         shell: bash
         run: |
           vcpkg integrate install
           vcpkg install openssl:x64-windows-static-md
-          echo "::set-env OPENSSL_DIR 'C:\Tools\vcpkg\installed\x64-windows-static-md'"
-          echo "::set-env OPENSSL_STATIC Yes"
-        env:
-          VCPKG_ROOT: 'C:\vcpkg'
+          echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
+          echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - name: Install toolchain (Linux static)
-        if: matrix.name == 'linux-musl'
+        if: ${{ matrix.name == 'linux-musl' }}
         uses: mariodfinity/rust-musl-action@master
         with:
           args: make ${{ matrix.make_target }}
       - name: Install toolchain (ARM)
-        if: matrix.name == 'linux-arm32'
+        if: ${{ matrix.name == 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -70,7 +79,7 @@ jobs:
           override: true
           target: arm-unknown-linux-gnueabihf
       - name: Install toolchain (Non-linux)
-        if: matrix.name != 'linux-musl' && matrix.name != 'linux-arm32'
+        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -78,7 +87,7 @@ jobs:
           override: true
 
       - name: Cross build
-        if: matrix.name == 'linux-arm32'
+        if: ${{ matrix.name == 'linux-arm32' }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
@@ -86,7 +95,7 @@ jobs:
           args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
 
       - name: Make
-        if: matrix.name != 'linux-musl' && matrix.name != 'linux-arm32'
+        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         run: make ${{ matrix.make_target }}
 
       - name: Upload binaries to release

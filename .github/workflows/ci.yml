@@ -15,16 +15,26 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - if: ${{ contains(matrix.os, 'windows') }}
+        shell: bash
+        run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            ${{ env.VCPKG_ROOT }}
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust }}-ci-1
+
       - name: Install dependencies (windows only)
-        if: matrix.os == 'windows-latest'
+        if: ${{ contains(matrix.os, 'windows') }}
         shell: bash
         run: |
           vcpkg integrate install
           vcpkg install openssl:x64-windows-static-md
-          echo "::set-env OPENSSL_DIR 'C:\Tools\vcpkg\installed\x64-windows-static-md'"
-          echo "::set-env OPENSSL_STATIC Yes"
-        env:
-          VCPKG_ROOT: 'C:\vcpkg'
+          echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
+          echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - uses: actions-rs/toolchain@v1
         with:
