@@ -1,6 +1,6 @@
 [package]
 name = "quill"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["DFINITY Team"]
 edition = "2021"
 
@@ -15,7 +15,7 @@ bip32 = "0.4.0"
 candid = "0.8.2"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
 flate2 = "1.0.22"
-hex = {version = "0.4.2", features = ["serde"] }
+hex = { version = "0.4.2", features = ["serde"] }
 ic-agent = "0.21.0"
 ic-identity-hsm = { version = "0.21.0", optional = true }
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
@@ -44,7 +44,7 @@ serde_bytes = "0.11.2"
 serde_cbor = "0.11.2"
 serde_json = "1.0.57"
 tiny-bip39 = "1.0.0"
-tokio = { version = "1.18.5", features = [ "full" ] }
+tokio = { version = "1.18.5", features = ["full"] }
 rpassword = "6.0.0"
 
 # forces reqwest to be >0.11.6 to avoid issues in agent-rs
@@ -65,4 +65,4 @@ default = ["static-ssl", "hsm"]
 
 [profile.release-arm]
 inherits = "release"
-opt-level=2
+opt-level = 2

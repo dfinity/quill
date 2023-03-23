@@ -57,7 +57,7 @@ jobs:
           key: ${{ matrix.os }}-cargo-${{ matrix.rust }}-release-1
 
       - name: Install dependencies (windows only)
-        if: ${{ contains(matrix.os, 'windows')
+        if: ${{ contains(matrix.os, 'windows') }}
         shell: bash
         run: |
           vcpkg integrate install
