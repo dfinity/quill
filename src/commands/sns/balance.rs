@@ -5,7 +5,7 @@ use crate::{
 };
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::Account;
+use icrc_ledger_types::Account;
 
 use super::SnsCanisterIds;
 
@@ -44,7 +44,7 @@ pub async fn exec(
     } else {
         let (principal, _) = get_ids(auth)?;
         Account {
-            owner: principal.into(),
+            owner: principal,
             subaccount: None,
         }
     };

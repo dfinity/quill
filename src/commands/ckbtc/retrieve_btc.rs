@@ -4,7 +4,10 @@ use anyhow::Context;
 use candid::{Encode, Nat};
 use clap::Parser;
 use ic_ckbtc_minter::updates::retrieve_btc::RetrieveBtcArgs;
-use ic_icrc1::{endpoints::Transfer, Account, Memo};
+use icrc_ledger_types::{
+    transaction::{Memo, Transfer},
+    Account,
+};
 
 use crate::{
     commands::get_ids,
@@ -67,7 +70,7 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
             created_at_time: None,
             fee: opts.fee,
             from: Account {
-                owner: principal.into(),
+                owner: principal,
                 subaccount: opts.from_subaccount.map(|x| x.0 .0),
             },
             memo: opts.memo.map(Memo::from),

@@ -1,6 +1,9 @@
 use candid::{Encode, Nat};
 use clap::Parser;
-use ic_icrc1::{endpoints::Transfer, Account, Memo};
+use icrc_ledger_types::{
+    transaction::{Memo, Transfer},
+    Account,
+};
 
 use crate::{
     commands::get_ids,
@@ -44,7 +47,7 @@ pub struct TransferOpts {
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (principal, _) = get_ids(auth)?;
     let from = Account {
-        owner: principal.into(),
+        owner: principal,
         subaccount: opts.from_subaccount.map(|x| x.0 .0),
     };
     let mut to = opts.to.0;

@@ -1,6 +1,6 @@
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::Account;
+use icrc_ledger_types::Account;
 
 use crate::{
     commands::{get_ids, send::submit_unsigned_ingress},
@@ -43,7 +43,7 @@ pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> A
     } else {
         let (principal, _) = get_ids(auth)?;
         Account {
-            owner: principal.into(),
+            owner: principal,
             subaccount: None,
         }
     };

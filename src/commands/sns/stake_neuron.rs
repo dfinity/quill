@@ -8,7 +8,6 @@ use crate::{
 };
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::{endpoints::TransferArg, Account, Memo};
 use ic_nervous_system_common::ledger;
 use ic_sns_governance::pb::v1::{
     manage_neuron,
@@ -19,6 +18,8 @@ use ic_sns_governance::pb::v1::{
     ManageNeuron,
 };
 use icp_ledger::Tokens;
+use icrc_ledger_types::transaction::{Memo, TransferArg};
+use icrc_ledger_types::Account;
 
 use super::SnsCanisterIds;
 
@@ -78,7 +79,7 @@ pub fn exec(
             from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
             created_at_time: None,
             to: Account {
-                owner: governance_canister_id.into(),
+                owner: governance_canister_id,
                 subaccount: Some(neuron_subaccount.0),
             },
         };

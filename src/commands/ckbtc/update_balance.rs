@@ -25,7 +25,7 @@ pub struct UpdateBalanceOpts {
 pub fn exec(auth: &AuthInfo, opts: UpdateBalanceOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let (owner, mut subaccount) = opts
         .sender
-        .map_or((None, None), |x| (Some(x.0.owner.into()), x.0.subaccount));
+        .map_or((None, None), |x| (Some(x.0.owner), x.0.subaccount));
     if let Some(subacct) = opts.subaccount {
         subaccount = Some(subacct.0 .0);
     }
