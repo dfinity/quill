@@ -5,8 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.4.1] - 2023-02-23
 
+- Added release binaries for linux-gnu in addition to linux-musl on amd64.
 - Fixed `quill generate` requiring authentication. (#181)
 - Require an additional `--already-transferred` flag for the single-message form of `quill neuron-stake`. (#173)
 - Added `--disburse-amount` and `--disburse-to` to `quill neuron-manage`. (#171)
