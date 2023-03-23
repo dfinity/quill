@@ -81,7 +81,11 @@ fn main() -> AnyhowResult {
     let opts = CliOpts::parse();
     let qr = opts.global_opts.qr;
     let fetch_root_key = opts.global_opts.fetch_root_key;
-    let auth = get_auth(opts.global_opts)?;
+    let auth = if let commands::Command::Generate(_) = &opts.command {
+        AuthInfo::NoAuth
+    } else {
+        get_auth(opts.global_opts)?
+    };
     commands::dispatch(&auth, opts.command, fetch_root_key, qr)?;
     Ok(())
 }
