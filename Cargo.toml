@@ -33,7 +33,7 @@ ic-types = "0.4.1"
 icp-ledger = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "1ce7e5b0bd68760382eb2b3b810a11bd600770be" }
 num-bigint = "0.4.3"
-openssl = "0.10.45"
+openssl = "0.10.48"
 pem = "1.0.1"
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
