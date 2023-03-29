@@ -1,0 +1,1 @@
+"$QUILL" ckbtc balance --testnet --dry-run -y --pem-file -

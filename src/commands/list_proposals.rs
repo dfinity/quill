@@ -1,27 +1,20 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{governance_canister_id, AnyhowResult},
+    lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
-use candid::{CandidType, Encode};
+use candid::Encode;
 use clap::Parser;
-use ic_nns_common::types::ProposalId;
+use ic_nns_governance::pb::v1::ListProposalInfo;
 
-#[derive(CandidType)]
-pub struct ListProposalInfo {
-    pub limit: u32,
-    pub before_proposal: Option<ProposalId>,
-    pub exclude_topic: Vec<i32>,
-    pub include_reward_status: Vec<i32>,
-    pub include_status: Vec<i32>,
-}
-
+/// Queries for a list of pending proposals.
 #[derive(Parser)]
 pub struct ListProposalsOpts {
+    /// Only displays <LIMIT> proposals.
     #[clap(long)]
     pub limit: Option<u32>,
 
     /// Skips confirmation and sends the message directly.
-    #[clap(long)]
+    #[clap(long, short)]
     yes: bool,
 
     /// Will display the query, but not send it.
@@ -30,6 +23,7 @@ pub struct ListProposalsOpts {
 }
 
 // We currently only support a subset of the functionality.
+#[tokio::main]
 pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&ListProposalInfo {
         limit: opts.limit.unwrap_or(100),
@@ -40,6 +34,7 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
     })?;
     submit_unsigned_ingress(
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "list_proposals",
         args,
         opts.yes,

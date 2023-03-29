@@ -1,0 +1,20 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    command = opt variant {
+      Disburse = record {
+        to_account = opt record {
+          hash = blob "\c6H\b8\14\e8\1dyF\e8\ba\ce\a9\92\80\e0|_Q\a0K\a7\a3\80\09\d8\ad\8e\89";
+        };
+        amount = opt record { e8s = 5_731_000_000 : nat64 };
+      }
+    };
+    neuron_id_or_subaccount = null;
+  },
+)

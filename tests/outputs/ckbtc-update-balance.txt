@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: mqygn-kiaaa-aaaar-qaadq-cai
+  Method name: update_balance
+  Arguments:   (
+  record {
+    owner = null;
+    subaccount = opt blob "\bd\e9\c3\b1H\b8K\82\fd\d8n\c6\f2\0d\0c{\88\09\e5D\99\f8\93\cb\ca7\9d\c55\ea\19K";
+  },
+)

@@ -1,6 +1,6 @@
 use crate::{
     lib::signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    lib::{governance_canister_id, AnyhowResult, AuthInfo},
+    lib::{governance_canister_id, AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE},
 };
 use anyhow::{anyhow, Context};
 use candid::{CandidType, Encode};
@@ -15,7 +15,7 @@ pub struct UpdateNodeProvider {
     pub reward_account: Option<AccountIdentifier>,
 }
 
-/// Signs a neuron configuration change.
+/// Update node provider details.
 #[derive(Parser)]
 pub struct UpdateNodeProviderOpts {
     /// The account identifier of the reward account.
@@ -27,7 +27,7 @@ pub fn exec(
     auth: &AuthInfo,
     opts: UpdateNodeProviderOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let reward_account = ledger_canister::AccountIdentifier::from_hex(&opts.reward_account)
+    let reward_account = icp_ledger::AccountIdentifier::from_hex(&opts.reward_account)
         .map_err(|e| anyhow!(e))
         .with_context(|| format!("Account {} is not valid address", &opts.reward_account))?;
     let args = Encode!(&UpdateNodeProvider {
@@ -38,6 +38,7 @@ pub fn exec(
     Ok(vec![sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "update_node_provider",
         args,
     )?])

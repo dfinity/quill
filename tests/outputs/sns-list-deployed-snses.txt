@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: qaa6y-5yaaa-aaaaa-aaafa-cai
+  Method name: list_deployed_snses
+  Arguments:   (record {})

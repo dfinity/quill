@@ -1,15 +1,15 @@
 use crate::lib::get_idl_string;
 use crate::lib::{AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
+use candid::Principal;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
-use ic_types::principal::Principal;
 use serde::{Deserialize, Serialize};
 use serde_cbor::Value;
 use std::convert::TryFrom;
 use std::time::Duration;
 
-use super::get_agent;
+use super::{get_agent, get_default_role};
 
 #[derive(Debug)]
 pub struct MessageError(String);
@@ -40,6 +40,7 @@ pub struct Ingress {
     pub call_type: String,
     pub request_id: Option<String>,
     pub content: String,
+    pub role: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -49,7 +50,7 @@ pub struct IngressWithRequestId {
 }
 
 impl Ingress {
-    pub fn parse(&self) -> AnyhowResult<(Principal, Principal, String, String)> {
+    pub fn parse(&self) -> AnyhowResult<(Principal, Principal, String, String, String)> {
         let cbor: Value = serde_cbor::from_slice(&hex::decode(&self.content)?)
             .context("Invalid cbor data in the content of the message.")?;
         if let Value::Map(m) = cbor {
@@ -70,11 +71,17 @@ impl Ingress {
                 ) {
                     let sender = Principal::try_from(sender)?;
                     let canister_id = Principal::try_from(canister_id)?;
+                    let role = if let Some(role) = &self.role {
+                        role
+                    } else {
+                        get_default_role(sender).unwrap_or("<none>")
+                    };
                     return Ok((
                         sender,
                         canister_id,
                         method_name.to_string(),
-                        get_idl_string(arg, canister_id, method_name, "args")?,
+                        get_idl_string(arg, canister_id, role, method_name, "args")?,
+                        role.to_owned(),
                     ));
                 }
             }
@@ -102,6 +109,7 @@ pub fn sign(
     canister_id: Principal,
     method_name: &str,
     args: Vec<u8>,
+    role: &str,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
     let ingress_expiry = Duration::from_secs(5 * 60);
 
@@ -118,6 +126,7 @@ pub fn sign(
             call_type: "update".to_string(),
             request_id: Some(request_id.into()),
             content,
+            role: Some(role.to_owned()),
         },
         request_id: Some(request_id),
     })
@@ -127,10 +136,11 @@ pub fn sign(
 pub fn sign_ingress_with_request_status_query(
     auth: &AuthInfo,
     canister_id: Principal,
+    role: &str,
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(auth, canister_id, method_name, args)?;
+    let msg_with_req_id = sign(auth, canister_id, method_name, args, role)?;
     let request_id = msg_with_req_id
         .request_id
         .context("No request id for transfer call found")?;

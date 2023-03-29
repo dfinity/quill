@@ -1,16 +1,18 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
-    lib::{governance_canister_id, AnyhowResult},
+    lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
 use candid::Encode;
 use clap::Parser;
 
+/// Queries for information about a neuron, such as its voting power and age.
 #[derive(Parser)]
 pub struct GetNeuronInfoOpts {
+    /// The neuron identifier.
     pub ident: u64,
 
     /// Skips confirmation and sends the message directly.
-    #[clap(long)]
+    #[clap(long, short)]
     yes: bool,
 
     /// Will display the query, but not send it.
@@ -19,10 +21,12 @@ pub struct GetNeuronInfoOpts {
 }
 
 // We currently only support a subset of the functionality.
+#[tokio::main]
 pub async fn exec(opts: GetNeuronInfoOpts, fetch_root_key: bool) -> AnyhowResult {
     let args = Encode!(&opts.ident)?;
     submit_unsigned_ingress(
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "get_neuron_info",
         args,
         opts.yes,

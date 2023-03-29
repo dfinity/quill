@@ -15,10 +15,18 @@ jobs:
       matrix:
         # windows not supported by dfx
         os: [ubuntu-latest, macos-latest]
-        rust: [1.60.0]
+        rust: [1.66.1]
         binary_path: ["target/release"]
     steps:
       - uses: actions/checkout@master
+      
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust }}-ci-1
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -42,7 +50,11 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - id: set-matrix
-        run: echo "::set-output name=matrix::$(scripts/workflows/e2e-matrix.py)"
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "matrix<<$EOF" >> $GITHUB_OUTPUT
+          scripts/workflows/e2e-matrix.py >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
 
   test:
     runs-on: ${{ matrix.os }}
@@ -62,17 +74,17 @@ jobs:
       - name: Setup quill binary
         run: chmod +x /usr/local/bin/quill
       - name: Provision Darwin
-        if: contains(matrix.os, 'macos')
+        if: ${{ contains(matrix.os, 'macos') }}
         run: bash scripts/workflows/provision-darwin.sh
       - name: Provision Linux
-        if: contains(matrix.os, 'ubuntu')
+        if: ${{ contains(matrix.os, 'ubuntu') }}
         run: bash scripts/workflows/provision-linux.sh
       - name: Prepare environment
         run: |
           echo "archive=$(pwd)/e2e/archive" >> "$GITHUB_ENV"
           echo "assets=$(pwd)/e2e/assets" >> "$GITHUB_ENV"
           echo "utils=$(pwd)/e2e/utils" >> "$GITHUB_ENV"
-          export
+          export -p
       - name: Run e2e test
         run: timeout 2100 bats "e2e/$E2E_TEST"
 

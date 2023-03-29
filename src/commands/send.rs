@@ -4,13 +4,13 @@ use crate::lib::{
     signing::{Ingress, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::{anyhow, Context};
-use candid::CandidType;
+use anyhow::{anyhow, bail, Context};
+use atty::Stream;
+use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::ReplicaV2Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
-use ic_types::principal::Principal;
-use ledger_canister::{Subaccount, Tokens};
+use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -49,20 +49,28 @@ pub struct SendArgs {
 /// Sends a signed message or a set of messages.
 #[derive(Parser)]
 pub struct SendOpts {
-    /// Path to the signed message
-    file_name: PathBuf,
+    /// Path to the signed message (`-` for stdin)
+    file_name: Option<PathBuf>,
 
     /// Will display the signed message, but not send it.
     #[clap(long)]
     dry_run: bool,
 
     /// Skips confirmation and sends the message directly.
-    #[clap(long)]
+    #[clap(long, short)]
     yes: bool,
 }
 
+#[tokio::main]
 pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
-    let json = read_from_file(&opts.file_name)?;
+    let file_name = if let Some(file_name) = &opts.file_name {
+        file_name.as_path()
+    } else if atty::isnt(Stream::Stdin) {
+        "-".as_ref()
+    } else {
+        bail!("File name must be provided if not being piped")
+    };
+    let json = read_from_file(file_name)?;
     if let Ok(val) = serde_json::from_str::<Ingress>(&json) {
         send(&val, &opts).await?;
     } else if let Ok(vals) = serde_json::from_str::<Vec<Ingress>>(&json) {
@@ -81,6 +89,7 @@ pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
 
 pub async fn submit_unsigned_ingress(
     canister_id: Principal,
+    role: &str,
     method_name: &str,
     args: Vec<u8>,
     yes: bool,
@@ -90,6 +99,7 @@ pub async fn submit_unsigned_ingress(
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
         &AuthInfo::NoAuth,
         canister_id,
+        role,
         method_name,
         args,
     )?;
@@ -114,10 +124,11 @@ async fn submit_ingress_and_check_status(
     if opts.dry_run {
         return Ok(());
     }
-    let (_, _, method_name, _) = &message.ingress.parse()?;
+    let (_, _, method_name, _, role) = &message.ingress.parse()?;
     match request_status::submit(
         &message.request_status,
         Some(method_name.to_string()),
+        role,
         fetch_root_key,
     )
     .await
@@ -129,7 +140,7 @@ async fn submit_ingress_and_check_status(
 }
 
 async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
-    let (sender, canister_id, method_name, args) = message.parse()?;
+    let (sender, canister_id, method_name, args, role) = message.parse()?;
 
     println!("Sending message with\n");
     println!("  Call type:   {}", message.call_type);
@@ -143,6 +154,11 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     }
 
     if message.call_type == "update" && !opts.yes {
+        if !atty::is(Stream::Stdin) {
+            eprintln!("Cannot confirm y/n if the input is being piped.");
+            eprintln!("To confirm sending this message, rerun `quill send` with the `-y` flag.");
+            std::process::exit(1);
+        }
         println!("\nDo you want to send this message? [y/N]");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
@@ -160,6 +176,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                 ic_agent::agent::ReplicaV2Transport::query(&transport, canister_id, content)
                     .await?,
                 canister_id,
+                &role,
                 &method_name,
             )?;
             println!("Response: {}", response);

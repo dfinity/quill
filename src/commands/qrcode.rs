@@ -4,6 +4,7 @@ use crate::lib::{read_from_file, AnyhowResult};
 use clap::Parser;
 use qrcodegen::{QrCode, QrCodeEcc};
 
+/// Print QR code for data e.g. principal id.
 #[derive(Parser)]
 pub struct QRCodeOpts {
     /// File the contents of which to be output as a QRCode.
@@ -18,7 +19,7 @@ pub struct QRCodeOpts {
 /// Prints the account and the principal ids.
 pub fn exec(opts: QRCodeOpts) -> AnyhowResult {
     if let Some(file) = opts.file {
-        let data = read_from_file(&file)?;
+        let data = read_from_file(file)?;
         print_qr(&data);
     }
     if let Some(string) = opts.string {

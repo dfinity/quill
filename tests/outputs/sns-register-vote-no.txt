@@ -1,0 +1,17 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    subaccount = blob "\83\a7\d2\b1/eO\f5\835\e5\a2Q,\ca\e0\d7\83\9ctK\18\07\a4|\96\f5\b9\f3\96\90i";
+    command = opt variant {
+      RegisterVote = record {
+        vote = 2 : int32;
+        proposal = opt record { id = 1 : nat64 };
+      }
+    };
+  },
+)

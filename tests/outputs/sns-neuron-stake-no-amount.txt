@@ -1,0 +1,21 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    subaccount = blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+    command = opt variant {
+      ClaimOrRefresh = record {
+        by = opt variant {
+          MemoAndController = record {
+            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+            memo = 777 : nat64;
+          }
+        };
+      }
+    };
+  },
+)

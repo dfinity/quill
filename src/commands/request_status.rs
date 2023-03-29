@@ -1,10 +1,10 @@
 use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
+use candid::Principal;
 use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
-use ic_types::Principal;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -13,6 +13,7 @@ use std::sync::Arc;
 pub async fn submit(
     req: &RequestStatus,
     method_name: Option<String>,
+    role: &str,
     fetch_root_key: bool,
 ) -> AnyhowResult<String> {
     let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
@@ -62,8 +63,14 @@ pub async fn submit(
         }
     }
     .await?;
-    get_idl_string(&blob, canister_id, &method_name.unwrap_or_default(), "rets")
-        .context("Invalid IDL blob.")
+    get_idl_string(
+        &blob,
+        canister_id,
+        role,
+        &method_name.unwrap_or_default(),
+        "rets",
+    )
+    .context("Invalid IDL blob.")
 }
 
 pub(crate) struct ProxySignReplicaV2Transport {

@@ -1,7 +1,7 @@
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo,
+    AnyhowResult, AuthInfo, ROLE_NNS_GOVERNANCE,
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -12,7 +12,7 @@ pub struct ListNeurons {
     pub include_neurons_readable_by_caller: bool,
 }
 
-/// Signs a neuron configuration change.
+/// Signs the query for all neurons belonging to the signing principal.
 #[derive(Parser)]
 pub struct ListNeuronsOpts {
     /// The optional ids of the specific neuron to query. Note that these ids
@@ -32,6 +32,7 @@ pub fn exec(auth: &AuthInfo, opts: ListNeuronsOpts) -> AnyhowResult<Vec<IngressW
     Ok(vec![sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "list_neurons",
         args,
     )?])

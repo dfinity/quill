@@ -1,9 +1,10 @@
 #![warn(unused_extern_crates)]
+#![allow(special_module_name)]
 use std::path::{Path, PathBuf};
 
 use crate::lib::AnyhowResult;
 use anyhow::Context;
-use bip39::Mnemonic;
+use bip39::{Language, Mnemonic};
 use clap::{crate_version, Args, Parser};
 use lib::AuthInfo;
 
@@ -14,6 +15,8 @@ mod lib;
 #[derive(Parser)]
 #[clap(name("quill"), version = crate_version!())]
 pub struct CliOpts {
+    #[clap(flatten, next_help_heading = "COMMON")]
+    global_opts: GlobalOpts,
     #[clap(subcommand)]
     command: commands::Command,
 }
@@ -21,81 +24,115 @@ pub struct CliOpts {
 #[derive(Args)]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long)]
+    #[clap(long, group = "auth", global = true)]
     pem_file: Option<PathBuf>,
 
-    #[clap(long)]
+    /// Use a hardware key to sign messages.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
+    #[clap(long, group = "auth", global = true)]
     hsm: bool,
 
-    #[clap(long)]
+    /// Path to the PKCS#11 module to use.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
+    #[cfg_attr(
+        target_os = "windows",
+        doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
+    )]
+    #[cfg_attr(
+        target_os = "macos",
+        doc = "Defaults to /Library/OpenSC/lib/pkcs11/opensc-pkcs11.so"
+    )]
+    #[cfg_attr(
+        target_os = "linux",
+        doc = "Defaults to /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
+    )]
+    #[clap(long, global = true)]
     hsm_libpath: Option<PathBuf>,
 
-    #[clap(long)]
+    /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
+    #[clap(long, global = true)]
     hsm_slot: Option<usize>,
 
-    #[clap(long)]
+    /// The ID of the key to use. Consult your hardware key's documentation.
+    #[cfg_attr(feature = "hsm", clap(hidden = true))]
+    #[clap(long, global = true)]
     hsm_id: Option<String>,
 
     /// Path to your seed file (use "-" for STDIN)
-    #[clap(long)]
+    #[clap(long, global = true)]
     seed_file: Option<PathBuf>,
 
     /// Output the result(s) as UTF-8 QR codes.
-    #[clap(long)]
+    #[clap(long, global = true)]
     qr: bool,
 
     /// Fetches the root key before making requests so that interfacing with local instances is possible.
     /// DO NOT USE WITH ANY REAL INFORMATION
-    #[clap(long = "insecure-local-dev-mode", name = "insecure-local-dev-mode")]
+    #[clap(
+        long = "insecure-local-dev-mode",
+        name = "insecure-local-dev-mode",
+        global = true
+    )]
     fetch_root_key: bool,
 }
 
-#[derive(Args)]
-pub struct BaseOpts<T: Args> {
-    #[clap(flatten)]
-    command_opts: T,
-    #[clap(flatten, next_help_heading = "COMMON")]
-    global_opts: GlobalOpts,
-}
-
-fn main() {
+fn main() -> AnyhowResult {
     let opts = CliOpts::parse();
-    if let Err(err) = commands::dispatch(opts.command) {
-        for (level, cause) in err.chain().enumerate() {
-            if level == 0 {
-                eprintln!("Error: {}", err);
-                continue;
-            }
-            if level == 1 {
-                eprintln!("Caused by:");
-            }
-            eprintln!("{:width$}{}", "", cause, width = level * 2);
-        }
-        std::process::exit(1);
-    }
+    let qr = opts.global_opts.qr;
+    let fetch_root_key = opts.global_opts.fetch_root_key;
+    let auth = if let commands::Command::Generate(_) = &opts.command {
+        AuthInfo::NoAuth
+    } else {
+        get_auth(opts.global_opts)?
+    };
+    commands::dispatch(&auth, opts.command, fetch_root_key, qr)?;
+    Ok(())
 }
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
-    // Get PEM from the file if provided, or try to convert from the seed file
-    if opts.hsm {
-        let mut hsm = lib::HSMInfo::new();
-        if let Some(path) = opts.hsm_libpath {
-            hsm.libpath = path;
-        }
-        if let Some(slot) = opts.hsm_slot {
-            hsm.slot = slot;
-        }
-        if let Some(id) = opts.hsm_id {
-            hsm.ident = id;
-        }
-        Ok(lib::AuthInfo::NitroHsm(hsm))
-    } else {
-        let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
-        if let Some(pem) = pem {
-            Ok(lib::AuthInfo::PemFile(pem))
+    #[cfg(feature = "hsm")]
+    {
+        // Get PEM from the file if provided, or try to convert from the seed file
+        if opts.hsm
+            || opts.hsm_libpath.is_some()
+            || opts.hsm_slot.is_some()
+            || opts.hsm_id.is_some()
+        {
+            let mut hsm = lib::HSMInfo::new();
+            if let Some(path) = opts.hsm_libpath {
+                hsm.libpath = path;
+            }
+            if let Some(slot) = opts.hsm_slot {
+                hsm.slot = slot;
+            }
+            if let Some(id) = opts.hsm_id {
+                hsm.ident = id;
+            }
+            Ok(AuthInfo::Pkcs11Hsm(hsm))
         } else {
-            Ok(lib::AuthInfo::NoAuth)
+            pem_auth(opts)
         }
+    }
+    #[cfg(not(feature = "hsm"))]
+    {
+        if opts.hsm
+            || opts.hsm_libpath.is_some()
+            || opts.hsm_slot.is_some()
+            || opts.hsm_id.is_some()
+        {
+            anyhow::bail!("This build of quill does not support HSM functionality.")
+        }
+        pem_auth(opts)
+    }
+}
+
+fn pem_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
+    let pem = read_pem(opts.pem_file.as_deref(), opts.seed_file.as_deref())?;
+    if let Some(pem) = pem {
+        Ok(AuthInfo::PemFile(pem))
+    } else {
+        Ok(AuthInfo::NoAuth)
     }
 }
 
@@ -114,7 +151,8 @@ fn read_pem(pem_file: Option<&Path>, seed_file: Option<&Path>) -> AnyhowResult<O
 }
 
 fn parse_mnemonic(phrase: &str) -> AnyhowResult<Mnemonic> {
-    Mnemonic::parse(phrase).context("Couldn't parse the seed phrase as a valid mnemonic. {:?}")
+    Mnemonic::from_phrase(phrase, Language::English)
+        .context("Couldn't parse the seed phrase as a valid mnemonic. {:?}")
 }
 
 fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
@@ -135,7 +173,7 @@ fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
 #[cfg(test)]
 mod tests {
     use crate::read_pem;
-    use bip39::Mnemonic;
+    use bip39::{Language, Mnemonic};
 
     #[test]
     fn test_read_pem_none_none() {
@@ -169,7 +207,9 @@ mod tests {
         seed_file
             .write_all(phrase.as_bytes())
             .expect("Cannot write to temp file");
-        let mnemonic = crate::lib::mnemonic_to_pem(&Mnemonic::parse(phrase).unwrap()).unwrap();
+        let mnemonic =
+            crate::lib::mnemonic_to_pem(&Mnemonic::from_phrase(phrase, Language::English).unwrap())
+                .unwrap();
 
         let pem = read_pem(None, Some(seed_file.path()))
             .expect("Unable to read seed_file")

@@ -1,17 +1,19 @@
 use crate::{
-    commands::{send::Memo, transfer},
+    commands::{
+        send::Memo,
+        transfer::{self, parse_tokens},
+    },
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AnyhowResult, AuthInfo,
+        AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
 use anyhow::anyhow;
-use candid::{CandidType, Encode};
+use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use ic_types::Principal;
-use ledger_canister::{AccountIdentifier, Subaccount};
+use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
@@ -23,20 +25,33 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 #[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
+    #[clap(long, value_parser = parse_tokens, conflicts_with = "already-transferred", required_unless_present = "already-transferred")]
+    amount: Option<Tokens>,
+
+    /// Skips signing the transfer of ICP, signing only the staking request.
     #[clap(long)]
-    amount: Option<String>,
+    already_transferred: bool,
 
     /// The name of the neuron (up to 8 ASCII characters).
-    #[clap(long, validator(neuron_name_validator))]
+    #[clap(
+        long,
+        validator(neuron_name_validator),
+        conflicts_with = "nonce",
+        required_unless_present = "nonce"
+    )]
     name: Option<String>,
 
     /// The nonce of the neuron.
-    #[clap(long, validator(neuron_name_validator), conflicts_with("name"))]
+    #[clap(long)]
     nonce: Option<u64>,
 
-    /// Transaction fee, default is 10000 e8s.
+    /// Transaction fee, default is 0.0001 ICP.
+    #[clap(long, value_parser = parse_tokens)]
+    fee: Option<Tokens>,
+
+    /// The subaccount to transfer from.
     #[clap(long)]
-    fee: Option<String>,
+    from_subaccount: Option<ParsedSubaccount>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -48,17 +63,19 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
-    let mut messages = match opts.amount {
-        Some(amount) => transfer::exec(
+    let mut messages = if !opts.already_transferred {
+        transfer::exec(
             auth,
             transfer::TransferOpts {
-                to: account.to_hex(),
-                amount,
+                to: ParsedNnsAccount::Original(account),
+                amount: opts.amount.unwrap(),
                 fee: opts.fee,
-                memo: Some(nonce.to_string()),
+                memo: Some(nonce),
+                from_subaccount: opts.from_subaccount,
             },
-        )?,
-        _ => Vec::new(),
+        )?
+    } else {
+        Vec::new()
     };
     let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
         memo: Memo(nonce),
@@ -68,6 +85,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     messages.push(sign_ingress_with_request_status_query(
         auth,
         governance_canister_id(),
+        ROLE_NNS_GOVERNANCE,
         "claim_or_refresh_neuron_from_account",
         args,
     )?);
@@ -98,8 +116,7 @@ fn convert_name_to_nonce(name: &str) -> u64 {
 }
 
 fn neuron_name_validator(name: &str) -> Result<(), String> {
-    // Convert to bytes before checking the length to restrict it to ASCII only
-    if name.as_bytes().len() > 8 {
+    if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
         return Err("The neuron name must be 8 character or less".to_string());
     }
     Ok(())

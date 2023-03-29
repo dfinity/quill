@@ -1,0 +1,11 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rkp4c-7iaaa-aaaaa-aaaca-cai
+  Method name: error_refund_icp
+  Arguments:   (
+  record {
+    source_principal_id = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+  },
+)
