@@ -1,8 +1,10 @@
 use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
-use anyhow::anyhow;
+use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use clap::Parser;
 use icp_ledger::AccountIdentifier;
+use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
+use sha3::{Digest, Keccak256};
 
 #[derive(Parser)]
 /// Prints the principal id and the account id.
@@ -10,22 +12,31 @@ pub struct PublicOpts {
     /// Principal for which to get the account_id.
     #[clap(long)]
     principal_id: Option<String>,
+    /// Additionally prints the legacy DFN address for Genesis claims.
+    #[clap(long, conflicts_with = "principal-id")]
+    genesis_dfn: bool,
 }
 
 /// Prints the account and the principal ids.
 pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
-    let (principal_id, account_id) = get_public_ids(auth, opts)?;
+    let (principal_id, account_id) = get_public_ids(auth, &opts)?;
     println!("Principal id: {}", principal_id.to_text());
     println!("Account id: {}", account_id);
+    if opts.genesis_dfn {
+        let AuthInfo::PemFile(pem) = auth else {
+            bail!("Must supply a pem or seed file for the DFN address");
+        };
+        println!("DFN address: {}", get_dfn(pem)?)
+    }
     Ok(())
 }
 
 /// Returns the account id and the principal id if the private key was provided.
 fn get_public_ids(
     auth: &AuthInfo,
-    opts: PublicOpts,
+    opts: &PublicOpts,
 ) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    match opts.principal_id {
+    match &opts.principal_id {
         Some(principal_id) => {
             let principal_id = Principal::from_text(principal_id)?;
             Ok((principal_id, get_account_id(principal_id)?))
@@ -40,6 +51,14 @@ fn get_public_ids(
             }
         }
     }
+}
+
+fn get_dfn(pem: &str) -> AnyhowResult<String> {
+    let pk = SecretKey::from_sec1_pem(pem).context("DFN addresses need a secp256k1 key")?;
+    let pubk = pk.public_key();
+    let uncompressed = pubk.to_encoded_point(false);
+    let hash = Keccak256::digest(&uncompressed.as_bytes()[1..]);
+    Ok(hex::encode(&hash[12..]))
 }
 
 /// Returns the account id and the principal id if the private key was provided.
