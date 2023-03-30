@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Added option to print DFN address for Genesis investors. (#184)
+
 ## [0.4.1] - 2023-03-23
 
 - Added release binaries for linux-gnu in addition to linux-musl on amd64.

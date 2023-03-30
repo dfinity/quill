@@ -12,9 +12,10 @@ quill public-ids [option]
 
 ## Flags
 
-| Flag           | Description                 |
-|----------------|-----------------------------|
-| `-h`, `--help` | Displays usage information. |
+| Flag            | Description                                                    |
+|-----------------|----------------------------------------------------------------|
+| `-h`, `--help`  | Displays usage information.                                    |
+| `--genesis-dfn` | Additionally prints the legacy DFN address for Genesis claims. |
 
 ## Options
 
