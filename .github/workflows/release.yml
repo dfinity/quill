@@ -9,7 +9,6 @@ jobs:
   build:
     name: Release binary for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +19,7 @@ jobs:
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64-musl
             make_target: musl-static
-            container: rust:1.66.1-alpine
+            rust: 1.66.1
           - os: windows-latest
             name: windows
             target_file: target/release/quill.exe
