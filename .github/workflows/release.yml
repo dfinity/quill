@@ -51,10 +51,6 @@ jobs:
         shell: bash
         run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
 
-      - name: Install toolchain (Linux static)
-        if: ${{ matrix.name == 'linux-musl' }}
-        uses: docker://liuchong/rustup:stable-musl
-
       - uses: actions/cache@v3
         with:
           path: |
