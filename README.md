@@ -9,8 +9,8 @@ that has never connected to the internet) known as a cold wallet. To support col
 approach to sending query/update calls to the IC. In the first phase, `quill` is used with the various subcommands to
 generate and sign messages based on user input, without needing access to the internet. In the second phase, the signed
 message(s) are sent to the IC. Since this requires connection to boundary nodes via the internet, cold-wallet users will
-transport the signed message(s) from the air-gapped computer (i.e. with a USB stick) to a computer connected with the
-internet
+transport the signed message(s) from the air-gapped computer (i.e. with a USB stick, or via QR code) to a computer connected to the
+internet.
 
 ## Disclaimer
 
@@ -79,6 +79,7 @@ quill -h
 1. Download the file specific to your system architecture
     1. for x86 download `quill-linux-x86_64`
     2. for arm32 download `quill-arm_32`
+    3. for Alpine download `quill-linux-x86_64-musl`
 
 2. Move the file to your `/usr/local/bin` directory to make it available system-wide
 
@@ -101,18 +102,46 @@ quill -h
 ### Windows
 
 1. Download the file named `quill-windows-x86_64.exe`
-2. Double-click the downloaded file to launch the executable
+
+2. Move it and a shell to a convenient location, e.g.
+
+```ps1
+move-item quill-windows-x86_64.exe ~\quill.exe
+set-location ~
+```
+
+3. Run quill
+
+```ps1
+.\quill.exe -h
+```
 
 ## Build
 
 To compile `quill` run:
 
-1. `rustup set profile minimal`
-2. `rustup toolchain install stable --component rustfmt --component clippy`
-3. `rustup override set stable`
-4. `make release`
+```sh
+cargo build --release --locked
+```
 
 After this, find the binary at `target/release/quill`.
+
+Quill has two optional features, both activated by default:
+
+- `static-ssl`, to build OpenSSL from source instead of dynamically linking a preinstalled version (requires a C compiler)
+- `hsm`, to enable PKCS#11 HSM support (requires runtime dynamic linking)
+
+To build a version of Quill that links OpenSSL dynamically run:
+
+```sh
+cargo build --release --locked --no-default-features --feature hsm
+```
+
+To build a version of Quill compatible with statically-linked-only environments, such as Alpine, run:
+
+```sh
+cargo build --release --locked --no-default-features --feature static-ssl
+```
 
 ### Building with Nix
 
@@ -122,7 +151,7 @@ running `cargo`. Just replace the above build steps with the following:
 To compile `quill` run:
 
 1. `nix-shell`
-4. `make release`
+4. `cargo build --release --locked`
 
 After this, find the binary at `target/release/quill`.
 

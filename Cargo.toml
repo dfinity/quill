@@ -64,6 +64,5 @@ static-ssl = ["openssl/vendored"]
 hsm = ["dep:ic-identity-hsm"]
 default = ["static-ssl", "hsm"]
 
-[profile.release-arm]
-inherits = "release"
+[profile.release]
 opt-level = 2

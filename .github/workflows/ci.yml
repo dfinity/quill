@@ -1,6 +1,9 @@
 name: CI
 
 on: pull_request
+    
+env:
+  rust: 1.66.1
 
 jobs:
   build:
@@ -10,8 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [1.66.1]
-        task: [check, fmt, clippy, test]
+        task: 
+        - name: Format
+          command: cargo fmt -- --check
+        - name: Clippy
+          command: cargo clippy --all --all-targets --all-features --tests -- -D warnings
+        - name: Test
+          command: cargo build && ./commands/run.sh
     steps:
       - uses: actions/checkout@master
 
@@ -25,7 +33,7 @@ jobs:
             ~/.cargo/git
             target
             ${{ env.VCPKG_ROOT }}
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust }}-ci-1
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
 
       - name: Install dependencies (windows only)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -39,9 +47,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ env.rust }}
           override: true
           components: rustfmt, clippy
 
-      - name: ${{ matrix.task }}
-        run: make ${{ matrix.task }}
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.command }}
+        shell: bash
