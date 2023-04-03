@@ -19,7 +19,7 @@ jobs:
         - name: Clippy
           command: cargo clippy --all --all-targets --all-features --tests -- -D warnings
         - name: Test
-          command: cargo build && ./commands/run.sh
+          command: cargo build && ./tests/run.sh
     steps:
       - uses: actions/checkout@master
 
