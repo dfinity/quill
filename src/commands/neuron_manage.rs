@@ -35,6 +35,91 @@ enum EnableState {
     Disabled,
 }
 
+#[derive(CandidType, Default)]
+pub struct Spawn {
+    pub new_controller: Option<Principal>,
+}
+
+#[derive(CandidType)]
+pub struct Split {
+    pub amount_e8s: u64,
+}
+
+#[derive(CandidType)]
+pub struct Merge {
+    pub source_neuron_id: NeuronId,
+}
+
+#[derive(CandidType)]
+pub struct Follow {
+    pub topic: i32,
+    pub followees: Vec<NeuronId>,
+}
+
+#[derive(candid::CandidType)]
+pub struct MergeMaturity {
+    pub percentage_to_merge: u32,
+}
+
+#[derive(candid::CandidType)]
+pub struct Motion {
+    pub motion_text: String,
+}
+
+#[derive(candid::CandidType)]
+pub struct KnownNeuron {
+    id: Option<NeuronId>,
+    known_neuron_data: Option<KnownNeuronData>,
+}
+
+#[derive(candid::CandidType)]
+pub struct KnownNeuronData {
+    name: String,
+    description: Option<String>,
+}
+
+#[derive(candid::CandidType)]
+pub enum Action {
+    RegisterKnownNeuron(KnownNeuron),
+    // ManageNeuron(ManageNeuron),
+    // ExecuteNnsFunction(ExecuteNnsFunction),
+    // RewardNodeProvider(RewardNodeProvider),
+    // SetDefaultFollowees(SetDefaultFollowees),
+    // RewardNodeProviders(RewardNodeProviders),
+    // ManageNetworkEconomics(NetworkEconomics),
+    // ApproveGenesisKyc(ApproveGenesisKyc),
+    // AddOrRemoveNodeProvider(AddOrRemoveNodeProvider),
+    Motion(Motion),
+}
+
+#[derive(candid::CandidType)]
+pub struct Proposal {
+    pub title: Option<String>,
+    pub summary: String,
+    pub url: String,
+    pub action: Option<Action>,
+}
+
+#[derive(CandidType)]
+pub enum Command {
+    Configure(Configure),
+    RegisterVote(RegisterVote),
+    Disburse(Disburse),
+    Spawn(Spawn),
+    Split(Split),
+    Follow(Follow),
+    Merge(Merge),
+    MergeMaturity(MergeMaturity),
+    MakeProposal(Proposal),
+}
+
+#[derive(CandidType)]
+struct ManageNeuron {
+    id: Option<NeuronId>,
+    command: Option<Command>,
+    neuron_id_or_subaccount: Option<NeuronIdOrSubaccount>,
+}
+
 /// Signs a neuron configuration change.
 #[derive(Parser)]
 pub struct ManageOpts {
@@ -124,6 +209,34 @@ pub struct ManageOpts {
     /// Set whether new maturity should be automatically staked.
     #[clap(long, arg_enum)]
     auto_stake_maturity: Option<EnableState>,
+
+    /// Submit a proposal with this title; must be used with --proposal-summary-file
+    #[clap(long)]
+    proposal_title: Option<String>,
+
+    /// URL to be associated with a submitted proposal
+    #[clap(long)]
+    proposal_url: Option<String>,
+
+    /// Submit a proposal, taking its summary from this file and title from --proposal-title
+    #[clap(long)]
+    proposal_summary_file: Option<std::path::PathBuf>,
+
+    /// The kind of proposal to be submitted: "motion", or "register-known-neuron"
+    #[clap(long)]
+    proposal_kind: Option<String>,
+
+    /// For a register-known-neuron proposal, the neuron id being proposed
+    #[clap(long)]
+    known_neuron_id: Option<String>,
+
+    /// For a register-known-neuron proposal, the name being proposed
+    #[clap(long)]
+    known_neuron_name: Option<String>,
+
+    /// For a register-known-neuron proposal, a brief description of the neuron
+    #[clap(long)]
+    known_neuron_desc: Option<String>,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -303,6 +416,46 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         })?;
         msgs.push(args);
     }
+
+    if let Some(summary_file) = opts.proposal_summary_file {
+        if let Some(title) = opts.proposal_title {
+            let args = Encode!(&ManageNeuron {
+                id,
+                command: Some(Command::MakeProposal(Proposal {
+                    title: Some(title.clone()),
+                    url: opts.proposal_url.unwrap_or_default(),
+                    action: Some(match opts.proposal_kind.as_deref() {
+                        Some("register-known-neuron") => Action::RegisterKnownNeuron(KnownNeuron {
+                            id: opts.known_neuron_id.map(|x| NeuronId {
+                                id: parse_neuron_id(x)
+                                    .expect("Could not parse known neuron id to propose")
+                            }),
+                            known_neuron_data: Some(KnownNeuronData {
+                                name: opts
+                                    .known_neuron_name
+                                    .expect("Expected a known neuron name to propose"),
+                                description: opts.known_neuron_desc,
+                            }),
+                        }),
+                        _ => Action::Motion(Motion { motion_text: title }),
+                    }),
+                    summary: std::fs::read_to_string(summary_file.clone()).unwrap_or_else(
+                        |_| panic!("Could not read summary file {}", summary_file.display())
+                    ),
+                })),
+                neuron_id_or_subaccount: None,
+            })?;
+            msgs.push(args);
+        } else {
+            return Err(anyhow!(
+                "--proposal-summary-file must be used with --proposal-title"
+            ));
+        }
+    } else if opts.proposal_title.is_some() {
+        return Err(anyhow!(
+            "--proposal-summary-file must be used with --proposal-title"
+        ));
+    };
 
     if opts.join_community_fund {
         let args = Encode!(&ManageNeuron {
