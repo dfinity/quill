@@ -91,3 +91,13 @@ jobs:
           file: ${{ matrix.target_file }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+  
+  aggregate:
+    name: release:required
+    needs: [build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: check result
+        if: ${{ needs.build.result != 'success' }}
+        run: exit 1
