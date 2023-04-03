@@ -98,10 +98,6 @@ jobs:
         if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         run: make ${{ matrix.make_target }}
 
-      - name: Musl build
-        if: ${{ matrix.name == 'linux-musl' }}
-        run: cargo build --target x86_64-unknown-linux-musl --no-default-features --features static-ssl --release --locked
-
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
