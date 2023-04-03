@@ -16,6 +16,7 @@ jobs:
         include:
           - os: ubuntu-20.04
             name: linux-musl
+            target: x86_64-unknown-linux-musl
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64-musl
             make_target: musl-static
@@ -34,6 +35,7 @@ jobs:
             rust: 1.66.1
           - os: ubuntu-latest
             name: linux-arm32
+            target: arm-unknown-linux-gnueabihf
             target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-arm_32
             make_target: unused
@@ -69,13 +71,13 @@ jobs:
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - name: Install toolchain (ARM)
-        if: ${{ matrix.name == 'linux-arm32' }}
+        if: ${{ matrix.name == 'linux-arm32' || matrix.name == 'linux-musl' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-          target: arm-unknown-linux-gnueabihf
+          target: ${{ matrix.target }}
       - name: Install toolchain (Non-linux)
         if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
@@ -85,12 +87,12 @@ jobs:
           override: true
 
       - name: Cross build
-        if: ${{ matrix.name == 'linux-arm32' }}
+        if: ${{ matrix.name == 'linux-arm32' || matrix.name == 'linux-musl' }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
+          args: --target ${{ matrix.target }} --features static-ssl --profile release-arm --locked
 
       - name: Make
         if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
