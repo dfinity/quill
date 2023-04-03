@@ -9,7 +9,6 @@ jobs:
   build:
     name: Release binary for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
@@ -19,7 +18,7 @@ jobs:
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64-musl
             make_target: musl-static
-            container: liuchong/rustup:1.66.1-musl
+            target: x86_64-unknown-linux-musl
           - os: windows-latest
             name: windows
             target_file: target/release/quill.exe
@@ -37,6 +36,7 @@ jobs:
             target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-arm_32
             make_target: unused
+            target: arm-unknown-linux-gnueabihf
             rust: 1.66.1
           - os: ubuntu-latest
             name: linux
@@ -68,21 +68,13 @@ jobs:
           echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
-      - name: Install toolchain (ARM)
-        if: ${{ matrix.name == 'linux-arm32' }}
+      - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-          target: arm-unknown-linux-gnueabihf
-      - name: Install toolchain (Non-linux)
-        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
+          target: ${{ matrix.target }}
 
       - name: Cross build
         if: ${{ matrix.name == 'linux-arm32' }}
