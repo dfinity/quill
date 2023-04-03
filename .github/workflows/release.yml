@@ -66,7 +66,6 @@ jobs:
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
       - name: Install toolchain
-        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
