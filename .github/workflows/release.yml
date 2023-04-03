@@ -48,6 +48,11 @@ jobs:
       - if: ${{ contains(matrix.os, 'windows') }}
         shell: bash
         run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
+
+      - name: Install toolchain (Linux static)
+        if: ${{ matrix.name == 'linux-musl' }}
+        uses: docker://liuchong/rustup:stable-musl
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -65,11 +70,6 @@ jobs:
           echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
           echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
 
-      - name: Install toolchain (Linux static)
-        if: ${{ matrix.name == 'linux-musl' }}
-        uses: mariodfinity/rust-musl-action@master
-        with:
-          args: make ${{ matrix.make_target }}
       - name: Install toolchain (ARM)
         if: ${{ matrix.name == 'linux-arm32' }}
         uses: actions-rs/toolchain@v1
@@ -95,7 +95,7 @@ jobs:
           args: --target arm-unknown-linux-gnueabihf --features static-ssl --profile release-arm --locked
 
       - name: Make
-        if: ${{ matrix.name != 'linux-musl' && matrix.name != 'linux-arm32' }}
+        if: ${{ matrix.name != 'linux-arm32' }}
         run: make ${{ matrix.make_target }}
 
       - name: Upload binaries to release
