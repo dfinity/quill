@@ -131,7 +131,7 @@ Quill has two optional features, both activated by default:
 - `static-ssl`, to build OpenSSL from source instead of dynamically linking a preinstalled version (requires a C compiler)
 - `hsm`, to enable PKCS#11 HSM support (requires runtime dynamic linking)
 
-To build a version of Quill that links OpenSSL dynamically run:
+To build a version of Quill that links OpenSSL dynamically, but retains HSM support, run:
 
 ```sh
 cargo build --release --locked --no-default-features --feature hsm
