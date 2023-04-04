@@ -114,17 +114,13 @@ To compile `quill` run:
 
 After this, find the binary at `target/release/quill`.
 
-### Building with Nix
+### Building with Docker/Podman
 
-If you have Nix installed, you can use it to provide an environment for
-running `cargo`. Just replace the above build steps with the following:
+Quill can be reproducibly built or cross-compiled in a Docker container using [`cross`](https://github.com/cross-rs/cross).
 
-To compile `quill` run:
-
-1. `nix-shell`
-4. `make release`
-
-After this, find the binary at `target/release/quill`.
+1. Follow the instructions at [cross-rs/cross](https://github.com/cross-rs/cross) to install `cross`.
+2. If using a target with particular restrictions, such as `x86_64-apple-darwin`, ensure you have built a local image via the instructions at [cross-rs/cross-toolchains](https://github.com/cross-rs/cross-toolchains).
+3. Run `cross build --release --locked --target <target platform>`, e.g. `--target x86_64-unknown-linux-gnu`.
 
 ## Testnets
 
