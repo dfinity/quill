@@ -6,16 +6,18 @@ on:
       - master
   pull_request:
 
+env:
+  rust: 1.66.1
+
 jobs:
   build:
-    name: ${{ matrix.task }} build (${{ matrix.os }})
+    name: e2e build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         # windows not supported by dfx
         os: [ubuntu-latest, macos-latest]
-        rust: [1.66.1]
         binary_path: ["target/release"]
     steps:
       - uses: actions/checkout@master
@@ -26,21 +28,22 @@ jobs:
             ~/.cargo/git
             ~/.cargo/registry
             target
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust }}-ci-1
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
 
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ env.rust }}
           override: true
           # components: rustfmt, clippy
 
       - name: Build release
-        run: make release
+        run: cargo build --release --locked
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: quill-${{ matrix.os }}-rs-${{ matrix.rust }}
+          name: quill-${{ matrix.os }}-rs-${{ env.rust }}
           path: ${{ matrix.binary_path }}/quill
 
   list_tests:
@@ -69,7 +72,7 @@ jobs:
       - name: Download quill binary
         uses: actions/download-artifact@v2
         with:
-          name: quill-${{ matrix.os }}-rs-${{ matrix.rust }}
+          name: quill-${{ matrix.os }}-rs-${{ env.rust }}
           path: /usr/local/bin
       - name: Setup quill binary
         run: chmod +x /usr/local/bin/quill
