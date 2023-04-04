@@ -1,14 +1,7 @@
 name: Check shell scripts
-on:
-  pull_request:
-    paths:
-      - 'e2e/**'
-      - '.github/**'
-      - 'scripts/**'
-      - 'tests/**'
-  push:
-    branches: 
-      - master
+
+on: pull_request
+
 jobs:
   check_macos:
     runs-on: macos-latest
