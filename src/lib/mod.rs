@@ -464,7 +464,7 @@ impl FromStr for ParsedAccount {
         hasher.update(&subaccount.0 .0);
         ensure!(
             hasher.finalize() == crc,
-            "Account ID did not match checksum; was it copied wrong?"
+            "Invalid ICRC-1 account: account ID did not match checksum (was it copied wrong?)"
         );
         Ok(Self(Account {
             owner: principal.into(),
