@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 - Added option to print DFN address for Genesis investors. (#184)
+- Updated to new ICRC-1 account ID format. (#190)
 
 ## [0.4.1] - 2023-03-23
 
