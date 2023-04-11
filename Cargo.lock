@@ -3724,7 +3724,6 @@ dependencies = [
  "ic-sns-wasm",
  "ic-types 0.4.2",
  "icp-ledger",
- "itertools",
  "k256",
  "ledger-canister",
  "num-bigint 0.4.3",
