@@ -1,6 +1,5 @@
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::Account;
 use ic_sns_governance::pb::v1::{
     manage_neuron::{disburse::Amount, Command, Disburse},
     ManageNeuron,
@@ -8,7 +7,7 @@ use ic_sns_governance::pb::v1::{
 use icp_ledger::Tokens;
 
 use crate::{
-    commands::{get_ids, transfer::parse_tokens},
+    commands::{get_account, transfer::parse_tokens},
     lib::{
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_SNS_GOVERNANCE,
@@ -38,18 +37,7 @@ pub fn exec(
     canister_ids: &SnsCanisterIds,
     opts: DisburseOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let mut account = if let Some(acct) = opts.to {
-        acct.0
-    } else {
-        let (principal, _) = get_ids(auth)?;
-        Account {
-            owner: principal.into(),
-            subaccount: None,
-        }
-    };
-    if let Some(subaccount) = opts.subaccount {
-        account.subaccount = Some(subaccount.0 .0);
-    }
+    let account = get_account(Some(auth), opts.to, opts.subaccount)?;
     let args = ManageNeuron {
         command: Some(Command::Disburse(Disburse {
             amount: opts.amount.map(|amount| Amount {
