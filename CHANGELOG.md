@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Added `disburse`, `disburse-maturity`, `split-neuron`, and `follow-neuron` to `quill sns`. (#191)
 - Added option to print DFN address for Genesis investors. (#184)
 
 ## [0.4.1] - 2023-03-23
 
-- Added `disburse`, `disburse-maturity`, `split-neuron`, and `follow-neuron` to `quill sns`. (#191)
 - Added release binaries for linux-gnu in addition to linux-musl on amd64. (#180)
 - Fixed `quill generate` requiring authentication. (#181)
 - Require an additional `--already-transferred` flag for the single-message form of `quill neuron-stake`. (#173)
