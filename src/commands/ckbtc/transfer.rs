@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_icrc1::{endpoints::Transfer, Account, Memo};
 
 use crate::{
-    commands::get_ids,
+    commands::{get_account, get_ids},
     lib::{
         ckbtc_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -47,10 +47,7 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
         owner: principal.into(),
         subaccount: opts.from_subaccount.map(|x| x.0 .0),
     };
-    let mut to = opts.to.0;
-    if let Some(subaccount) = opts.to_subaccount {
-        to.subaccount = Some(subaccount.0 .0);
-    }
+    let to = get_account(None, Some(opts.to), opts.to_subaccount)?;
     let amount = opts.satoshis.unwrap_or_else(|| opts.amount.unwrap().0);
     let args = Transfer {
         amount,
