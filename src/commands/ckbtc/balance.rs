@@ -1,9 +1,8 @@
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::Account;
 
 use crate::{
-    commands::{get_ids, send::submit_unsigned_ingress},
+    commands::{get_account, send::submit_unsigned_ingress},
     lib::{
         ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
         ROLE_ICRC1_LEDGER,
@@ -38,18 +37,7 @@ pub struct BalanceOpts {
 
 #[tokio::main]
 pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> AnyhowResult {
-    let mut account = if let Some(acct) = opts.of {
-        acct.0
-    } else {
-        let (principal, _) = get_ids(auth)?;
-        Account {
-            owner: principal.into(),
-            subaccount: None,
-        }
-    };
-    if let Some(subaccount) = opts.of_subaccount {
-        account.subaccount = Some(subaccount.0 .0);
-    }
+    let account = get_account(Some(auth), opts.of, opts.of_subaccount)?;
     submit_unsigned_ingress(
         ckbtc_canister_id(opts.testnet),
         ROLE_ICRC1_LEDGER,
