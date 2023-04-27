@@ -27,8 +27,8 @@ The latter two require you to have run `cargo build` before executing them.
 
 ## Documentation
 
-Every change to the command-line interface must contain documentation; we use `clap`, so Rustdoc comments turn into CLI documentation. Additionally, this in-code documentation must mirrored by a corresponding change in `docs/cli-reference`. See existing doc pages for examples. Finally, any feature or notable bugfix should be mentioned in [CHANGELOG.md](CHANGELOG.md), under the `## Unreleased` header.
+Every change to the command-line interface must contain documentation; we use `clap`, so Rustdoc comments turn into CLI documentation. Additionally, this in-code documentation must be mirrored by a corresponding change in `docs/cli-reference`. See existing doc pages for examples. Finally, any feature or notable bugfix should be mentioned in [CHANGELOG.md](CHANGELOG.md), under the `## Unreleased` header.
 
 ## Miscellaneous
 
-Quill employs optional Cargo features for different platforms. Ensure your contribution builds (and lints) on all configurations - this can be automated with the [`cargo-hack`](https://github.com/taiki-e/cargo-hack) tool, as `cargo hack check --feature-powerset --features static-ssl`.
+Quill employs optional Cargo features for different platforms. Ensure your contribution builds (and lints) on all configurations - this can be automated with the [`cargo-hack`](https://github.com/taiki-e/cargo-hack) tool, as `cargo hack clippy --feature-powerset --features static-ssl`.
