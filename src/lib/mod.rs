@@ -1,6 +1,7 @@
 //! All the common functionality.
 
 use anyhow::{anyhow, bail, ensure, Context};
+use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -45,6 +46,7 @@ pub fn get_ic_url() -> String {
     env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
+pub mod ledger;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
@@ -389,7 +391,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     }
 
     let seed = Seed::new(mnemonic, "");
-    let ext = bip32::XPrv::derive_from_path(seed, &"m/44'/223'/0'/0/0".parse()?)
+    let ext = bip32::XPrv::derive_from_path(seed, &derivation_path())
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();
@@ -405,6 +407,11 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     };
     let key_pem = encode(&pem);
     Ok(key_pem.replace('\r', "").replace("\n\n", "\n"))
+}
+
+const DERIVATION_PATH: &str = "m/44'/223'/0'/0/0";
+fn derivation_path() -> DerivationPath {
+    DERIVATION_PATH.parse().unwrap()
 }
 
 pub struct ParsedSubaccount(pub Subaccount);
