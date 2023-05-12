@@ -2,3 +2,4 @@ Principal id: fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
 Account id: 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752
 Principal id: 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe
 Account id: fe09de27b0fc2f9541f6e24ae41d0652aab116212dec7f75f0d502417539e6d4
+SNS neuron id (memo = 0): 785d80b7abaf0d01fdadcef37ecd93cef68db3be7b2d66687bd1d64954c56c55
