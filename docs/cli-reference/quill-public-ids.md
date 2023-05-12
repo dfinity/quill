@@ -19,9 +19,10 @@ quill public-ids [option]
 
 ## Options
 
-| Option                          | Description                                |
-|---------------------------------|--------------------------------------------|
-| `--principal-id <PRINCIPAL_ID>` | Principal for which to get the account_id. |
+| Option                          | Description                                               |
+|---------------------------------|-----------------------------------------------------------|
+| `--principal-id <PRINCIPAL_ID>` | Principal for which to get the account_id.                |
+| `--memo <MEMO>`                 | Memo used along with a Principal to get the SNS NeuronId. |
 
 ## Examples
 
