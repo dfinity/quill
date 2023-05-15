@@ -1,8 +1,11 @@
 use crate::commands::transfer::parse_tokens;
+use crate::lib::signing::{
+    sign_ingress_with_request_status_query, sign_staking_ingress_with_request_status_query,
+};
 use crate::{
     lib::{
-        signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-        AuthInfo, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_SNS_GOVERNANCE,
+        signing::IngressWithRequestId, AuthInfo, ParsedSubaccount, ROLE_ICRC1_LEDGER,
+        ROLE_SNS_GOVERNANCE,
     },
     AnyhowResult,
 };
@@ -105,7 +108,7 @@ pub fn exec(
         }))
     })?;
 
-    messages.push(sign_ingress_with_request_status_query(
+    messages.push(sign_staking_ingress_with_request_status_query(
         auth,
         governance_canister_id,
         ROLE_SNS_GOVERNANCE,

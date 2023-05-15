@@ -1,4 +1,4 @@
-use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
+use crate::lib::{get_account_id, get_identity, ledger::LedgerIdentity, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use clap::Parser;
@@ -15,6 +15,9 @@ pub struct PublicOpts {
     /// Additionally prints the legacy DFN address for Genesis claims.
     #[clap(long, conflicts_with = "principal-id")]
     genesis_dfn: bool,
+    /// If authenticating with a Ledger device, display the public IDs on the device.
+    #[clap(long, requires = "ledgerhq")]
+    display_on_ledger: bool,
 }
 
 /// Prints the account and the principal ids.
@@ -27,6 +30,9 @@ pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
             bail!("Must supply a pem or seed file for the DFN address");
         };
         println!("DFN address: {}", get_dfn(pem)?)
+    }
+    if opts.display_on_ledger {
+        LedgerIdentity::new()?.display_pk()?;
     }
     Ok(())
 }

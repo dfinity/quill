@@ -9,6 +9,7 @@ use serde_cbor::Value;
 use std::convert::TryFrom;
 use std::time::Duration;
 
+use super::ledger::LedgerIdentity;
 use super::{get_agent, get_default_role};
 
 #[derive(Debug)]
@@ -110,10 +111,15 @@ pub fn sign(
     method_name: &str,
     args: Vec<u8>,
     role: &str,
+    is_staking: bool,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
     let ingress_expiry = Duration::from_secs(5 * 60);
+    let agent = get_agent(auth)?;
+    if is_staking && matches!(auth, AuthInfo::Ledger) {
+        LedgerIdentity::new()?.next_stake();
+    }
 
-    let signed_update = UpdateBuilder::new(&get_agent(auth)?, canister_id, method_name.to_string())
+    let signed_update = UpdateBuilder::new(&agent, canister_id, method_name.to_string())
         .with_arg(args)
         .expire_after(ingress_expiry)
         .sign()?;
@@ -140,7 +146,43 @@ pub fn sign_ingress_with_request_status_query(
     method_name: &str,
     args: Vec<u8>,
 ) -> AnyhowResult<IngressWithRequestId> {
-    let msg_with_req_id = sign(auth, canister_id, method_name, args, role)?;
+    sign_ingress_with_request_status_query_internal(
+        auth,
+        canister_id,
+        role,
+        method_name,
+        args,
+        false,
+    )
+}
+
+/// Same as [`sign_ingress_with_request_status_query`], but signals that the request is staking.
+pub fn sign_staking_ingress_with_request_status_query(
+    auth: &AuthInfo,
+    canister_id: Principal,
+    role: &str,
+    method_name: &str,
+    args: Vec<u8>,
+) -> AnyhowResult<IngressWithRequestId> {
+    sign_ingress_with_request_status_query_internal(
+        auth,
+        canister_id,
+        role,
+        method_name,
+        args,
+        true,
+    )
+}
+
+fn sign_ingress_with_request_status_query_internal(
+    auth: &AuthInfo,
+    canister_id: Principal,
+    role: &str,
+    method_name: &str,
+    args: Vec<u8>,
+    is_staking: bool,
+) -> AnyhowResult<IngressWithRequestId> {
+    let msg_with_req_id = sign(auth, canister_id, method_name, args, role, is_staking)?;
     let request_id = msg_with_req_id
         .request_id
         .context("No request id for transfer call found")?;

@@ -1,6 +1,6 @@
 use std::{
-    fmt,
-    sync::atomic::{AtomicBool, Ordering},
+    fmt, mem,
+    sync::{Arc, Mutex, Weak},
 };
 
 use anyhow::Context;
@@ -10,6 +10,7 @@ use hidapi::HidApi;
 use ic_agent::{Identity, Signature};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
+use once_cell::sync::Lazy;
 
 use super::{derivation_path, AnyhowResult};
 
@@ -34,40 +35,58 @@ const SIG_LEN: usize = 64;
 
 const CHUNK_SIZE: usize = 250;
 
-pub struct LedgerIdentity {
+// necessary due to HidApi being a singleton
+static GLOBAL_HANDLE: Lazy<Mutex<Weak<Mutex<LedgerIdentityInner>>>> =
+    Lazy::new(|| Mutex::new(Weak::new()));
+
+struct LedgerIdentityInner {
     transport: TransportNativeHID,
-    next_stake: AtomicBool,
+    next_stake: bool,
+}
+
+pub struct LedgerIdentity {
+    inner: Arc<Mutex<LedgerIdentityInner>>,
 }
 
 impl LedgerIdentity {
     pub fn new() -> AnyhowResult<Self> {
-        Ok(Self {
-            transport: TransportNativeHID::new(&HidApi::new().unwrap())?,
-            next_stake: AtomicBool::new(false),
-        })
+        let mut global = GLOBAL_HANDLE.lock().unwrap();
+        if let Some(existing) = global.upgrade() {
+            Ok(Self { inner: existing })
+        } else {
+            let inner = Arc::new(Mutex::new(LedgerIdentityInner {
+                transport: TransportNativeHID::new(&HidApi::new().unwrap())?,
+                next_stake: false,
+            }));
+            *global = Arc::downgrade(&inner);
+            Ok(Self { inner })
+        }
     }
     pub fn next_stake(&self) {
-        self.next_stake.store(true, Ordering::Release);
+        self.inner.lock().unwrap().next_stake = true;
     }
+    #[allow(unused)]
     pub fn version(&self) -> AnyhowResult<LedgerVersion> {
-        get_version(&self.transport)
+        get_version(&self.inner.lock().unwrap().transport)
     }
     pub fn display_pk(&self) -> AnyhowResult<()> {
-        display_pk(&self.transport, &derivation_path())
+        display_pk(&self.inner.lock().unwrap().transport, &derivation_path())
     }
 }
 
 impl Identity for LedgerIdentity {
     fn sender(&self) -> Result<Principal, String> {
-        let (principal, _) = get_identity(&self.transport, &derivation_path())?;
+        let (principal, _) =
+            get_identity(&self.inner.lock().unwrap().transport, &derivation_path())?;
         Ok(principal)
     }
     #[allow(clippy::bool_to_int_with_if)]
     fn sign(&self, blob: &[u8]) -> Result<Signature, String> {
+        let mut lock = self.inner.lock().unwrap();
         let path = derivation_path();
-        let (_, pk) = get_identity(&self.transport, &path)?;
-        let is_stake = self.next_stake.swap(false, Ordering::AcqRel);
-        let sig = sign_blob(&self.transport, blob, if is_stake { 1 } else { 0 }, &path)?;
+        let next_stake = mem::replace(&mut lock.next_stake, false);
+        let (_, pk) = get_identity(&lock.transport, &path)?;
+        let sig = sign_blob(&lock.transport, blob, if next_stake { 1 } else { 0 }, &path)?;
         Ok(Signature {
             public_key: Some(pk),
             signature: Some(sig),
@@ -127,15 +146,15 @@ fn sign_blob(
 ) -> Result<Vec<u8>, String> {
     sign_chunk(transport, PAYLOAD_INIT, &serialize_path(path), txtype)?;
     let chunks = blob.chunks(CHUNK_SIZE);
-    let len = chunks.len();
+    let end = chunks.len() - 1;
     for (i, chunk) in chunks.enumerate() {
         let res = sign_chunk(
             transport,
-            if i == len { PAYLOAD_ADD } else { PAYLOAD_LAST },
+            if i == end { PAYLOAD_LAST } else { PAYLOAD_ADD },
             chunk,
             txtype,
         )?;
-        if i == len {
+        if i == end {
             return Ok(res.ok_or("Error signing message with Ledger: No signature returned")?);
         }
     }
