@@ -24,6 +24,7 @@ Sending message with
   Method name: refresh_buyer_tokens
   Arguments:   (
   record {
+    confirmation_text = null;
     buyer = "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
   },
 )

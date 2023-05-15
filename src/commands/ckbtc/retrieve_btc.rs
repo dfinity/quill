@@ -4,7 +4,7 @@ use anyhow::Context;
 use candid::{Encode, Nat};
 use clap::Parser;
 use ic_ckbtc_minter::updates::retrieve_btc::RetrieveBtcArgs;
-use ic_icrc1::{endpoints::Transfer, Account, Memo};
+use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 
 use crate::{
     commands::get_ids,
@@ -62,14 +62,11 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
     let mut messages = vec![];
     let amount = opts.satoshis.unwrap_or_else(|| opts.amount.unwrap().0);
     if !opts.already_transferred {
-        let transfer_args = Transfer {
+        let transfer_args = TransferArg {
             amount: amount.clone(),
             created_at_time: None,
             fee: opts.fee,
-            from: Account {
-                owner: principal.into(),
-                subaccount: opts.from_subaccount.map(|x| x.0 .0),
-            },
+            from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
             memo: opts.memo.map(Memo::from),
             to: ckbtc_withdrawal_address(&principal, opts.testnet),
         };

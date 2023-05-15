@@ -7,8 +7,8 @@ use crate::lib::{
 use crate::lib::{ParsedAccount, ROLE_ICRC1_LEDGER};
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::{endpoints::TransferArg, Memo};
 use icp_ledger::Tokens;
+use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 
 use super::SnsCanisterIds;
 

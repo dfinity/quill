@@ -73,6 +73,7 @@ pub fn exec(
     }
     let refresh = RefreshBuyerTokensRequest {
         buyer: controller.to_text(),
+        confirmation_text: None,
     };
     messages.push(sign_ingress_with_request_status_query(
         auth,

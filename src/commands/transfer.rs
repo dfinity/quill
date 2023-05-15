@@ -8,8 +8,8 @@ use crate::lib::{ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::endpoints::TransferArg;
 use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
+use icrc_ledger_types::icrc1::transfer::TransferArg;
 
 /// Signs an ICP transfer transaction.
 #[derive(Parser)]
