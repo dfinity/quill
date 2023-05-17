@@ -25,12 +25,13 @@ quill sns pay --amount-icp-e8s <AMOUNT_ICP_E8S> --ticket-creation-time <TICKET_C
 
 ## Options
 
-| Option                                          | Description                           |
-|-------------------------------------------------|---------------------------------------|
-| `--amount-icp-e8s <AMOUNT>`                     | The amount of ICP to transfer.        |
-| `--subaccount <SUBACCOUNT>`                     | Pay from this subaccount.             |
-| `--ticket-creation-time <TICKET_CREATION_TIME>` | The creation_time of the sale ticket. |
-| `--ticket-id`                                   | The ticket_id of the sale ticket.     |
+| Option                                          | Description                                 |
+|-------------------------------------------------|---------------------------------------------|
+| `--amount-icp-e8s <AMOUNT>`                     | The amount of ICP to transfer.              |
+| `--confirmation-text <CONFIRMATION_TEXT>`       | The required confirmation text for this SNS |
+| `--subaccount <SUBACCOUNT>`                     | Pay from this subaccount.                   |
+| `--ticket-creation-time <TICKET_CREATION_TIME>` | The creation_time of the sale ticket.       |
+| `--ticket-id`                                   | The ticket_id of the sale ticket.           |
 
 ## Remarks
 
