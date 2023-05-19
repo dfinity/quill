@@ -1,10 +1,10 @@
+use crate::lib::{get_identity, AnyhowResult, AuthInfo};
 use anyhow::anyhow;
-use clap::Parser;
 use candid::Principal;
-use ic_sns_governance::pb::v1::NeuronId;
+use clap::Parser;
 use ic_base_types::PrincipalId;
 use ic_nervous_system_common::ledger;
-use crate::lib::{AnyhowResult, AuthInfo, get_identity};
+use ic_sns_governance::pb::v1::NeuronId;
 
 #[derive(Parser)]
 pub struct NeuronIdOpts {
