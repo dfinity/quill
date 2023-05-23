@@ -1,9 +1,9 @@
 use candid::{Encode, Nat};
 use clap::Parser;
-use ic_icrc1::{endpoints::Transfer, Account, Memo};
+use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 
 use crate::{
-    commands::{get_account, get_ids},
+    commands::get_account,
     lib::{
         ckbtc_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -42,18 +42,13 @@ pub struct TransferOpts {
 }
 
 pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (principal, _) = get_ids(auth)?;
-    let from = Account {
-        owner: principal.into(),
-        subaccount: opts.from_subaccount.map(|x| x.0 .0),
-    };
     let to = get_account(None, Some(opts.to), opts.to_subaccount)?;
     let amount = opts.satoshis.unwrap_or_else(|| opts.amount.unwrap().0);
-    let args = Transfer {
+    let args = TransferArg {
         amount,
         created_at_time: None,
         fee: opts.fee,
-        from,
+        from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
         to,
         memo: opts.memo.map(Memo::from),
     };

@@ -111,6 +111,7 @@ pub fn exec(
                 canister_id: Some(target_canister_id.into()),
                 new_canister_wasm: wasm,
                 canister_upgrade_arg,
+                mode: None,
             },
         )),
     };

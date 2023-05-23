@@ -8,9 +8,9 @@ use std::{
 use anyhow::Context;
 use candid::{Deserialize, Principal};
 use clap::{Parser, Subcommand};
-use ic_icrc1::Account;
 use ic_sns_governance::pb::v1::Account as GovAccount;
 use ic_sns_governance::pb::v1::{NeuronId, Subaccount};
+use icrc_ledger_types::icrc1::account::Account;
 use serde::Serialize;
 
 use crate::lib::{AnyhowResult, AuthInfo};
@@ -185,7 +185,7 @@ impl FromStr for ParsedSnsNeuron {
 
 fn governance_account(account: Account) -> GovAccount {
     GovAccount {
-        owner: Some(account.owner),
+        owner: Some(account.owner.into()),
         subaccount: account.subaccount.map(|sub| Subaccount {
             subaccount: sub.to_vec(),
         }),

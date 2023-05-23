@@ -48,10 +48,10 @@ type ClaimSwapNeuronsRequest = record {
   neuron_parameters : vec NeuronParameters;
 };
 type ClaimSwapNeuronsResponse = record {
-  skipped_claims : nat32;
-  successful_claims : nat32;
-  failed_claims : nat32;
+  claim_swap_neurons_result : opt ClaimSwapNeuronsResult;
 };
+type ClaimSwapNeuronsResult = variant { Ok : ClaimedSwapNeurons; Err : int32 };
+type ClaimedSwapNeurons = record { swap_neurons : vec SwapNeuron };
 type Command = variant {
   Split : Split;
   Follow : Follow;
@@ -145,6 +145,9 @@ type GenericNervousSystemFunction = record {
   validator_method_name : opt text;
   target_method_name : opt text;
 };
+type GetMaturityModulationResponse = record {
+  maturity_modulation : opt MaturityModulation;
+};
 type GetMetadataResponse = record {
   url : opt text;
   logo : opt text;
@@ -167,6 +170,7 @@ type Governance = record {
   root_canister_id : opt principal;
   id_to_nervous_system_functions : vec record { nat64; NervousSystemFunction };
   metrics : opt GovernanceCachedMetrics;
+  maturity_modulation : opt MaturityModulation;
   mode : int32;
   parameters : opt NervousSystemParameters;
   is_finalizing_disburse_maturity : opt bool;
@@ -229,6 +233,10 @@ type ManageSnsMetadata = record {
   name : opt text;
   description : opt text;
 };
+type MaturityModulation = record {
+  current_basis_points : opt int32;
+  updated_at_timestamp_seconds : opt nat64;
+};
 type MemoAndController = record { controller : opt principal; memo : nat64 };
 type MergeMaturity = record { percentage_to_merge : nat32 };
 type MergeMaturityResponse = record {
@@ -261,6 +269,7 @@ type NervousSystemParameters = record {
   max_age_bonus_percentage : opt nat64;
   neuron_grantable_permissions : opt NeuronPermissionList;
   voting_rewards_parameters : opt VotingRewardsParameters;
+  maturity_modulation_disabled : opt bool;
   max_number_of_principals_per_neuron : opt nat64;
 };
 type Neuron = record {
@@ -288,10 +297,11 @@ type NeuronInFlightCommand = record {
 type NeuronParameters = record {
   controller : opt principal;
   dissolve_delay_seconds : opt nat64;
-  memo : opt nat64;
   source_nns_neuron_id : opt nat64;
   stake_e8s : opt nat64;
+  followees : vec NeuronId;
   hotkey : opt principal;
+  neuron_id : opt NeuronId;
 };
 type NeuronPermission = record {
   "principal" : opt principal;
@@ -319,6 +329,7 @@ type ProposalData = record {
   ballots : vec record { text; Ballot };
   reward_event_round : nat64;
   failed_timestamp_seconds : nat64;
+  reward_event_end_timestamp_seconds : opt nat64;
   proposal_creation_timestamp_seconds : nat64;
   initial_voting_period_seconds : nat64;
   reject_cost_e8s : nat64;
@@ -341,7 +352,9 @@ type RemoveNeuronPermissions = record {
 type Result = variant { Error : GovernanceError; Neuron : Neuron };
 type Result_1 = variant { Error : GovernanceError; Proposal : ProposalData };
 type RewardEvent = record {
+  rounds_since_last_distribution : opt nat64;
   actual_timestamp_seconds : nat64;
+  end_timestamp_seconds : opt nat64;
   distributed_e8s_equivalent : nat64;
   round : nat64;
   settled_proposals : vec ProposalId;
@@ -356,6 +369,7 @@ type StakeMaturityResponse = record {
   staked_maturity_e8s : nat64;
 };
 type Subaccount = record { subaccount : vec nat8 };
+type SwapNeuron = record { id : opt NeuronId; status : int32 };
 type Tally = record {
   no : nat64;
   yes : nat64;
@@ -377,6 +391,7 @@ type UpgradeInProgress = record {
 };
 type UpgradeSnsControlledCanister = record {
   new_canister_wasm : vec nat8;
+  mode : opt int32;
   canister_id : opt principal;
   canister_upgrade_arg : opt vec nat8;
 };
@@ -397,7 +412,10 @@ type VotingRewardsParameters = record {
 type WaitForQuietState = record { current_deadline_timestamp_seconds : nat64 };
 service : (Governance) -> {
   claim_swap_neurons : (ClaimSwapNeuronsRequest) -> (ClaimSwapNeuronsResponse);
+  fail_stuck_upgrade_in_progress : (record {}) -> (record {});
   get_build_metadata : () -> (text) query;
+  get_latest_reward_event : () -> (RewardEvent) query;
+  get_maturity_modulation : (record {}) -> (GetMaturityModulationResponse);
   get_metadata : (record {}) -> (GetMetadataResponse) query;
   get_mode : (record {}) -> (GetModeResponse) query;
   get_nervous_system_parameters : (null) -> (NervousSystemParameters) query;
