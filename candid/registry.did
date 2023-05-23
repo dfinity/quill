@@ -4,6 +4,11 @@ type AddFirewallRulesPayload = record {
   positions : vec int32;
   rules : vec FirewallRule;
 };
+type AddHostOsVersionPayload = record {
+  release_package_urls : vec text;
+  hostos_version_id : text;
+  release_package_sha256_hex : text;
+};
 type AddNodeOperatorPayload = record {
   ipv6 : opt text;
   node_operator_principal_id : opt principal;
@@ -31,11 +36,6 @@ type AddOrRemoveDataCentersProposalPayload = record {
   data_centers_to_add : vec DataCenterRecord;
   data_centers_to_remove : vec text;
 };
-type BitcoinFeature = record {
-  status : BitcoinFeatureStatus;
-  network : Network;
-};
-type BitcoinFeatureStatus = variant { Paused; Enabled; Disabled; Syncing };
 type BlessReplicaVersionPayload = record {
   release_package_urls : opt vec text;
   node_manager_sha256_hex : text;
@@ -132,7 +132,6 @@ type FirewallRulesScope = variant {
   Global;
 };
 type Gps = record { latitude : float32; longitude : float32 };
-type Network = variant { Mainnet; Regtest; Testnet };
 type NodeOperatorRecord = record {
   ipv6 : opt text;
   node_operator_principal_id : vec nat8;
@@ -144,7 +143,10 @@ type NodeOperatorRecord = record {
 type NodeProvidersMonthlyXdrRewards = record {
   rewards : vec record { text; nat64 };
 };
-type NodeRewardRate = record { xdr_permyriad_per_node_per_month : nat64 };
+type NodeRewardRate = record {
+  xdr_permyriad_per_node_per_month : nat64;
+  reward_coefficient_percent : opt int32;
+};
 type NodeRewardRates = record { rates : vec record { text; NodeRewardRate } };
 type PrepareCanisterMigrationPayload = record {
   canister_id_ranges : vec CanisterIdRange;
@@ -199,9 +201,16 @@ type SubnetFeatures = record {
   canister_sandboxing : bool;
   sev_status : opt SevFeatureStatus;
   http_requests : bool;
-  bitcoin : opt BitcoinFeature;
+  onchain_observability : opt bool;
 };
 type SubnetType = variant { application; verified_application; system };
+type UpdateElectedReplicaVersionsPayload = record {
+  release_package_urls : vec text;
+  replica_versions_to_unelect : vec text;
+  replica_version_to_elect : opt text;
+  guest_launch_measurement_sha256_hex : opt text;
+  release_package_sha256_hex : opt text;
+};
 type UpdateNodeDirectlyPayload = record {
   idkg_dealing_encryption_pk : opt vec nat8;
 };
@@ -220,6 +229,10 @@ type UpdateNodeOperatorConfigPayload = record {
 };
 type UpdateNodeRewardsTableProposalPayload = record {
   new_entries : vec record { text; NodeRewardRates };
+};
+type UpdateNodesHostOsVersionPayload = record {
+  hostos_version_id : opt text;
+  node_ids : vec principal;
 };
 type UpdateSubnetPayload = record {
   unit_delay_millis : opt nat64;
@@ -263,6 +276,7 @@ type UpdateUnassignedNodesConfigPayload = record {
 };
 service : {
   add_firewall_rules : (AddFirewallRulesPayload) -> ();
+  add_hostos_version : (AddHostOsVersionPayload) -> ();
   add_node : (AddNodePayload) -> (Result);
   add_node_operator : (AddNodeOperatorPayload) -> ();
   add_nodes_to_subnet : (AddNodesToSubnetPayload) -> ();
@@ -288,6 +302,7 @@ service : {
   reroute_canister_ranges : (RerouteCanisterRangesPayload) -> (Result_1);
   retire_replica_version : (RetireReplicaVersionPayload) -> ();
   set_firewall_config : (SetFirewallConfigPayload) -> ();
+  update_elected_replica_versions : (UpdateElectedReplicaVersionsPayload) -> ();
   update_firewall_rules : (AddFirewallRulesPayload) -> ();
   update_node_directly : (UpdateNodeDirectlyPayload) -> (Result_1);
   update_node_operator_config : (UpdateNodeOperatorConfigPayload) -> ();
@@ -295,6 +310,7 @@ service : {
       UpdateNodeOperatorConfigDirectlyPayload,
     ) -> ();
   update_node_rewards_table : (UpdateNodeRewardsTableProposalPayload) -> ();
+  update_nodes_hostos_version : (UpdateNodesHostOsVersionPayload) -> ();
   update_subnet : (UpdateSubnetPayload) -> ();
   update_subnet_replica_version : (UpdateSubnetReplicaVersionPayload) -> ();
   update_unassigned_nodes_config : (UpdateUnassignedNodesConfigPayload) -> ();

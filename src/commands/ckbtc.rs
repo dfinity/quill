@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::bail;
 use candid::{Nat, Principal};
 use clap::Subcommand;
-use ic_icrc1::Account;
+use icrc_ledger_types::icrc1::account::Account;
 use openssl::sha::Sha256;
 use rust_decimal::Decimal;
 
@@ -88,7 +88,7 @@ fn ckbtc_withdrawal_address(user: &Principal, testnet: bool) -> Account {
     hasher.update(user.as_slice());
     hasher.update(&[0; 8]);
     Account {
-        owner: ckbtc_minter_canister_id(testnet).into(),
+        owner: ckbtc_minter_canister_id(testnet),
         subaccount: Some(hasher.finish()),
     }
 }

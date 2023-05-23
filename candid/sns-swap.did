@@ -18,6 +18,7 @@ type CfParticipant = record {
   hotkey_principal : text;
   cf_neurons : vec CfNeuron;
 };
+type Countries = record { iso_codes : vec text };
 type DefiniteCanisterSettingsArgs = record {
   controller : principal;
   freezing_threshold : nat;
@@ -28,6 +29,9 @@ type DefiniteCanisterSettingsArgs = record {
 type DerivedState = record {
   sns_tokens_per_icp : float32;
   buyer_total_icp_e8s : nat64;
+  cf_participant_count : opt nat64;
+  direct_participant_count : opt nat64;
+  cf_neuron_count : opt nat64;
 };
 type DirectInvestment = record { buyer_principal : text };
 type Err = record { description : opt text; error_type : opt int32 };
@@ -58,6 +62,9 @@ type GetBuyersTotalResponse = record { buyers_total : nat64 };
 type GetDerivedStateResponse = record {
   sns_tokens_per_icp : opt float64;
   buyer_total_icp_e8s : opt nat64;
+  cf_participant_count : opt nat64;
+  direct_participant_count : opt nat64;
+  cf_neuron_count : opt nat64;
 };
 type GetInitResponse = record { init : opt Init };
 type GetLifecycleResponse = record {
@@ -73,11 +80,13 @@ type Init = record {
   sns_root_canister_id : text;
   fallback_controller_principal_ids : vec text;
   neuron_minimum_stake_e8s : opt nat64;
+  confirmation_text : opt text;
   nns_governance_canister_id : text;
   transaction_fee_e8s : opt nat64;
   icp_ledger_canister_id : text;
   sns_ledger_canister_id : text;
   sns_governance_canister_id : text;
+  restricted_countries : opt Countries;
 };
 type InvalidUserAmount = record {
   min_amount_icp_e8s_included : nat64;
@@ -106,11 +115,16 @@ type ListSnsNeuronRecipesRequest = record {
 type ListSnsNeuronRecipesResponse = record {
   sns_neuron_recipes : vec SnsNeuronRecipe;
 };
-type NeuronAttributes = record { dissolve_delay_seconds : nat64; memo : nat64 };
+type NeuronAttributes = record {
+  dissolve_delay_seconds : nat64;
+  memo : nat64;
+  followees : vec NeuronId;
+};
 type NeuronBasketConstructionParameters = record {
   dissolve_delay_interval_seconds : nat64;
   count : nat64;
 };
+type NeuronId = record { id : vec nat8 };
 type NewSaleTicketRequest = record {
   subaccount : opt vec nat8;
   amount_icp_e8s : nat64;
@@ -144,7 +158,10 @@ type Possibility = variant {
 };
 type Possibility_1 = variant { Ok : Response; Err : CanisterCallError };
 type Possibility_2 = variant { Ok : record {}; Err : CanisterCallError };
-type RefreshBuyerTokensRequest = record { buyer : text };
+type RefreshBuyerTokensRequest = record {
+  confirmation_text : opt text;
+  buyer : text;
+};
 type RefreshBuyerTokensResponse = record {
   icp_accepted_participation_e8s : nat64;
   icp_ledger_account_balance_e8s : nat64;
@@ -167,11 +184,14 @@ type SnsNeuronRecipe = record {
 };
 type Swap = record {
   neuron_recipes : vec SnsNeuronRecipe;
+  next_ticket_id : opt nat64;
   decentralization_sale_open_timestamp_seconds : opt nat64;
   finalize_swap_in_progress : opt bool;
   cf_participants : vec CfParticipant;
   init : opt Init;
+  purge_old_tickets_last_completion_timestamp_nanoseconds : opt nat64;
   lifecycle : int32;
+  purge_old_tickets_next_principal : opt vec nat8;
   buyers : vec record { text; BuyerState };
   params : opt Params;
   open_sns_token_swap_proposal_id : opt nat64;
@@ -190,8 +210,10 @@ type Ticket = record {
   amount_icp_e8s : nat64;
 };
 type TransferableAmount = record {
+  transfer_fee_paid_e8s : opt nat64;
   transfer_start_timestamp_seconds : nat64;
   amount_e8s : nat64;
+  amount_transferred_e8s : opt nat64;
   transfer_success_timestamp_seconds : nat64;
 };
 service : (Init) -> {
@@ -216,6 +238,7 @@ service : (Init) -> {
       ListSnsNeuronRecipesResponse,
     ) query;
   new_sale_ticket : (NewSaleTicketRequest) -> (NewSaleTicketResponse);
+  notify_payment_failure : (record {}) -> (Ok_1);
   open : (OpenRequest) -> (record {});
   refresh_buyer_tokens : (RefreshBuyerTokensRequest) -> (
       RefreshBuyerTokensResponse,
