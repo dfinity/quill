@@ -30,7 +30,7 @@ pub struct CliOpts {
 )]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long, group = "seeded", global = true)]
+    #[clap(long, groups = &["seeded", "auth"], global = true)]
     pem_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.

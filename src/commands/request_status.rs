@@ -2,7 +2,7 @@ use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use candid::Principal;
-use ic_agent::agent::{ReplicaV2Transport, Replied, RequestStatusResponse};
+use ic_agent::agent::{Replied, RequestStatusResponse, Transport};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
 use std::future::Future;
@@ -24,7 +24,7 @@ pub async fn submit(
     if fetch_root_key {
         agent.fetch_root_key().await?;
     }
-    agent.set_transport(ProxySignReplicaV2Transport {
+    agent.set_transport(ProxySignTransport {
         req: req.clone(),
         http_transport: Arc::new(
             ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
@@ -33,19 +33,10 @@ pub async fn submit(
     });
     let Replied::CallReplied(blob) = async {
         loop {
-            match agent
-                .request_status_raw(&request_id, canister_id, false)
-                .await?
-            {
+            match agent.request_status_raw(&request_id, canister_id).await? {
                 RequestStatusResponse::Replied { reply } => return Ok(reply),
-                RequestStatusResponse::Rejected {
-                    reject_code,
-                    reject_message,
-                } => {
-                    return Err(anyhow!(AgentError::ReplicaError {
-                        reject_code,
-                        reject_message,
-                    }))
+                RequestStatusResponse::Rejected(response) => {
+                    return Err(anyhow!(AgentError::ReplicaError(response)))
                 }
                 RequestStatusResponse::Unknown
                 | RequestStatusResponse::Received
@@ -73,18 +64,18 @@ pub async fn submit(
     .context("Invalid IDL blob.")
 }
 
-pub(crate) struct ProxySignReplicaV2Transport {
+pub(crate) struct ProxySignTransport {
     req: RequestStatus,
-    http_transport: Arc<dyn 'static + ReplicaV2Transport + Send + Sync>,
+    http_transport: Arc<dyn 'static + Transport + Send + Sync>,
 }
 
-impl ReplicaV2Transport for ProxySignReplicaV2Transport {
+impl Transport for ProxySignTransport {
     fn read_state<'a>(
         &'a self,
         _canister_id: Principal,
         _content: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
-        async fn run(transport: &ProxySignReplicaV2Transport) -> Result<Vec<u8>, AgentError> {
+        async fn run(transport: &ProxySignTransport) -> Result<Vec<u8>, AgentError> {
             let canister_id = Principal::from_text(transport.req.canister_id.clone())
                 .map_err(|err| MessageError(format!("Unable to parse canister_id: {}", err)))?;
             let envelope = hex::decode(transport.req.content.clone()).map_err(|err| {

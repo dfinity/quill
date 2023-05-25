@@ -1,18 +1,25 @@
 use std::{
     fmt, mem,
     sync::{Arc, Mutex, Weak},
+    time::Duration,
 };
 
 use anyhow::Context;
 use bip32::DerivationPath;
 use candid::Principal;
 use hidapi::HidApi;
-use ic_agent::{Identity, Signature};
+use ic_agent::{agent::EnvelopeContent, Identity, Signature};
+use indicatif::ProgressBar;
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
+use serde::Serialize;
+use serde_cbor::Serializer;
 
-use super::{derivation_path, AnyhowResult};
+use super::{
+    derivation_path, genesis_token_canister_id, governance_canister_id, ledger_canister_id,
+    AnyhowResult,
+};
 
 const CLA: u8 = 0x11;
 const GET_VERSION: u8 = 0x00;
@@ -20,6 +27,8 @@ const GET_ADDR_SECP256K1: u8 = 0x01;
 const SIGN_SECP256K1: u8 = 0x02;
 const P1_ONLY_RETRIEVE: u8 = 0x00;
 const P1_SHOW_ADDRESS_IN_DEVICE: u8 = 0x01;
+const TX_NORMAL: u8 = 0x00;
+const TX_STAKING: u8 = 0x01;
 
 const PAYLOAD_INIT: u8 = 0x00;
 const PAYLOAD_ADD: u8 = 0x01;
@@ -72,6 +81,10 @@ impl LedgerIdentity {
     pub fn display_pk(&self) -> AnyhowResult<()> {
         display_pk(&self.inner.lock().unwrap().transport, &derivation_path())
     }
+    pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
+        get_identity(&self.inner.lock().unwrap().transport, &derivation_path())
+            .map_err(anyhow::Error::msg)
+    }
 }
 
 impl Identity for LedgerIdentity {
@@ -81,12 +94,38 @@ impl Identity for LedgerIdentity {
         Ok(principal)
     }
     #[allow(clippy::bool_to_int_with_if)]
-    fn sign(&self, blob: &[u8]) -> Result<Signature, String> {
+    fn sign(&self, content: &EnvelopeContent) -> Result<Signature, String> {
         let mut lock = self.inner.lock().unwrap();
         let path = derivation_path();
         let next_stake = mem::replace(&mut lock.next_stake, false);
         let (_, pk) = get_identity(&lock.transport, &path)?;
-        let sig = sign_blob(&lock.transport, blob, if next_stake { 1 } else { 0 }, &path)?;
+        // The IC ledger app expects to receive the entire envelope, sans signature.
+        #[derive(Serialize)]
+        struct Envelope<'a> {
+            content: &'a EnvelopeContent,
+        }
+        let mut blob = vec![];
+        let mut serializer = Serializer::new(&mut blob);
+        serializer.self_describe().map_err(|e| format!("{e}"))?;
+        Envelope { content }
+            .serialize(&mut serializer)
+            .map_err(|e| format!("{e}"))?;
+        let spinner = ProgressBar::new_spinner();
+        let message = match content {
+            EnvelopeContent::Call { method_name, .. } => format!("`{method_name}` call"),
+            EnvelopeContent::Query { method_name, .. } => format!("`{method_name}` query call"),
+            EnvelopeContent::ReadState { .. } => "status check".into(),
+        };
+        spinner.set_message(format!("Confirm {message} on Ledger device..."));
+        spinner.enable_steady_tick(Duration::from_millis(100));
+        let sig = sign_blob(
+            &lock.transport,
+            &blob,
+            if next_stake { TX_STAKING } else { TX_NORMAL },
+            &path,
+            content,
+        )?;
+        spinner.finish_with_message(format!("Confirmed {message} on Ledger device"));
         Ok(Signature {
             public_key: Some(pk),
             signature: Some(sig),
@@ -115,7 +154,7 @@ fn get_identity(
     let response = transport
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
-    let response = interpret_response(&response, "fetching principal from Ledger")?;
+    let response = interpret_response(&response, "fetching principal from Ledger", None)?;
     let pk = response[PK_OFFSET..PK_OFFSET + PK_LEN].to_vec();
     let principal =
         Principal::try_from_slice(&response[PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN])
@@ -126,15 +165,60 @@ fn get_identity(
 fn interpret_response<'a>(
     response: &'a APDUAnswer<Vec<u8>>,
     action: &str,
+    content: Option<&EnvelopeContent>,
 ) -> Result<&'a [u8], String> {
     if let Ok(errcode) = response.error_code() {
-        if errcode == APDUErrorCode::NoError {
-            Ok(response.apdu_data())
-        } else {
-            Err(format!("Error {action}: {errcode:?}"))
+        match errcode {
+            APDUErrorCode::NoError => Ok(response.apdu_data()),
+            APDUErrorCode::DataInvalid if matches!(content, Some(content) if !supported_transaction(content)) => {
+                Err(format!(
+                    "Error {action}: The IC app for Ledger only supports transfers and neuron management"
+                ))
+            }
+            APDUErrorCode::ClaNotSupported => Err(format!("Error {action}: IC app not open on device")),
+            APDUErrorCode::CommandNotAllowed => Err(format!("Error {action}: Device rejected the message")),
+            errcode => match std::str::from_utf8(response.apdu_data()) {
+                Ok(s) if !s.trim().is_empty() => Err(format!("Error {action}: {errcode:?}: {s}")),
+                _ => Err(format!("Error {action}: {errcode:?}")),
+            },
         }
     } else {
-        Err(format!("Error {action}: {:#X}", response.retcode()))
+        match response.retcode() {
+            0x6E01 => Err(format!("Error {action}: IC app not open on device")),
+            retcode => Err(format!("Error {action}: {retcode:#X}")),
+        }
+    }
+}
+
+fn supported_transaction(content: &EnvelopeContent) -> bool {
+    match content {
+        EnvelopeContent::Call {
+            canister_id,
+            method_name,
+            ..
+        }
+        | EnvelopeContent::Query {
+            canister_id,
+            method_name,
+            ..
+        } => {
+            if *canister_id == genesis_token_canister_id() {
+                method_name == "claim_neurons"
+            } else if *canister_id == governance_canister_id() {
+                method_name == "manage_neuron"
+                    || method_name == "manage_neuron_pb"
+                    || method_name == "list_neurons"
+                    || method_name == "list_neurons_pb"
+                    || method_name == "update_node_provider"
+            } else if *canister_id == ledger_canister_id() {
+                method_name == "send_pb" || method_name == "icrc1_transfer"
+            } else {
+                method_name == "icrc1_transfer"
+                    || method_name == "manage_neuron"
+                    || method_name == "list_neurons"
+            }
+        }
+        _ => true,
     }
 }
 
@@ -143,8 +227,15 @@ fn sign_blob(
     blob: &[u8],
     txtype: u8,
     path: &DerivationPath,
+    content: &EnvelopeContent,
 ) -> Result<Vec<u8>, String> {
-    sign_chunk(transport, PAYLOAD_INIT, &serialize_path(path), txtype)?;
+    sign_chunk(
+        transport,
+        PAYLOAD_INIT,
+        &serialize_path(path),
+        txtype,
+        content,
+    )?;
     let chunks = blob.chunks(CHUNK_SIZE);
     let end = chunks.len() - 1;
     for (i, chunk) in chunks.enumerate() {
@@ -153,6 +244,7 @@ fn sign_blob(
             if i == end { PAYLOAD_LAST } else { PAYLOAD_ADD },
             chunk,
             txtype,
+            content,
         )?;
         if i == end {
             return Ok(res.ok_or("Error signing message with Ledger: No signature returned")?);
@@ -166,6 +258,7 @@ fn sign_chunk(
     kind: u8,
     chunk: &[u8],
     txtype: u8,
+    content: &EnvelopeContent,
 ) -> Result<Option<Vec<u8>>, String> {
     let command = APDUCommand {
         cla: CLA,
@@ -177,7 +270,7 @@ fn sign_chunk(
     let response = transport
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
-    let response = interpret_response(&response, "signing message with Ledger")?;
+    let response = interpret_response(&response, "signing message with Ledger", Some(content))?;
     if !response.is_empty() {
         Ok(Some(response[SIG_OFFSET..SIG_OFFSET + SIG_LEN].to_vec()))
     } else {
@@ -196,7 +289,7 @@ fn get_version(transport: &TransportNativeHID) -> AnyhowResult<LedgerVersion> {
     let response = transport
         .exchange(&command)
         .context("Error communicating with ledger")?;
-    let response = interpret_response(&response, "fetching version from Ledger")
+    let response = interpret_response(&response, "fetching version from Ledger", None)
         .map_err(anyhow::Error::msg)?;
     Ok(LedgerVersion {
         major: response[1],
@@ -216,7 +309,8 @@ fn display_pk(transport: &TransportNativeHID, path: &DerivationPath) -> AnyhowRe
     let response = transport
         .exchange(&command)
         .context("Error communicating with ledger")?;
-    interpret_response(&response, "displaying public key on Ledger").map_err(anyhow::Error::msg)?;
+    interpret_response(&response, "displaying public key on Ledger", None)
+        .map_err(anyhow::Error::msg)?;
     Ok(())
 }
 

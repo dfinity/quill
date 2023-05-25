@@ -8,6 +8,7 @@ fixup() {
     cmd=$(basename "$1")
     out=${cmd/sh/txt}
     export QUILL="${CARGO_TARGET_DIR:-../target}/debug/quill"
+    export QUILL_TEST_FIXED_TIMESTAMP=1
     echo "$PEM" | bash -o pipefail "commands/$cmd" > "./outputs/$out"
 }
 

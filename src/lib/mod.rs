@@ -30,7 +30,6 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::str::FromStr;
 #[cfg(feature = "hsm")]
 use std::{cell::RefCell, path::PathBuf};
 use std::{
@@ -39,6 +38,7 @@ use std::{
     path::Path,
     time::Duration,
 };
+use std::{str::FromStr, time::SystemTime};
 
 use self::ledger::LedgerIdentity;
 
@@ -553,6 +553,17 @@ impl ParsedNnsAccount {
                 AccountIdentifier::new(account.owner.into(), account.subaccount.map(Subaccount))
             }
         }
+    }
+}
+
+pub fn now_nanos() -> u64 {
+    if std::env::var("QUILL_TEST_FIXED_TIMESTAMP").is_ok() {
+        1_669_073_904_187_044_208
+    } else {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64
     }
 }
 

@@ -5,7 +5,7 @@ use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 use crate::{
     commands::get_account,
     lib::{
-        ckbtc_canister_id,
+        ckbtc_canister_id, now_nanos,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER,
     },
@@ -46,7 +46,7 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     let amount = opts.satoshis.unwrap_or_else(|| opts.amount.unwrap().0);
     let args = TransferArg {
         amount,
-        created_at_time: None,
+        created_at_time: Some(now_nanos()),
         fee: opts.fee,
         from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
         to,

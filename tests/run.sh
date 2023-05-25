@@ -9,6 +9,7 @@ run_test() {
     expected="outputs/${cmd/sh/txt}"
     out=$(mktemp)
     export QUILL="${CARGO_TARGET_DIR:-../target}/debug/quill"
+    export QUILL_TEST_FIXED_TIMESTAMP=1
     echo "$PEM" | bash -o pipefail "commands/$cmd" > "$out"
     if ! diff -r --ignore-all-space "$expected" "$out" >/dev/null; then
         >&2 echo "Test case $cmd failed." 
