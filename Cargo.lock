@@ -1713,12 +1713,9 @@ dependencies = [
 [[package]]
 name = "ic-agent"
 version = "0.24.1"
-source = "git+https://github.com/dfinity/agent-rs?rev=b267abae406a7360d3329d397d6333cc7304d155#b267abae406a7360d3329d397d6333cc7304d155"
+source = "git+https://github.com/dfinity/agent-rs?rev=b9c57f8bab23cc9936dca4560293ffe485471c6d#b9c57f8bab23cc9936dca4560293ffe485471c6d"
 dependencies = [
- "async-trait",
  "backoff",
- "base32",
- "byteorder",
  "candid",
  "futures-util",
  "hex",
@@ -1728,7 +1725,6 @@ dependencies = [
  "ic-verify-bls-signature",
  "k256 0.13.1",
  "leb128",
- "mime",
  "pem 2.0.1",
  "pkcs8 0.10.2",
  "rand",
@@ -1887,7 +1883,7 @@ dependencies = [
 [[package]]
 name = "ic-certification"
 version = "0.24.1"
-source = "git+https://github.com/dfinity/agent-rs?rev=b267abae406a7360d3329d397d6333cc7304d155#b267abae406a7360d3329d397d6333cc7304d155"
+source = "git+https://github.com/dfinity/agent-rs?rev=b9c57f8bab23cc9936dca4560293ffe485471c6d#b9c57f8bab23cc9936dca4560293ffe485471c6d"
 dependencies = [
  "hex",
  "serde",
@@ -2385,11 +2381,10 @@ dependencies = [
 [[package]]
 name = "ic-identity-hsm"
 version = "0.24.1"
-source = "git+https://github.com/dfinity/agent-rs?rev=b267abae406a7360d3329d397d6333cc7304d155#b267abae406a7360d3329d397d6333cc7304d155"
+source = "git+https://github.com/dfinity/agent-rs?rev=b9c57f8bab23cc9936dca4560293ffe485471c6d#b9c57f8bab23cc9936dca4560293ffe485471c6d"
 dependencies = [
  "hex",
  "ic-agent",
- "num-bigint 0.4.3",
  "pkcs11",
  "sha2 0.10.6",
  "simple_asn1",

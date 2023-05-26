@@ -24,8 +24,8 @@ icp-ledger = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
 
 candid = "0.8.2"
-ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "b267abae406a7360d3329d397d6333cc7304d155" }
-ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "b267abae406a7360d3329d397d6333cc7304d155", optional = true }
+ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "b9c57f8bab23cc9936dca4560293ffe485471c6d" }
+ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "b9c57f8bab23cc9936dca4560293ffe485471c6d", optional = true }
 ic-types = "0.4.1"
 
 anyhow = "1.0.34"
