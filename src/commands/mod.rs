@@ -3,7 +3,7 @@
 use crate::lib::{AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
 use anyhow::Context;
 use clap::Parser;
-use ic_icrc1::Account;
+use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
 
 mod account_balance;
@@ -190,7 +190,7 @@ fn get_account(
     } else if let Some(auth) = auth {
         let (principal, _) = get_ids(auth)?;
         Account {
-            owner: principal.into(),
+            owner: principal,
             subaccount: None,
         }
     } else {

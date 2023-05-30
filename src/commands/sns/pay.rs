@@ -40,6 +40,10 @@ pub struct PayOpts {
     /// This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
     #[clap(long)]
     notify_only: bool,
+
+    /// If a particular SNS requires confirmation text to participate in a sale, enter it using this flag.
+    #[clap(long)]
+    confirmation_text: Option<String>,
 }
 
 pub fn exec(
@@ -73,6 +77,7 @@ pub fn exec(
     }
     let refresh = RefreshBuyerTokensRequest {
         buyer: controller.to_text(),
+        confirmation_text: opts.confirmation_text,
     };
     messages.push(sign_ingress_with_request_status_query(
         auth,

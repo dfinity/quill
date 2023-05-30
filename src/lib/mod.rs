@@ -13,7 +13,6 @@ use ic_agent::{
     Agent, Identity,
 };
 use ic_base_types::PrincipalId;
-use ic_icrc1::Account;
 #[cfg(feature = "hsm")]
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
@@ -21,6 +20,7 @@ use ic_nns_constants::{
     SNS_WASM_CANISTER_ID,
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
+use icrc_ledger_types::icrc1::account::Account;
 use itertools::Itertools;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
@@ -438,7 +438,7 @@ impl FromStr for ParsedAccount {
         if addr.last() != Some(&0x7f) {
             let principal = Principal::try_from_slice(addr)?;
             return Ok(Self(Account {
-                owner: principal.into(),
+                owner: principal,
                 subaccount: None,
             }));
         }
@@ -457,7 +457,7 @@ impl FromStr for ParsedAccount {
         subaccount_padded[32 - subaccount_length..].copy_from_slice(subaccount);
         let principal = Principal::try_from_slice(&addr[..addr.len() - subaccount_length - 2])?;
         Ok(Self(Account {
-            owner: principal.into(),
+            owner: principal,
             subaccount: Some(subaccount_padded),
         }))
     }
@@ -539,7 +539,7 @@ impl ParsedNnsAccount {
         match self {
             Self::Original(ident) => ident,
             Self::Icrc1(account) => {
-                AccountIdentifier::new(account.owner, account.subaccount.map(Subaccount))
+                AccountIdentifier::new(account.owner.into(), account.subaccount.map(Subaccount))
             }
         }
     }
@@ -555,7 +555,7 @@ mod tests {
     fn account() {
         let account = ParsedAccount::from_str("q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6").unwrap();
         assert_eq!(
-            account.0.owner.0,
+            account.0.owner,
             Principal::from_str("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
         );
         assert_eq!(account.0.subaccount, Some(*b"*\x0aw\xb2\xb0\x98\xe7V\xe6\x07iU\x13FU~1-\x84\xccu\xae\xfe\x9c\xa8\x8bGU\xd2\x84\xfe\xe4"));
@@ -565,7 +565,7 @@ mod tests {
     #[test]
     fn simple_account() {
         let mut account = ParsedAccount::from_str("2vxsx-fae").unwrap();
-        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.owner, Principal::anonymous());
         assert_eq!(account.0.subaccount, None);
         assert_eq!(account.to_string(), "2vxsx-fae");
         let mut subacct1 = [0; 32];
@@ -573,7 +573,7 @@ mod tests {
         account.0.subaccount = Some(subacct1);
         assert_eq!(account.to_string(), "ozcx7-eaeae-ax6");
         let account = ParsedAccount::from_str("ozcx7-eaeae-ax6").unwrap();
-        assert_eq!(account.0.owner.0, Principal::anonymous());
+        assert_eq!(account.0.owner, Principal::anonymous());
         assert_eq!(account.0.subaccount, Some(subacct1));
     }
 

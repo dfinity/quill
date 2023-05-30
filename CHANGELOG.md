@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Added `--confirmation-text` to `quill sns pay`. (#195)
 - Fixed `quill ckbtc update-balance` allowing the anonymous principal. (#191)
 - Added `disburse`, `disburse-maturity`, `split-neuron`, and `follow-neuron` to `quill sns`. (#191)
 - Added option to print DFN address for Genesis investors. (#184)

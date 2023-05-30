@@ -28,7 +28,7 @@ pub struct UpdateBalanceOpts {
 pub fn exec(auth: &AuthInfo, opts: UpdateBalanceOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let account = get_account(Some(auth), opts.sender, opts.subaccount)?;
     let args = UpdateBalanceArgs {
-        owner: Some(account.owner.into()),
+        owner: Some(account.owner),
         subaccount: account.subaccount,
     };
     let message = sign_ingress_with_request_status_query(
