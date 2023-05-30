@@ -7,6 +7,7 @@ use candid::{
     types::Function,
     IDLProg, Principal,
 };
+use crc32fast::Hasher;
 use data_encoding::BASE32_NOPAD;
 use ic_agent::{
     identity::{AnonymousIdentity, BasicIdentity, Secp256k1Identity},
@@ -21,7 +22,6 @@ use ic_nns_constants::{
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
-use itertools::Itertools;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
 use serde_cbor::Value;
@@ -417,48 +417,65 @@ impl FromStr for ParsedSubaccount {
             s.len() <= 64,
             "Too long: subaccounts are 64 characters or less"
         );
+        let mut padded;
+        let mut s = s;
+        if s.len() % 2 == 1 {
+            padded = String::new();
+            padded.push('0');
+            padded.push_str(s);
+            s = &padded;
+        }
         hex::decode_to_slice(s, &mut array[32 - s.len() / 2..])?;
         Ok(ParsedSubaccount(Subaccount(array)))
     }
 }
 
+#[derive(Debug)]
 pub struct ParsedAccount(pub Account);
 
 impl FromStr for ParsedAccount {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut base32 = s.replace('-', "");
-        base32.make_ascii_uppercase();
-        let decoded = BASE32_NOPAD.decode(base32.as_bytes())?;
-        let (crc_bytes, addr) = decoded.split_at(4);
-        let crc = crc32fast::hash(addr);
-        if crc.to_be_bytes() != *crc_bytes {
-            bail!("Principal CRC doesn't match - was it copied correctly?");
-        }
-        if addr.last() != Some(&0x7f) {
-            let principal = Principal::try_from_slice(addr)?;
+        let Some((rest, subaccount)) = s.split_once('.') else {
             return Ok(Self(Account {
-                owner: principal,
-                subaccount: None,
+                owner: Principal::from_str(s)
+                    .map_err(|e| anyhow!("Invalid ICRC-1 account: missing subaccount, or: {e}"))?,
+                subaccount: None
             }));
-        }
-        let subaccount_length = *addr
-            .get(addr.len() - 2)
-            .context("Invalid ICRC-1 address (subaccount length missing)")?
-            as usize;
-        ensure!(
-            subaccount_length <= 32,
-            "Invalid ICRC-1 address (subaccount too long)"
+        };
+        let (principal, crc) = rest
+            .rsplit_once('-')
+            .context("Invalid ICRC-1 address (no principal)")?;
+        let crc = BASE32_NOPAD
+            .decode(crc.to_ascii_uppercase().as_bytes())
+            .context("Invalid ICRC-1 account: invalid CRC")?;
+        let crc = u32::from_be_bytes(
+            crc[..]
+                .try_into()
+                .context("Invalid ICRC-1 account: invalid CRC")?,
         );
-        let subaccount = addr
-            .get(addr.len() - subaccount_length - 2..addr.len() - 2)
-            .context("Invalid ICRC-1 address (subaccount too small)")?;
-        let mut subaccount_padded = [0; 32];
-        subaccount_padded[32 - subaccount_length..].copy_from_slice(subaccount);
-        let principal = Principal::try_from_slice(&addr[..addr.len() - subaccount_length - 2])?;
+        let principal =
+            Principal::from_str(principal).context("Invalid ICRC-1 account: invalid principal")?;
+        ensure!(
+            !subaccount.starts_with('0'),
+            "Invalid ICRC-1 account: subaccount started with 0",
+        );
+        ensure!(
+            !subaccount.is_empty(),
+            "Invalid ICRC-1 account: empty subaccount despite subaccount separator",
+        );
+        let subaccount = ParsedSubaccount::from_str(subaccount)
+            .context("Invalid ICRC-1 account: invalid subaccount")?;
+        let mut hasher = Hasher::new();
+        hasher.update(principal.as_slice());
+        hasher.update(&subaccount.0 .0);
+        ensure!(
+            hasher.finalize() == crc,
+            "Invalid ICRC-1 account: account ID did not match checksum (was it copied wrong?)"
+        );
         Ok(Self(Account {
             owner: principal,
-            subaccount: Some(subaccount_padded),
+            subaccount: Some(subaccount.0 .0),
         }))
     }
 }
@@ -470,36 +487,22 @@ impl Display for ParsedAccount {
 }
 
 fn fmt_account(account: &Account, f: &mut Formatter<'_>) -> fmt::Result {
-    const EMPTY: [u8; 32] = [0; 32];
-    match account.subaccount {
-        None | Some(EMPTY) if account.owner.as_slice().last() != Some(&0x7f) => {
-            account.owner.fmt(f)
-        }
-        _ => {
-            let mut principal_bytes = account.owner.as_slice().to_owned();
-            let subaccount = account.subaccount.unwrap_or_default();
-            let first_digit = subaccount.iter().position(|x| *x != 0);
-            let shrunk = if let Some(first_digit) = first_digit {
-                &subaccount[first_digit..]
-            } else {
-                &[]
-            };
-            principal_bytes.extend_from_slice(shrunk);
-            principal_bytes.extend_from_slice(&[shrunk.len() as u8, 0x7f]);
-            let crc = crc32fast::hash(&principal_bytes);
-            principal_bytes.splice(0..0, crc.to_be_bytes());
-            let hex_encoding = BASE32_NOPAD.encode(&principal_bytes);
-            let chunks = hex_encoding.chars().chunks(5);
-            write!(
-                f,
-                "{}",
-                chunks
-                    .into_iter()
-                    .map(|ck| ck.map(|ch| ch.to_ascii_lowercase()).format(""))
-                    .format("-")
-            )
-        }
-    }
+    write!(f, "{}", account.owner)?;
+    let Some(subaccount) = account.subaccount else { return Ok(()) };
+    let Some(first_digit) = subaccount.iter().position(|x| *x != 0) else { return Ok(()) };
+    let mut crc = Hasher::new();
+    crc.update(account.owner.as_slice());
+    crc.update(&subaccount);
+    let mut crc = BASE32_NOPAD.encode(&crc.finalize().to_be_bytes());
+    crc.make_ascii_lowercase();
+    let shrunk = &subaccount[first_digit..];
+    let subaccount = hex::encode(shrunk);
+    let subaccount = if subaccount.as_bytes()[0] == b'0' {
+        &subaccount[1..]
+    } else {
+        &subaccount
+    };
+    write!(f, "-{crc}.{subaccount}")
 }
 
 #[derive(Debug, Clone)]
@@ -553,17 +556,60 @@ mod tests {
 
     #[test]
     fn account() {
-        let account = ParsedAccount::from_str("q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6").unwrap();
+        let account = ParsedAccount::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
         assert_eq!(
             account.0.owner,
-            Principal::from_str("mqygn-kiaaa-aaaar-qaadq-cai").unwrap()
+            Principal::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae")
+                .unwrap(),
         );
-        assert_eq!(account.0.subaccount, Some(*b"*\x0aw\xb2\xb0\x98\xe7V\xe6\x07iU\x13FU~1-\x84\xccu\xae\xfe\x9c\xa8\x8bGU\xd2\x84\xfe\xe4"));
-        assert_eq!(account.to_string(), "q26sl-4iaaa-aaaar-qaadq-cajkb-j33fm-ey45l-omb3j-kujum-vl6ge-wyjtd-vv37j-zkeli-5k5fb-h64qq-h6")
+        assert_eq!(account.0.subaccount, Some(*b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"));
+        assert_eq!(account.to_string(), "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
     }
 
     #[test]
-    fn simple_account() {
+    fn account_short() {
+        let account = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1",
+        )
+        .unwrap();
+        assert_eq!(
+            account.0.owner,
+            Principal::from_text("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae")
+                .unwrap(),
+        );
+        assert_eq!(account.0.subaccount.unwrap()[..31], [0; 31][..]);
+        assert_eq!(account.0.subaccount.unwrap()[31], 1);
+        assert_eq!(
+            account.to_string(),
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1",
+        );
+    }
+
+    #[test]
+    fn account_default_subaccount() {
+        let mut account = ParsedAccount::from_str(
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae",
+        )
+        .unwrap();
+        assert_eq!(
+            account.0.owner,
+            Principal::from_str("iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae")
+                .unwrap()
+        );
+        assert_eq!(account.0.subaccount, None);
+        assert_eq!(
+            account.to_string(),
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae"
+        );
+        account.0.subaccount = Some([0; 32]);
+        assert_eq!(
+            account.to_string(),
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae"
+        );
+    }
+
+    #[test]
+    fn account_other_principals() {
         let mut account = ParsedAccount::from_str("2vxsx-fae").unwrap();
         assert_eq!(account.0.owner, Principal::anonymous());
         assert_eq!(account.0.subaccount, None);
@@ -571,10 +617,40 @@ mod tests {
         let mut subacct1 = [0; 32];
         subacct1[31] = 1;
         account.0.subaccount = Some(subacct1);
-        assert_eq!(account.to_string(), "ozcx7-eaeae-ax6");
-        let account = ParsedAccount::from_str("ozcx7-eaeae-ax6").unwrap();
-        assert_eq!(account.0.owner, Principal::anonymous());
-        assert_eq!(account.0.subaccount, Some(subacct1));
+        assert_eq!(account.to_string(), "2vxsx-fae-22yutvy.1");
+    }
+
+    #[test]
+    fn account_errors() {
+        let not_canonical = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.01",
+        );
+        assert!(not_canonical
+            .unwrap_err()
+            .to_string()
+            .contains("subaccount started with 0"));
+        let no_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae.1",
+        );
+        assert!(no_cksum.unwrap_err().to_string().contains("invalid CRC"));
+        let bad_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627j.1",
+        );
+        assert!(bad_cksum.unwrap_err().to_string().contains("invalid CRC"));
+        let wrong_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-7cc627i.1",
+        );
+        assert!(wrong_cksum
+            .unwrap_err()
+            .to_string()
+            .contains("account ID did not match checksum"));
+        let null_subaccount = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-q6bn32y.",
+        );
+        assert!(null_subaccount
+            .unwrap_err()
+            .to_string()
+            .contains("empty subaccount despite subaccount separator"));
     }
 
     #[test]
