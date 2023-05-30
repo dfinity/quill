@@ -446,8 +446,6 @@ impl FromStr for ParsedAccount {
         let (principal, crc) = rest
             .rsplit_once('-')
             .context("Invalid ICRC-1 address (no principal)")?;
-        let principal =
-            Principal::from_str(principal).context("Invalid ICRC-1 account: invalid principal")?;
         let crc = BASE32_NOPAD
             .decode(crc.to_ascii_uppercase().as_bytes())
             .context("Invalid ICRC-1 account: invalid CRC")?;
@@ -455,6 +453,16 @@ impl FromStr for ParsedAccount {
             crc[..]
                 .try_into()
                 .context("Invalid ICRC-1 account: invalid CRC")?,
+        );
+        let principal =
+            Principal::from_str(principal).context("Invalid ICRC-1 account: invalid principal")?;
+        ensure!(
+            !subaccount.starts_with('0'),
+            "Invalid ICRC-1 account: subaccount started with 0",
+        );
+        ensure!(
+            !subaccount.is_empty(),
+            "Invalid ICRC-1 account: empty subaccount despite subaccount separator",
         );
         let subaccount = ParsedSubaccount::from_str(subaccount)
             .context("Invalid ICRC-1 account: invalid subaccount")?;
@@ -548,18 +556,56 @@ mod tests {
 
     #[test]
     fn account() {
-        let account = ParsedAccount::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
+        let mut account = ParsedAccount::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
         assert_eq!(
             account.0.owner,
             Principal::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae")
-                .unwrap()
+                .unwrap(),
         );
         assert_eq!(account.0.subaccount, Some(*b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"));
-        assert_eq!(account.to_string(), "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20")
+        assert_eq!(account.to_string(), "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+        let mut one = [0; 32];
+        one[31] = 1;
+        account.0.subaccount = Some(one);
+        assert_eq!(
+            account.to_string(),
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1",
+        );
+        assert_eq!(
+            account.0,
+            ParsedAccount::from_str(
+                "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1"
+            )
+            .unwrap()
+            .0,
+        );
     }
 
     #[test]
-    fn simple_account() {
+    fn account_default_subaccount() {
+        let mut account = ParsedAccount::from_str(
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae",
+        )
+        .unwrap();
+        assert_eq!(
+            account.0.owner,
+            Principal::from_str("iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae")
+                .unwrap()
+        );
+        assert_eq!(account.0.subaccount, None);
+        assert_eq!(
+            account.to_string(),
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae"
+        );
+        account.0.subaccount = Some([0; 32]);
+        assert_eq!(
+            account.to_string(),
+            "iooej-vlrze-c5tme-tn7qt-vqe7z-7bsj5-ebxlc-hlzgs-lueo3-3yast-pae"
+        );
+    }
+
+    #[test]
+    fn account_other_principals() {
         let mut account = ParsedAccount::from_str("2vxsx-fae").unwrap();
         assert_eq!(account.0.owner, Principal::anonymous());
         assert_eq!(account.0.subaccount, None);
@@ -568,8 +614,39 @@ mod tests {
         subacct1[31] = 1;
         account.0.subaccount = Some(subacct1);
         assert_eq!(account.to_string(), "2vxsx-fae-22yutvy.1");
-        let account = ParsedAccount::from_str("2vxsx-fae-22yutvy.2");
-        assert!(account.unwrap_err().to_string().contains("checksum"))
+    }
+
+    #[test]
+    fn account_errors() {
+        let not_canonical = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.01",
+        );
+        assert!(not_canonical
+            .unwrap_err()
+            .to_string()
+            .contains("subaccount started with 0"));
+        let no_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae.1",
+        );
+        assert!(no_cksum.unwrap_err().to_string().contains("invalid CRC"));
+        let bad_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627j.1",
+        );
+        assert!(bad_cksum.unwrap_err().to_string().contains("invalid CRC"));
+        let wrong_cksum = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-7cc627i.1",
+        );
+        assert!(wrong_cksum
+            .unwrap_err()
+            .to_string()
+            .contains("account ID did not match checksum"));
+        let null_subaccount = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-q6bn32y.",
+        );
+        assert!(null_subaccount
+            .unwrap_err()
+            .to_string()
+            .contains("empty subaccount despite subaccount separator"));
     }
 
     #[test]
