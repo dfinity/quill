@@ -1,8 +1,9 @@
 //! This module implements the command-line API.
 
-use crate::lib::{AnyhowResult, AuthInfo};
+use crate::lib::{AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
 use anyhow::Context;
 use clap::Parser;
+use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
 
 mod account_balance;
@@ -177,4 +178,26 @@ where
         }
         Ok(())
     }
+}
+
+fn get_account(
+    auth: Option<&AuthInfo>,
+    account: Option<ParsedAccount>,
+    subaccount: Option<ParsedSubaccount>,
+) -> AnyhowResult<Account> {
+    let mut account = if let Some(acct) = account {
+        acct.0
+    } else if let Some(auth) = auth {
+        let (principal, _) = get_ids(auth)?;
+        Account {
+            owner: principal,
+            subaccount: None,
+        }
+    } else {
+        panic!("neither auth nor account present")
+    };
+    if let Some(subaccount) = subaccount {
+        account.subaccount = Some(subaccount.0 .0);
+    }
+    Ok(account)
 }

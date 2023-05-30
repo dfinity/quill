@@ -1,11 +1,10 @@
 use crate::{
-    commands::{get_ids, send::submit_unsigned_ingress},
+    commands::{get_account, send::submit_unsigned_ingress},
     lib::{AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER},
     AnyhowResult,
 };
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::Account;
 
 use super::SnsCanisterIds;
 
@@ -39,18 +38,7 @@ pub async fn exec(
     fetch_root_key: bool,
 ) -> AnyhowResult {
     let ledger_canister_id = sns_canister_ids.ledger_canister_id;
-    let mut account = if let Some(acct) = opts.of {
-        acct.0
-    } else {
-        let (principal, _) = get_ids(auth)?;
-        Account {
-            owner: principal.into(),
-            subaccount: None,
-        }
-    };
-    if let Some(subaccount) = opts.subaccount {
-        account.subaccount = Some(subaccount.0 .0);
-    }
+    let account = get_account(Some(auth), opts.of, opts.subaccount)?;
 
     submit_unsigned_ingress(
         ledger_canister_id,

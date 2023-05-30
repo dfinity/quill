@@ -26,10 +26,12 @@ run_test() {
 tests=0
 if [ "$*" ]; then
     for f; do
+        echo "$f"
         run_test "$f"
     done
 else
     for f in ./commands/*; do
+        echo "$f"
         run_test "$f"
     done
 fi

@@ -1,3 +1,4 @@
+use crate::commands::get_account;
 use crate::commands::transfer::parse_tokens;
 use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -6,8 +7,8 @@ use crate::lib::{
 use crate::lib::{ParsedAccount, ROLE_ICRC1_LEDGER};
 use candid::Encode;
 use clap::Parser;
-use ic_icrc1::{endpoints::TransferArg, Memo};
 use icp_ledger::Tokens;
+use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 
 use super::SnsCanisterIds;
 
@@ -48,10 +49,7 @@ pub fn exec(
     let fee = opts.fee.map(|fee| fee.get_e8s().into());
     let memo = opts.memo.map(Memo::from);
     let ledger_canister_id = sns_canister_ids.ledger_canister_id;
-    let mut to = opts.to.0;
-    if let Some(to_subaccount) = opts.to_subaccount {
-        to.subaccount = Some(to_subaccount.0 .0);
-    }
+    let to = get_account(None, Some(opts.to), opts.to_subaccount)?;
     let args = TransferArg {
         memo,
         amount,

@@ -8,7 +8,9 @@ use std::{
 use anyhow::Context;
 use candid::{Deserialize, Principal};
 use clap::{Parser, Subcommand};
-use ic_sns_governance::pb::v1::NeuronId;
+use ic_sns_governance::pb::v1::Account as GovAccount;
+use ic_sns_governance::pb::v1::{NeuronId, Subaccount};
+use icrc_ledger_types::icrc1::account::Account;
 use serde::Serialize;
 
 use crate::lib::{AnyhowResult, AuthInfo};
@@ -17,15 +19,20 @@ use super::print_vec;
 
 mod balance;
 mod configure_dissolve_delay;
+mod disburse;
+mod disburse_maturity;
+mod follow_neuron;
 mod get_sale_participation;
 mod get_swap_refund;
 mod list_deployed_snses;
 mod make_proposal;
 mod make_upgrade_canister_proposal;
+mod neuron_id;
 mod neuron_permission;
 mod new_sale_ticket;
 mod pay;
 mod register_vote;
+mod split_neuron;
 mod stake_maturity;
 mod stake_neuron;
 mod status;
@@ -55,14 +62,19 @@ pub struct SnsOpts {
 pub enum SnsCommand {
     Balance(balance::BalanceOpts),
     ConfigureDissolveDelay(configure_dissolve_delay::ConfigureDissolveDelayOpts),
+    Disburse(disburse::DisburseOpts),
+    DisburseMaturity(disburse_maturity::DisburseMaturityOpts),
+    FollowNeuron(follow_neuron::FollowNeuronOpts),
     GetSwapRefund(get_swap_refund::GetSwapRefundOpts),
     ListDeployedSnses(list_deployed_snses::ListDeployedSnsesOpts),
     MakeProposal(make_proposal::MakeProposalOpts),
     MakeUpgradeCanisterProposal(make_upgrade_canister_proposal::MakeUpgradeCanisterProposalOpts),
+    NeuronId(neuron_id::NeuronIdOpts),
     NeuronPermission(neuron_permission::NeuronPermissionOpts),
     NewSaleTicket(new_sale_ticket::NewSaleTicketOpts),
     RegisterVote(register_vote::RegisterVoteOpts),
     GetSaleParticipation(get_sale_participation::GetSaleParticipationOpts),
+    SplitNeuron(split_neuron::SplitNeuronOpts),
     StakeMaturity(stake_maturity::StakeMaturityOpts),
     StakeNeuron(stake_neuron::StakeNeuronOpts),
     Status(status::StatusOpts),
@@ -82,6 +94,18 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             let out = configure_dissolve_delay::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
+        SnsCommand::Disburse(opts) => {
+            let out = disburse::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::DisburseMaturity(opts) => {
+            let out = disburse_maturity::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::FollowNeuron(opts) => {
+            let out = follow_neuron::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
         SnsCommand::GetSwapRefund(opts) => {
             let out = get_swap_refund::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
@@ -94,6 +118,9 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
         SnsCommand::MakeUpgradeCanisterProposal(opts) => {
             let out = make_upgrade_canister_proposal::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
+        }
+        SnsCommand::NeuronId(opts) => {
+            neuron_id::exec(auth, opts)?;
         }
         SnsCommand::NeuronPermission(opts) => {
             let out = neuron_permission::exec(auth, &canister_ids?, opts)?;
@@ -109,6 +136,10 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
         }
         SnsCommand::GetSaleParticipation(opts) => {
             get_sale_participation::exec(auth, &canister_ids?, opts, fetch_root_key)?
+        }
+        SnsCommand::SplitNeuron(opts) => {
+            let out = split_neuron::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
         }
         SnsCommand::StakeMaturity(opts) => {
             let out = stake_maturity::exec(auth, &canister_ids?, opts)?;
@@ -139,6 +170,7 @@ pub struct SnsCanisterIds {
     pub swap_canister_id: Principal,
 }
 
+#[derive(Clone)]
 pub struct ParsedSnsNeuron(pub NeuronId);
 
 impl Display for ParsedSnsNeuron {
@@ -153,5 +185,14 @@ impl FromStr for ParsedSnsNeuron {
         Ok(Self(NeuronId {
             id: hex::decode(s)?,
         }))
+    }
+}
+
+fn governance_account(account: Account) -> GovAccount {
+    GovAccount {
+        owner: Some(account.owner.into()),
+        subaccount: account.subaccount.map(|sub| Subaccount {
+            subaccount: sub.to_vec(),
+        }),
     }
 }
