@@ -28,11 +28,9 @@ ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da
 ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
 ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
 ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-types = "0.4.1"
 icp-ledger = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
 icrc-ledger-types = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
 ledger-canister = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-num-bigint = "0.4.3"
 openssl = "0.10.48"
 pem = "1.0.1"
 qrcodegen = "1.8"
