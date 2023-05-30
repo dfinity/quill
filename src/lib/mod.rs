@@ -556,7 +556,7 @@ mod tests {
 
     #[test]
     fn account() {
-        let mut account = ParsedAccount::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
+        let account = ParsedAccount::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
         assert_eq!(
             account.0.owner,
             Principal::from_str("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae")
@@ -564,20 +564,24 @@ mod tests {
         );
         assert_eq!(account.0.subaccount, Some(*b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"));
         assert_eq!(account.to_string(), "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
-        let mut one = [0; 32];
-        one[31] = 1;
-        account.0.subaccount = Some(one);
+    }
+
+    #[test]
+    fn account_short() {
+        let account = ParsedAccount::from_str(
+            "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1",
+        )
+        .unwrap();
+        assert_eq!(
+            account.0.owner,
+            Principal::from_text("k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae")
+                .unwrap(),
+        );
+        assert_eq!(account.0.subaccount.unwrap()[..31], [0; 31][..]);
+        assert_eq!(account.0.subaccount.unwrap()[31], 1);
         assert_eq!(
             account.to_string(),
             "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1",
-        );
-        assert_eq!(
-            account.0,
-            ParsedAccount::from_str(
-                "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-6cc627i.1"
-            )
-            .unwrap()
-            .0,
         );
     }
 
