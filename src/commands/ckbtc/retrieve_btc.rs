@@ -20,7 +20,7 @@ use super::{ckbtc_withdrawal_address, Btc};
 /// Signs messages to retrieve BTC in exchange for ckBTC.
 ///
 /// This command generates two messages by default; a transfer of ckBTC to the minting canister, and a request for BTC.
-/// However, if you have already made this transfer (the address can be viewed with `quill ckbtc get-withdrawal-account`),
+/// However, if you have already made this transfer (the address can be viewed with `quill ckbtc withdrawal-address`),
 /// you can use the `--already-transferred` flag to skip the first message.
 ///
 /// Bitcoin transactions take a while, so the response to the second message will not be a success state, but rather a
