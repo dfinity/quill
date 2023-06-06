@@ -60,3 +60,5 @@ The returned amount is the number of *satoshis*, or hundred-millionths of a ckBT
 The `--sender` flag is required if a signing key is not provided.
 
 As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.
+
+[IC dashboard]: https://dashboard.internetcomputer.org/bitcoin/transactions
