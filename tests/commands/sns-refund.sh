@@ -1,1 +1,0 @@
-"$QUILL" sns get-swap-refund --canister-ids-file ./sns_canister_ids.json --pem-file - | "$QUILL" send --dry-run -

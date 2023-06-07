@@ -1,1 +1,0 @@
-"$QUILL" sns get-sale-participation --canister-ids-file sns_canister_ids.json --pem-file - -y --dry-run

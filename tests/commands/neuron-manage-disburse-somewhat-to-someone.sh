@@ -1,1 +1,0 @@
-"$QUILL" neuron-manage 2313380519530470538 --disburse-to pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae --disburse-amount 57.31 --pem-file - | "$QUILL" send --dry-run

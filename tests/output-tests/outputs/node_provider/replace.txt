@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rwlgt-iiaaa-aaaaa-aaaaa-cai
+  Method name: update_node_operator_config_directly
+  Arguments:   (
+  record {
+    node_operator_id = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+    node_provider_id = opt principal "pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae";
+  },
+)
