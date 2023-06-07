@@ -3,8 +3,8 @@ name: Check shell scripts
 on: pull_request
 
 jobs:
-  check_macos:
-    runs-on: macos-latest
+  check:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install shellcheck
@@ -20,10 +20,10 @@ jobs:
   
   aggregate:
     name: shellcheck:required
-    needs: [check_macos]
+    needs: [check]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: check result
-        if: ${{ needs.check_macos.result != 'success' }}
+        if: ${{ needs.check.result != 'success' }}
         run: exit 1
