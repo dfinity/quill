@@ -26,3 +26,13 @@ quill ckbtc retrieve-btc-status [option] <BLOCK_INDEX>
 | `-h`, `--help`       | Displays usage information.                        |
 | `--testnet`          | Uses ckTESTBTC instead of ckBTC.                   |
 | `--yes`              | Skips confirmation and sends the message directly. |
+
+## Examples
+
+See the docs for [`quill ckbtc retrieve-btc`] for examples.
+
+## Remarks
+
+As this is a query call, it cannot be executed on an air-gapped machine, but does not require access to your keys.
+
+[`quill ckbtc retrieve-btc`]: quill-ckbtc-retrieve-btc.md

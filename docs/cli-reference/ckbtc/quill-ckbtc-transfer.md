@@ -33,3 +33,29 @@ quill ckbtc transfer [option] <TO>
 | `--memo <MEMO>`                       | An integer memo for this transaction.         |
 | `--satoshis <SATOSHIS>`               | The amount, in integer satoshis, to transfer. |
 | `--to-subaccount <TO_SUBACCOUNT>`     | The subaccount to transfer to.                |
+
+## Examples
+
+The `quill ckbtc transfer` command is used to transfer ckBTC from one account to another.
+
+For example, to transfer 0.5 ckBTC to the anonymous principal, `2vxsx-fae`:
+
+```sh
+quill ckbtc transfer 2vxsx-fae --amount 0.5
+```
+
+This will produce a response like:
+
+```candid
+(variant { Ok = 5_581_035 : nat })
+```
+
+This refers to the block index, also known as block height, at which the transaction took place; you can look up this transaction on the [IC dashboard]. 
+
+## Remarks
+
+Note that the returned index is the index for the ckBTC ledger, *not* an index for the Bitcoin ledger.
+
+As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.
+
+[IC dashboard]: https://dashboard.internetcomputer.org/bitcoin/transactions
