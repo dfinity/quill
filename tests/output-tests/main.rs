@@ -177,7 +177,7 @@ Stderr:
     #[track_caller]
     fn diff_s(&self, output: &[u8]) {
         self.assert_success();
-        if trim(&self.stdout) != trim(output) {
+        if !output_eq(&self.stdout, output) {
             panic!(
                 "
 Expected output:
@@ -201,7 +201,7 @@ Generated output:
             std::fs::write(output_file, &self.stderr).unwrap();
         } else {
             let output = std::fs::read(output_file).unwrap();
-            if trim(&self.stderr) != trim(&output) {
+            if !output_eq(&self.stderr, &output) {
                 panic!(
                     "\
 Expected ouptut:
@@ -217,8 +217,14 @@ Generated output:
     }
 }
 
+fn output_eq(a: &[u8], b: &[u8]) -> bool {
+    let a = trim(a).iter().filter(|&&x| x != b'\r');
+    let b = trim(b).iter().filter(|&&x| x != b'\r');
+    a.eq(b)
+}
+
 fn trim(s: &[u8]) -> &[u8] {
-    let Some(start) = s.iter().position(|x| !b" \n\t".contains(x)) else { return &[] };
-    let end = s.iter().rposition(|x| !b" \n\t".contains(x)).unwrap();
+    let Some(start) = s.iter().position(|x| !b" \r\n\t".contains(x)) else { return &[] };
+    let end = s.iter().rposition(|x| !b" \r\n\t".contains(x)).unwrap();
     &s[start..=end]
 }
