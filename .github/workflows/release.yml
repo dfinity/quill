@@ -42,12 +42,11 @@ jobs:
             name: linux
             target_file: target/release/quill
             asset_name: quill-linux-x86_64
+    env:
+      VCPKG_ROOT: 'C:\vcpkg'
     steps:
       - uses: actions/checkout@master
 
-      - if: ${{ contains(matrix.os, 'windows') }}
-        shell: bash
-        run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
       - uses: actions/cache@v3
         with:
           path: |

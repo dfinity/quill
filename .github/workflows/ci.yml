@@ -19,13 +19,12 @@ jobs:
         - name: Clippy
           command: cargo clippy --all --all-targets --all-features --tests -- -D warnings
         - name: Test
-          command: cargo build && ./tests/run.sh
+          command: cargo test
+    env:
+      VCPKG_ROOT: 'C:\vcpkg'
     steps:
       - uses: actions/checkout@master
 
-      - if: ${{ contains(matrix.os, 'windows') }}
-        shell: bash
-        run: echo 'VCPKG_ROOT=C:\vcpkg' >> $GITHUB_ENV
       - uses: actions/cache@v3
         with:
           path: |

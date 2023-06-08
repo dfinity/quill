@@ -1,1 +1,0 @@
-"$QUILL" ckbtc transfer fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --memo 3 --amount 3.14 --pem-file - | "$QUILL" send --dry-run -

@@ -1,1 +1,0 @@
-"$QUILL" ckbtc retrieve-btc-status 77 --dry-run -y

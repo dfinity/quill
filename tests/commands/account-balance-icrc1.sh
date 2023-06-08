@@ -1,1 +1,0 @@
-"$QUILL" account-balance a4a3l-wmwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqeai-bp4 --dry-run

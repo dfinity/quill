@@ -19,7 +19,7 @@ pub struct BalanceOpts {
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to check.
-    #[clap(long, conflicts_with = "of")]
+    #[clap(long)]
     of_subaccount: Option<ParsedSubaccount>,
 
     /// Skips confirmation and sends the message immediately.
