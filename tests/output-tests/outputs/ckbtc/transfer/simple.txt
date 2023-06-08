@@ -13,7 +13,7 @@ Sending message with
     fee = null;
     memo = opt blob "\00\00\00\00\00\00\00\03";
     from_subaccount = null;
-    created_at_time = null;
+    created_at_time = opt (1_669_073_904_187_044_208 : nat64);
     amount = 314_000_000 : nat;
   },
 )
