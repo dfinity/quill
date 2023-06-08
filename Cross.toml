@@ -1,2 +1,2 @@
 [build]
-pre-build = "./scripts/workflows/provision-linux-build.sh"
+pre-build = "scripts/workflows/provision-linux-build.sh"

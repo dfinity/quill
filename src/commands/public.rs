@@ -1,4 +1,6 @@
-use crate::lib::{get_account_id, get_identity, ledger::LedgerIdentity, AnyhowResult, AuthInfo};
+#[cfg(feature = "ledger")]
+use crate::lib::ledger::LedgerIdentity;
+use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use clap::Parser;
@@ -16,6 +18,7 @@ pub struct PublicOpts {
     #[clap(long, conflicts_with = "principal-id")]
     genesis_dfn: bool,
     /// If authenticating with a Ledger device, display the public IDs on the device.
+    #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
     #[clap(long, requires = "ledgerhq")]
     display_on_ledger: bool,
 }
@@ -32,7 +35,14 @@ pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
         println!("DFN address: {}", get_dfn(pem)?)
     }
     if opts.display_on_ledger {
-        LedgerIdentity::new()?.display_pk()?;
+        #[cfg(feature = "ledger")]
+        {
+            LedgerIdentity::new()?.display_pk()?;
+        }
+        #[cfg(not(feature = "ledger"))]
+        {
+            bail!("This build of quill does not support Ledger functionality.");
+        }
     }
     Ok(())
 }

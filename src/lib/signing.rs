@@ -9,6 +9,7 @@ use serde_cbor::Value;
 use std::convert::TryFrom;
 use std::time::Duration;
 
+#[cfg(feature = "ledger")]
 use super::ledger::LedgerIdentity;
 use super::{get_agent, get_default_role};
 
@@ -111,10 +112,11 @@ pub fn sign(
     method_name: &str,
     args: Vec<u8>,
     role: &str,
-    is_staking: bool,
+    #[allow(unused)] is_staking: bool,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
     let ingress_expiry = Duration::from_secs(5 * 60);
     let agent = get_agent(auth)?;
+    #[cfg(feature = "ledger")]
     if is_staking && matches!(auth, AuthInfo::Ledger) {
         LedgerIdentity::new()?.next_stake();
     }

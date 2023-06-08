@@ -70,6 +70,7 @@ struct GlobalOpts {
     seed_file: Option<PathBuf>,
 
     /// Authenticate using a Ledger hardware wallet.
+    #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
     #[clap(long, global = true, groups = &["ledgerhq", "auth"])]
     ledger: bool,
 
@@ -128,7 +129,14 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
                 anyhow::bail!("This build of quill does not support HSM functionality.")
             }
         } else if opts.ledger {
-            Ok(AuthInfo::Ledger)
+            #[cfg(feature = "ledger")]
+            {
+                Ok(AuthInfo::Ledger)
+            }
+            #[cfg(not(feature = "ledger"))]
+            {
+                anyhow::bail!("This build of quill does not support Ledger functionality.")
+            }
         } else {
             pem_auth(opts)
         }

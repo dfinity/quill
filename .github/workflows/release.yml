@@ -40,6 +40,7 @@ jobs:
             cross: true
             target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
             asset_name: quill-linux-arm32
+            features: [static-ssl, hsm]
           - os: ubuntu-latest
             name: linux
             target_file: target/release/quill
@@ -59,6 +60,7 @@ jobs:
           key: ${{ matrix.os }}-cargo-${{ env.rust }}-release-1
 
       - name: Install dependencies
+        if: ${{ matrix.build_deps }}
         run: ${{ matrix.build_deps }}
 
       - name: Install toolchain

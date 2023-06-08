@@ -126,6 +126,7 @@ fn escape_p(p: &impl AsRef<Path>) -> String {
 macro_rules! ledger_compatible {
     ($($name:ident),* $(,)?) => {
         $(
+            #[cfg(feature = "ledger")]
             mod $name {
                 #[test]
                 #[serial_test::serial(ledger)]
@@ -158,6 +159,7 @@ impl Default for AuthSettings {
     }
 }
 
+#[cfg(feature = "ledger")]
 impl AuthSettings {
     fn ledger() -> Self {
         Self {
@@ -187,6 +189,7 @@ impl Display for AccountIdPlaceholder {
 
 thread_local! { static AUTH_SETTINGS: RefCell<AuthSettings> = RefCell::default(); }
 
+#[cfg(feature = "ledger")]
 fn with_ledger(f: impl FnOnce()) {
     struct ResetGuard;
     impl Drop for ResetGuard {

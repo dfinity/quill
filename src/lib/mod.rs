@@ -40,6 +40,7 @@ use std::{
 };
 use std::{str::FromStr, time::SystemTime};
 
+#[cfg(feature = "ledger")]
 use self::ledger::LedgerIdentity;
 
 pub const IC_URL: &str = "https://ic0.app";
@@ -48,6 +49,7 @@ pub fn get_ic_url() -> String {
     env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
+#[cfg(feature = "ledger")]
 pub mod ledger;
 pub mod signing;
 
@@ -97,6 +99,7 @@ pub enum AuthInfo {
     PemFile(String), // --private-pem file specified
     #[cfg(feature = "hsm")]
     Pkcs11Hsm(HSMInfo),
+    #[cfg(feature = "ledger")]
     Ledger,
 }
 
@@ -324,6 +327,7 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
                 .context("Unable to use your hardware key")?;
             Ok(Box::new(identity) as _)
         }
+        #[cfg(feature = "ledger")]
         AuthInfo::Ledger => Ok(Box::new(LedgerIdentity::new()?)),
     }
 }
