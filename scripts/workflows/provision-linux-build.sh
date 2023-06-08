@@ -2,6 +2,7 @@
 set -euxo pipefail
 
 if [[ $# = 1 ]]; then # docker
+    dpkg --add-architecture "$CROSS_DEB_ARCH"
     sudo() {
         "$@"
     }
