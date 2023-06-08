@@ -17,8 +17,14 @@ jobs:
       fail-fast: false
       matrix:
         # windows not supported by dfx
-        os: [ubuntu-latest, macos-latest]
-        binary_path: ["target/release"]
+        include:
+          - os: ubuntu-latest
+            binary_path: target/release
+            build_deps: scripts/workflows/provision-linux-build.sh
+          - os: macos-latest
+            binary_path: target/release
+            build_deps: scripts/workflows/provision-darwin-build.sh
+            e2e_deps: scripts/workflows/provision-darwin-e2e.sh
     steps:
       - uses: actions/checkout@master
       
@@ -36,6 +42,8 @@ jobs:
           toolchain: ${{ env.rust }}
           override: true
           # components: rustfmt, clippy
+      - name: Install dependencies
+        run: ${{ matrix.build_deps }}
 
       - name: Build release
         run: cargo build --release --locked
@@ -78,10 +86,10 @@ jobs:
         run: chmod +x /usr/local/bin/quill
       - name: Provision Darwin
         if: ${{ contains(matrix.os, 'macos') }}
-        run: bash scripts/workflows/provision-darwin.sh
+        run: bash scripts/workflows/provision-darwin-e2e.sh
       - name: Provision Linux
         if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: bash scripts/workflows/provision-linux.sh
+        run: bash scripts/workflows/provision-linux-e2e.sh
       - name: Prepare environment
         run: |
           echo "archive=$(pwd)/e2e/archive" >> "$GITHUB_ENV"

@@ -28,10 +28,12 @@ jobs:
             name: windows
             target_file: target/release/quill.exe
             asset_name: quill-windows-x86_64.exe
+            build_deps: scripts/workflows/provision-windows-build.ps1
           - os: macos-latest
             name: macos
             target_file: target/release/quill
             asset_name: quill-macos-x86_64
+            build_deps: scripts/workflows/provision-darwin-build.sh
           - os: ubuntu-latest
             name: linux-arm32
             target: arm-unknown-linux-gnueabihf
@@ -42,6 +44,7 @@ jobs:
             name: linux
             target_file: target/release/quill
             asset_name: quill-linux-x86_64
+            build_deps: scripts/workflows/provision-linux-build.sh
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
@@ -55,14 +58,8 @@ jobs:
             ${{ env.VCPKG_ROOT }}
           key: ${{ matrix.os }}-cargo-${{ env.rust }}-release-1
 
-      - name: Install dependencies (windows only)
-        if: ${{ contains(matrix.os, 'windows') }}
-        shell: bash
-        run: |
-          vcpkg integrate install
-          vcpkg install openssl:x64-windows-static-md
-          echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
-          echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: ${{ matrix.build_deps }}
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
