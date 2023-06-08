@@ -24,8 +24,6 @@ Quill has three kinds of tests to be aware of:
     - Some output tests require a Ledger device. To run these tests, a Ledger Nano should be plugged in and initialized with the seed "equip will roof matter pink blind book anxiety banner elbow sun young", and the ICP app must be installed. Then run `cargo test -- --ignored` and accept each request on the device. These tests are manually run so if you do not own a Ledger device you will need to wait for the reviewer to notify you of test failures.
 - End-to-end tests. These are located in `e2e/tests-quill`. These should be added whenever a test needs to be run against a real replica. They are run with [`bats`](https://github.com/bats-core/bats-core), and you will need to install [`dfx`](https://github.com/dfinity/sdk) and [`bats-support`](https://github.com/ztombol/bats-support), and point the `BATSLIB` environment variable to the `bats-support` installation path. More examples of writing tests for our E2E test setup can be found in the [SDK repository](https://github.com/dfinity/sdk).
 
-The latter two require you to have run `cargo build` before executing them.
-
 ## Documentation
 
 Every change to the command-line interface must contain documentation; we use `clap`, so Rustdoc comments turn into CLI documentation. Additionally, this in-code documentation must be mirrored by a corresponding change in `docs/cli-reference`. See existing doc pages for examples. Finally, any feature or notable bugfix should be mentioned in [CHANGELOG.md](CHANGELOG.md), under the `## Unreleased` header.
