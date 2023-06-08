@@ -3,8 +3,19 @@ use std::io::Write;
 use tempfile::NamedTempFile;
 
 use crate::{
-    escape_p, quill, quill_authed, quill_query, quill_query_authed, quill_send, OutputExt,
+    escape_p, ledger_compatible, quill, quill_authed, quill_query, quill_query_authed, quill_send,
+    OutputExt, ACCOUNT_ID, PRINCIPAL,
 };
+
+// Uncomment tests on next ledger app update
+ledger_compatible![
+    account_balance,
+    claim_neurons,
+    list_neurons,
+    // neuron_stake,
+    public_ids,
+    transfer_icrc1,
+];
 
 #[test]
 fn account_balance() {
@@ -74,9 +85,12 @@ Account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1866",
 #[test]
 fn public_ids() {
     quill_authed("public-ids").diff_s(
-        b"\
-Principal id: fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
-Account id: 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752",
+        format!(
+            "\
+Principal id: {PRINCIPAL}
+Account id: {ACCOUNT_ID}"
+        )
+        .as_ref(),
     );
     quill(
         "public-ids --principal-id 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe",
@@ -119,10 +133,14 @@ fn transfer() {
         .diff("transfer/e8s-2.txt");
     quill_send("transfer 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752 --amount 1.23456")
         .diff("transfer/icp-and-e8s.txt");
-    quill_send("transfer bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1 --amount 12")
-        .diff("transfer/icrc1.txt");
     quill_send("transfer 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752 --amount 123.0456 --fee 0.0023")
         .diff("transfer/with-fees.txt");
     quill_send("transfer 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752 --amount 123.0456 --fee 0.0023 --memo 777")
         .diff("transfer/with-fees-and-memo.txt");
+}
+
+#[test]
+fn transfer_icrc1() {
+    quill_send("transfer bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1 --amount 12")
+        .diff("transfer/icrc1.txt");
 }

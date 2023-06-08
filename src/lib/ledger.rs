@@ -1,5 +1,6 @@
 use std::{
-    fmt, mem,
+    cell::Cell,
+    fmt,
     sync::{Arc, Mutex, Weak},
     time::Duration,
 };
@@ -15,6 +16,7 @@ use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use serde_cbor::Serializer;
+use thread_local::ThreadLocal;
 
 use super::{
     derivation_path, genesis_token_canister_id, governance_canister_id, ledger_canister_id,
@@ -45,16 +47,16 @@ const SIG_LEN: usize = 64;
 const CHUNK_SIZE: usize = 250;
 
 // necessary due to HidApi being a singleton
-static GLOBAL_HANDLE: Lazy<Mutex<Weak<Mutex<LedgerIdentityInner>>>> =
+static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
     Lazy::new(|| Mutex::new(Weak::new()));
 
 struct LedgerIdentityInner {
-    transport: TransportNativeHID,
-    next_stake: bool,
+    transport: Mutex<TransportNativeHID>,
+    next_stake: ThreadLocal<Cell<bool>>,
 }
 
 pub struct LedgerIdentity {
-    inner: Arc<Mutex<LedgerIdentityInner>>,
+    inner: Arc<LedgerIdentityInner>,
 }
 
 impl LedgerIdentity {
@@ -63,26 +65,26 @@ impl LedgerIdentity {
         if let Some(existing) = global.upgrade() {
             Ok(Self { inner: existing })
         } else {
-            let inner = Arc::new(Mutex::new(LedgerIdentityInner {
-                transport: TransportNativeHID::new(&HidApi::new().unwrap())?,
-                next_stake: false,
-            }));
+            let inner = Arc::new(LedgerIdentityInner {
+                transport: Mutex::new(TransportNativeHID::new(&HidApi::new().unwrap())?),
+                next_stake: ThreadLocal::new(),
+            });
             *global = Arc::downgrade(&inner);
             Ok(Self { inner })
         }
     }
     pub fn next_stake(&self) {
-        self.inner.lock().unwrap().next_stake = true;
+        self.inner.next_stake.get_or_default().set(false);
     }
     #[allow(unused)]
     pub fn version(&self) -> AnyhowResult<LedgerVersion> {
-        get_version(&self.inner.lock().unwrap().transport)
+        get_version(&self.inner.transport.lock().unwrap())
     }
     pub fn display_pk(&self) -> AnyhowResult<()> {
-        display_pk(&self.inner.lock().unwrap().transport, &derivation_path())
+        display_pk(&self.inner.transport.lock().unwrap(), &derivation_path())
     }
     pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
-        get_identity(&self.inner.lock().unwrap().transport, &derivation_path())
+        get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
             .map_err(anyhow::Error::msg)
     }
 }
@@ -90,15 +92,15 @@ impl LedgerIdentity {
 impl Identity for LedgerIdentity {
     fn sender(&self) -> Result<Principal, String> {
         let (principal, _) =
-            get_identity(&self.inner.lock().unwrap().transport, &derivation_path())?;
+            get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())?;
         Ok(principal)
     }
     #[allow(clippy::bool_to_int_with_if)]
     fn sign(&self, content: &EnvelopeContent) -> Result<Signature, String> {
-        let mut lock = self.inner.lock().unwrap();
         let path = derivation_path();
-        let next_stake = mem::replace(&mut lock.next_stake, false);
-        let (_, pk) = get_identity(&lock.transport, &path)?;
+        let next_stake = self.inner.next_stake.get_or_default().replace(false);
+        let transport = self.inner.transport.lock().unwrap();
+        let (_, pk) = get_identity(&transport, &path)?;
         // The IC ledger app expects to receive the entire envelope, sans signature.
         #[derive(Serialize)]
         struct Envelope<'a> {
@@ -119,7 +121,7 @@ impl Identity for LedgerIdentity {
         spinner.set_message(format!("Confirm {message} on Ledger device..."));
         spinner.enable_steady_tick(Duration::from_millis(100));
         let sig = sign_blob(
-            &lock.transport,
+            &transport,
             &blob,
             if next_stake { TX_STAKING } else { TX_NORMAL },
             &path,
@@ -172,7 +174,7 @@ fn interpret_response<'a>(
             APDUErrorCode::NoError => Ok(response.apdu_data()),
             APDUErrorCode::DataInvalid if matches!(content, Some(content) if !supported_transaction(content)) => {
                 Err(format!(
-                    "Error {action}: The IC app for Ledger only supports transfers and neuron management"
+                    "Error {action}: The IC app for Ledger only supports transfers and certain neuron management operations"
                 ))
             }
             APDUErrorCode::ClaNotSupported => Err(format!("Error {action}: IC app not open on device")),
@@ -185,6 +187,7 @@ fn interpret_response<'a>(
     } else {
         match response.retcode() {
             0x6E01 => Err(format!("Error {action}: IC app not open on device")),
+            0x5515 => Err(format!("Error {action}: device is sleeping")),
             retcode => Err(format!("Error {action}: {retcode:#X}")),
         }
     }

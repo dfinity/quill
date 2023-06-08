@@ -1,0 +1,19 @@
+Sending message with
+
+  Call type:   update
+  Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: icrc1_transfer
+  Arguments:   (
+  record {
+    to = record {
+      owner = principal "bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe";
+      subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\01";
+    };
+    fee = opt (10_000 : nat);
+    memo = opt blob "\00\00\00\00\00\00\00\00";
+    from_subaccount = null;
+    created_at_time = opt (1_669_073_904_187_044_208 : nat64);
+    amount = 1_200_000_000 : nat;
+  },
+)

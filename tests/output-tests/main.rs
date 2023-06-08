@@ -1,5 +1,9 @@
+use core::fmt;
 use std::{
-    env, fs,
+    cell::RefCell,
+    env,
+    fmt::Display,
+    fs,
     path::Path,
     process::{Command, Output, Stdio},
 };
@@ -9,7 +13,8 @@ mod neuron_manage;
 mod root;
 mod sns;
 
-const PRINCIPAL: &str = "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+const PRINCIPAL: PrincipalPlaceholder = PrincipalPlaceholder;
+const ACCOUNT_ID: AccountIdPlaceholder = AccountIdPlaceholder;
 const ALICE: &str = "pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae";
 #[allow(unused)]
 const BOB: &str = "jndu2-vwnnt-bpu6t-2jrke-fg3kj-vbrgf-ajecf-gv6ju-onyol-wc3e5-kqe";
@@ -106,7 +111,7 @@ fn asset(asset: &str) -> String {
 }
 
 fn auth_args() -> Vec<String> {
-    vec!["--pem-file".into(), default_pem().into()]
+    AUTH_SETTINGS.with(|auth| auth.borrow().args.clone())
 }
 
 fn sns_args() -> Vec<String> {
@@ -115,6 +120,83 @@ fn sns_args() -> Vec<String> {
 
 fn escape_p(p: &impl AsRef<Path>) -> String {
     shellwords::escape(p.as_ref().to_str().unwrap())
+}
+
+#[macro_export]
+macro_rules! ledger_compatible {
+    ($($name:ident),* $(,)?) => {
+        $(
+            mod $name {
+                #[test]
+                #[serial_test::serial(ledger)]
+                #[ignore = "requires a Ledger device"]
+                fn ledger() {
+                    $crate::with_ledger(|| {
+                        super::$name();
+                    })
+                }
+            }
+        )*
+    }
+}
+
+struct AuthSettings {
+    args: Vec<String>,
+    principal: String,
+    account_id: String,
+    outputs_dir: String,
+}
+
+impl Default for AuthSettings {
+    fn default() -> Self {
+        Self {
+            args: vec!["--pem-file".into(), default_pem().into()],
+            principal: "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae".into(),
+            account_id: "345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752".into(),
+            outputs_dir: "outputs".into(),
+        }
+    }
+}
+
+impl AuthSettings {
+    fn ledger() -> Self {
+        Self {
+            args: vec!["--ledger".into()],
+            principal: "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe".into(),
+            account_id: "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676".into(),
+            outputs_dir: "outputs_ledger".into(),
+        }
+    }
+}
+
+struct PrincipalPlaceholder;
+
+impl Display for PrincipalPlaceholder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        AUTH_SETTINGS.with(|auth| auth.borrow().principal.fmt(f))
+    }
+}
+
+struct AccountIdPlaceholder;
+
+impl Display for AccountIdPlaceholder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        AUTH_SETTINGS.with(|auth| auth.borrow().account_id.fmt(f))
+    }
+}
+
+thread_local! { static AUTH_SETTINGS: RefCell<AuthSettings> = RefCell::default(); }
+
+fn with_ledger(f: impl FnOnce()) {
+    struct ResetGuard;
+    impl Drop for ResetGuard {
+        fn drop(&mut self) {
+            AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::default());
+        }
+    }
+    let _guard = ResetGuard;
+    AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::ledger());
+    f()
 }
 
 trait OutputExt {
@@ -162,12 +244,16 @@ Stderr:
     }
     #[track_caller]
     fn diff(&self, output_file: &str) {
-        let output_file = format!(
-            "{}/tests/output-tests/outputs/{output_file}",
-            env!("CARGO_MANIFEST_DIR")
-        );
+        let output_file = AUTH_SETTINGS.with(|auth| {
+            format!(
+                "{}/tests/output-tests/{}/{output_file}",
+                env!("CARGO_MANIFEST_DIR"),
+                auth.borrow().outputs_dir,
+            )
+        });
         if env::var("FIX_OUTPUTS").is_ok() {
             self.assert_success();
+            fs::create_dir_all(Path::new(&output_file).parent().unwrap()).unwrap();
             fs::write(output_file, &self.stdout).unwrap();
         } else {
             let output = std::fs::read(output_file).unwrap();
@@ -193,10 +279,13 @@ Generated output:
     #[track_caller]
     fn diff_err(&self, output_file: &str) {
         self.assert_err();
-        let output_file = format!(
-            "{}/tests/output-tests/outputs/{output_file}",
-            env!("CARGO_MANIFEST_DIR")
-        );
+        let output_file = AUTH_SETTINGS.with(|auth| {
+            format!(
+                "{}/tests/output-tests/{}/{output_file}",
+                env!("CARGO_MANIFEST_DIR"),
+                auth.borrow().outputs_dir,
+            )
+        });
         if env::var("FIX_OUTPUTS").is_ok() {
             std::fs::write(output_file, &self.stderr).unwrap();
         } else {

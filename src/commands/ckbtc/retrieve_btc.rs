@@ -9,7 +9,7 @@ use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 use crate::{
     commands::get_ids,
     lib::{
-        ckbtc_canister_id, ckbtc_minter_canister_id,
+        ckbtc_canister_id, ckbtc_minter_canister_id, now_nanos,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedSubaccount, ROLE_CKBTC_MINTER, ROLE_ICRC1_LEDGER,
     },
@@ -64,7 +64,7 @@ pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressW
     if !opts.already_transferred {
         let transfer_args = TransferArg {
             amount: amount.clone(),
-            created_at_time: None,
+            created_at_time: Some(now_nanos()),
             fee: opts.fee,
             from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
             memo: opts.memo.map(Memo::from),

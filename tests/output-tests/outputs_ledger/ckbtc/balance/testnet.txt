@@ -1,0 +1,12 @@
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: mc6ru-gyaaa-aaaar-qaaaq-cai
+  Method name: icrc1_balance_of
+  Arguments:   (
+  record {
+    owner = principal "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+    subaccount = null;
+  },
+)

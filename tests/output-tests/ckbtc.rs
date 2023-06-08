@@ -1,4 +1,9 @@
-use crate::{quill_authed, quill_query, quill_query_authed, quill_send, OutputExt, PRINCIPAL};
+use crate::{
+    ledger_compatible, quill_authed, quill_query, quill_query_authed, quill_send, OutputExt,
+    PRINCIPAL,
+};
+
+ledger_compatible![balance, withdrawal_address, transfer];
 
 #[test]
 fn balance() {
@@ -19,8 +24,7 @@ fn retrieve_btc() {
 
 #[test]
 fn withdrawal_address() {
-    quill_authed("ckbtc withdrawal-address")
-        .diff_s(b"mqygn-kiaaa-aaaar-qaadq-cai-xvrx2hq.2b1ce8130386fc895735f19538973c109bf1de45749657b1039fefd4fd6bd50a");
+    quill_authed("ckbtc withdrawal-address").diff("ckbtc/withdrawal_address.txt");
 }
 
 #[test]

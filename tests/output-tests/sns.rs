@@ -1,10 +1,24 @@
 use crate::{
-    asset, quill, quill_authed, quill_query, quill_sns_query, quill_sns_query_authed,
-    quill_sns_send, OutputExt, PRINCIPAL,
+    asset, ledger_compatible, quill, quill_authed, quill_query, quill_sns_query,
+    quill_sns_query_authed, quill_sns_send, OutputExt, PRINCIPAL,
 };
 
 const NEURON_ID: &str = "83a7d2b12f654ff58335e5a2512ccae0d7839c744b1807a47c96f5b9f3969069";
 const FOLLOWEE: &str = "75c606cac8d0dab0a6f5db99d64c9b5312ed8cca2f971ea0ea960926db530d7f";
+
+// uncomment tests on next ledger app update
+ledger_compatible![
+    // follow,
+    transfer,
+    neuron_id,
+    neuron_permission,
+    dissolve,
+    disburse,
+    // make_proposal,
+    // stake_neuron,
+    stake_maturity,
+    // vote,
+];
 
 #[test]
 fn balance() {
@@ -17,6 +31,10 @@ fn dissolve_delay() {
         "sns configure-dissolve-delay {NEURON_ID} --additional-dissolve-delay-seconds 1000"
     ))
     .diff("sns/dissolve_delay/add_seconds.txt");
+}
+
+#[test]
+fn dissolve() {
     quill_sns_send(&format!(
         "sns configure-dissolve-delay {NEURON_ID} --start-dissolving"
     ))
@@ -38,6 +56,12 @@ fn disburse() {
 }
 
 #[test]
+fn stake_maturity() {
+    quill_sns_send(&format!("sns stake-maturity {NEURON_ID} --percentage 70"))
+        .diff("sns/manage_neuron/stake_maturity.txt");
+}
+
+#[test]
 fn manage_neuron() {
     quill_sns_send(&format!(
         "sns disburse-maturity {NEURON_ID} --percentage 25 --to {PRINCIPAL}"
@@ -47,8 +71,6 @@ fn manage_neuron() {
         "sns disburse-maturity {NEURON_ID} --subaccount 03"
     ))
     .diff("sns/manage_neuron/disburse_subaccount.txt");
-    quill_sns_send(&format!("sns stake-maturity {NEURON_ID} --percentage 70"))
-        .diff("sns/manage_neuron/stake_maturity.txt");
     quill_sns_send(&format!(
         "sns split-neuron {NEURON_ID} --memo 47 --amount 230.5"
     ))
@@ -111,8 +133,7 @@ fn make_proposal() {
 
 #[test]
 fn neuron_id() {
-    quill_authed("sns neuron-id --memo 0")
-        .diff_s(b"SNS Neuron Id: eaca1f294035a93c9d900cad9af8d7d5735f752b72f83cf1aed1ee3266545226");
+    quill_authed("sns neuron-id --memo 0").diff("sns/neuron_id/memo0.txt");
     quill("sns neuron-id --memo 0 --principal-id 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe")
         .diff_s(b"SNS Neuron Id: 785d80b7abaf0d01fdadcef37ecd93cef68db3be7b2d66687bd1d64954c56c55");
 }
