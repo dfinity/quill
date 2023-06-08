@@ -8,6 +8,7 @@ Fixes # (issue)
 
 Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration.
 
-# Checklist:
+# Checklist
 
-- [ ] I have made corresponding changes to the documentation in src/docs.
+- [ ] I have made corresponding changes to the documentation in docs/cli-reference.
+- [ ] I have added corresponding integration tests.
