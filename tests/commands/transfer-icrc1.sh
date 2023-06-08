@@ -1,1 +1,0 @@
-"$QUILL" transfer bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1 --amount 12 --pem-file - | "$QUILL" send --dry-run -

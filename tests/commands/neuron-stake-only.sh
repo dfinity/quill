@@ -1,1 +1,0 @@
-"$QUILL" neuron-stake --name myNeuron --already-transferred --pem-file - | "$QUILL" send --dry-run

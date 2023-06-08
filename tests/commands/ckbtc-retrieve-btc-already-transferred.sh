@@ -1,1 +1,0 @@
-"$QUILL" ckbtc retrieve-btc 3L2Uyh1eHpfPyPayqrh5WjfnTzWiG4xPLu --already-transferred --amount 3.14 --pem-file - | "$QUILL" send --dry-run

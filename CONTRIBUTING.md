@@ -20,7 +20,7 @@ All code contributions are subject to our [Contributor License Agreement (CLA)](
 Quill has three kinds of tests to be aware of: 
 
 - Rust unit tests. Add these whenever internal helpers are added or changed, using standard Rust test conventions.
-- Output tests. These are located in `tests/commands`. Add these whenever the command interface is updated. Each test is a shell script dry-running a `quill` command; its output is checked against a similarly named file in `tests/outputs`. Run `tests/fix_outputs.sh $YOUR_TEST` to generate this file for a new test, and then `tests/run.sh` to run the tests. Ensure that the output contains Candid field names rather than field hashes.
+- Output tests. These are located in `tests/output-tests`. Add these whenever the command interface is updated. Each test is an integration test dry-running a `quill` command; its output is checked against a file in `outputs`. Set `FIX_OUTPUTS=1` when running `cargo test` to generate this file for a new test. Ensure that the output contains Candid field names rather than field hashes.
 - End-to-end tests. These are located in `e2e/tests-quill`. These should be added whenever a test needs to be run against a real replica. They are run with [`bats`](https://github.com/bats-core/bats-core), and you will need to install [`dfx`](https://github.com/dfinity/sdk) and [`bats-support`](https://github.com/ztombol/bats-support), and point the `BATSLIB` environment variable to the `bats-support` installation path. More examples of writing tests for our E2E test setup can be found in the [SDK repository](https://github.com/dfinity/sdk).
 
 The latter two require you to have run `cargo build` before executing them.

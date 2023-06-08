@@ -1,1 +1,0 @@
-"$QUILL" ckbtc update-balance --testnet --subaccount bde9c3b148b84b82fdd86ec6f20d0c7b8809e54499f893cbca379dc535ea194b --pem-file - | "$QUILL" send --dry-run -

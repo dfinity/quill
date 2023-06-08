@@ -55,6 +55,7 @@ sha3 = "0.10.6"
 
 [dev-dependencies]
 tempfile = "3.3.0"
+shellwords = "1"
 
 [features]
 static-ssl = ["openssl/vendored"]
