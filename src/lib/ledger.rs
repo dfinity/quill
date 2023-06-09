@@ -177,9 +177,17 @@ fn interpret_response<'a>(
     if let Ok(errcode) = response.error_code() {
         match errcode {
             APDUErrorCode::NoError => Ok(response.apdu_data()),
+            APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "send_dfx") => {
+                Err(format!("Error {action}: Must use a principal or ICRC-1 account ID, not a legacy account ID"))
+            } 
             APDUErrorCode::DataInvalid if matches!(content, Some(content) if !supported_transaction(content)) => {
                 Err(format!(
                     "Error {action}: The IC app for Ledger only supports transfers and certain neuron management operations"
+                ))
+            }
+            APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "icrc1_transfer") => {
+                Err(format!(
+                    "Error {action}: The IC app for Ledger only supports transfers to user principals, not canisters or the anonymous principal"
                 ))
             }
             APDUErrorCode::ClaNotSupported => Err(format!("Error {action}: IC app not open on device")),
