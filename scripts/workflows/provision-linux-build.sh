@@ -12,4 +12,4 @@ if [[ $# = 1 ]]; then # docker
 fi
 
 sudo apt-get update -y
-sudo apt-get install "libudev-dev${arch+":$arch"}" libssl-dev -y
+sudo apt-get install "libudev-dev${arch-}" libssl-dev -y
