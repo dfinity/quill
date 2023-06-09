@@ -126,15 +126,16 @@ cargo build --release --locked
 
 After this, find the binary at `target/release/quill`.
 
-Quill has two optional features, both activated by default:
+Quill has three optional features, all activated by default:
 
 - `static-ssl`, to build OpenSSL from source instead of dynamically linking a preinstalled version (requires a C compiler)
 - `hsm`, to enable PKCS#11 HSM support (requires runtime dynamic linking)
+- `ledger`, to enable Ledger Nano support (requires runtime dynamic linking, and incompatible with armv6)
 
 To build a version of Quill that links OpenSSL dynamically, but retains HSM support, run:
 
 ```sh
-cargo build --release --locked --no-default-features --feature hsm
+cargo build --release --locked --no-default-features --features hsm,ledger
 ```
 
 To build a version of Quill compatible with statically-linked-only environments, such as Alpine, run:
