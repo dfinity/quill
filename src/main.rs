@@ -102,44 +102,37 @@ fn main() -> AnyhowResult {
 }
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
-    #[cfg(feature = "hsm")]
-    {
-        // Get PEM from the file if provided, or try to convert from the seed file
-        if opts.hsm
-            || opts.hsm_libpath.is_some()
-            || opts.hsm_slot.is_some()
-            || opts.hsm_id.is_some()
+    // Get PEM from the file if provided, or try to convert from the seed file
+    if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
+        #[cfg(feature = "hsm")]
         {
-            #[cfg(feature = "hsm")]
-            {
-                let mut hsm = lib::HSMInfo::new();
-                if let Some(path) = opts.hsm_libpath {
-                    hsm.libpath = path;
-                }
-                if let Some(slot) = opts.hsm_slot {
-                    hsm.slot = slot;
-                }
-                if let Some(id) = opts.hsm_id {
-                    hsm.ident = id;
-                }
-                Ok(AuthInfo::Pkcs11Hsm(hsm))
+            let mut hsm = lib::HSMInfo::new();
+            if let Some(path) = opts.hsm_libpath {
+                hsm.libpath = path;
             }
-            #[cfg(not(feature = "hsm"))]
-            {
-                anyhow::bail!("This build of quill does not support HSM functionality.")
+            if let Some(slot) = opts.hsm_slot {
+                hsm.slot = slot;
             }
-        } else if opts.ledger {
-            #[cfg(feature = "ledger")]
-            {
-                Ok(AuthInfo::Ledger)
+            if let Some(id) = opts.hsm_id {
+                hsm.ident = id;
             }
-            #[cfg(not(feature = "ledger"))]
-            {
-                anyhow::bail!("This build of quill does not support Ledger functionality.")
-            }
-        } else {
-            pem_auth(opts)
+            Ok(AuthInfo::Pkcs11Hsm(hsm))
         }
+        #[cfg(not(feature = "hsm"))]
+        {
+            anyhow::bail!("This build of quill does not support HSM functionality.")
+        }
+    } else if opts.ledger {
+        #[cfg(feature = "ledger")]
+        {
+            Ok(AuthInfo::Ledger)
+        }
+        #[cfg(not(feature = "ledger"))]
+        {
+            anyhow::bail!("This build of quill does not support Ledger functionality.")
+        }
+    } else {
+        pem_auth(opts)
     }
 }
 
