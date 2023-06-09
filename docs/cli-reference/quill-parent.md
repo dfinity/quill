@@ -78,6 +78,20 @@ Other PKCS#11 modules than OpenSC can be used as well. For example, to make use 
 quill list-neurons --hsm-slot 0 --hsm-id 05 --hsm-libpath /usr/local/lib/libykcs11.so
 ```
 
+Quill can use a Ledger device such as the Ledger Nano, allowing you to use the same principal and account with Quill that you use with the NNS website.
+
+```sh
+quill list-neurons --ledger
+```
+
+The Ledger device can be signaled to display the principal Quill uses with it:
+
+```sh
+quill public-ids --ledger --display-on-ledger
+```
+
+Note that PKCS#11 is not supported on the linux-musl build and Ledger is not supported on either linux-musl or linux-arm32. The latter is to preserve compatibility with armv6; if you have an armv7 device you can [build Quill from source](https://github.com/dfinity/quill#build).
+
 ## Remarks
 
 HSM commands ask for your PIN interactively, and for security cannot be piped. To use them in a script, you can instead pass the PIN via the `QUILL_HSM_PIN` environment variable. The other three flags can also be specified via `QUILL_HSM_SLOT`, `QUILL_HSM_LIBPATH`, and `QUILL_HSM_ID`.

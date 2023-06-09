@@ -24,7 +24,6 @@ jobs:
           - os: macos-latest
             binary_path: target/release
             build_deps: scripts/workflows/provision-darwin-build.sh
-            e2e_deps: scripts/workflows/provision-darwin-e2e.sh
     steps:
       - uses: actions/checkout@master
       

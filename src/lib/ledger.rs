@@ -81,7 +81,12 @@ impl LedgerIdentity {
         get_version(&self.inner.transport.lock().unwrap())
     }
     pub fn display_pk(&self) -> AnyhowResult<()> {
-        display_pk(&self.inner.transport.lock().unwrap(), &derivation_path())
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_message("Confirm principal on Ledger device...");
+        spinner.enable_steady_tick(Duration::from_millis(100));
+        display_pk(&self.inner.transport.lock().unwrap(), &derivation_path())?;
+        spinner.finish_and_clear();
+        Ok(())
     }
     pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
         get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
