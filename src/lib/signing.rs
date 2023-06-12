@@ -116,16 +116,12 @@ pub fn sign(
 ) -> AnyhowResult<SignedMessageWithRequestId> {
     let ingress_expiry = Duration::from_secs(5 * 60);
     let agent = get_agent(auth)?;
-    #[cfg(feature = "ledger")]
-    if is_staking && matches!(auth, AuthInfo::Ledger) {
-        LedgerIdentity::new()?.next_stake();
-    }
-
-    let signed_update = UpdateBuilder::new(&agent, canister_id, method_name.to_string())
-        .with_arg(args)
-        .expire_after(ingress_expiry)
-        .sign()?;
-
+    let signed_update = sign_with(auth, is_staking, || {
+        UpdateBuilder::new(&agent, canister_id, method_name.to_string())
+            .with_arg(args)
+            .expire_after(ingress_expiry)
+            .sign()
+    })?;
     let content = hex::encode(signed_update.signed_update);
     let request_id = signed_update.request_id;
 
@@ -138,6 +134,14 @@ pub fn sign(
         },
         request_id: Some(request_id),
     })
+}
+
+fn sign_with<T>(auth: &AuthInfo, #[allow(unused)] is_staking: bool, f: impl FnOnce() -> T) -> T {
+    #[cfg(feature = "ledger")]
+    if is_staking && matches!(auth, AuthInfo::Ledger) {
+        return LedgerIdentity::with_staking(f);
+    }
+    f()
 }
 
 /// Generates a bundle of signed messages (ingress + request status query).

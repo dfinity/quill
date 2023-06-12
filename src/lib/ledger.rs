@@ -16,7 +16,6 @@ use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use serde_cbor::Serializer;
-use thread_local::ThreadLocal;
 
 use super::{
     derivation_path, genesis_token_canister_id, governance_canister_id, ledger_canister_id,
@@ -50,9 +49,12 @@ const CHUNK_SIZE: usize = 250;
 static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
     Lazy::new(|| Mutex::new(Weak::new()));
 
+thread_local! {
+    static NEXT_STAKE: Cell<bool> = Cell::new(false);
+}
+
 struct LedgerIdentityInner {
     transport: Mutex<TransportNativeHID>,
-    next_stake: ThreadLocal<Cell<bool>>,
 }
 
 pub struct LedgerIdentity {
@@ -67,14 +69,17 @@ impl LedgerIdentity {
         } else {
             let inner = Arc::new(LedgerIdentityInner {
                 transport: Mutex::new(TransportNativeHID::new(&HidApi::new().unwrap())?),
-                next_stake: ThreadLocal::new(),
             });
             *global = Arc::downgrade(&inner);
             Ok(Self { inner })
         }
     }
-    pub fn next_stake(&self) {
-        self.inner.next_stake.get_or_default().set(false);
+    pub fn with_staking<T>(f: impl FnOnce() -> T) -> T {
+        NEXT_STAKE.with(|next_stake| {
+            let _guard = scopeguard::guard((), |_| next_stake.set(false));
+            next_stake.set(true);
+            f()
+        })
     }
     #[allow(unused)]
     pub fn version(&self) -> AnyhowResult<LedgerVersion> {
@@ -103,7 +108,7 @@ impl Identity for LedgerIdentity {
     #[allow(clippy::bool_to_int_with_if)]
     fn sign(&self, content: &EnvelopeContent) -> Result<Signature, String> {
         let path = derivation_path();
-        let next_stake = self.inner.next_stake.get_or_default().replace(false);
+        let next_stake = NEXT_STAKE.with(|next_stake| next_stake.replace(false));
         let transport = self.inner.transport.lock().unwrap();
         let (_, pk) = get_identity(&transport, &path)?;
         // The IC ledger app expects to receive the entire envelope, sans signature.

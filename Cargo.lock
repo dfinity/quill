@@ -4256,6 +4256,7 @@ dependencies = [
  "rand",
  "rpassword",
  "rust_decimal",
+ "scopeguard",
  "serde",
  "serde_bytes",
  "serde_cbor",
@@ -4265,7 +4266,6 @@ dependencies = [
  "shellwords",
  "simple_asn1",
  "tempfile",
- "thread_local",
  "tiny-bip39",
  "tokio",
 ]
@@ -5193,16 +5193,6 @@ name = "thousands"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bf63baf9f5039dadc247375c29eb13706706cfde997d0330d05aa63a77d8820"
-
-[[package]]
-name = "thread_local"
-version = "1.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
-dependencies = [
- "cfg-if 1.0.0",
- "once_cell",
-]
 
 [[package]]
 name = "time"

@@ -191,13 +191,9 @@ thread_local! { static AUTH_SETTINGS: RefCell<AuthSettings> = RefCell::default()
 
 #[cfg(feature = "ledger")]
 fn with_ledger(f: impl FnOnce()) {
-    struct ResetGuard;
-    impl Drop for ResetGuard {
-        fn drop(&mut self) {
-            AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::default());
-        }
-    }
-    let _guard = ResetGuard;
+    let _guard = scopeguard::guard((), |_| {
+        AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::default())
+    });
     AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::ledger());
     f()
 }
