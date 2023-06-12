@@ -3,6 +3,10 @@ name = "quill"
 version = "0.4.1"
 authors = ["DFINITY Team"]
 edition = "2021"
+rust-version = "1.66.1"
+description = "Minimalistic ledger and governance toolkit for cold wallets."
+repository = "https://github.com/dfinity/quill"
+license = "Apache-2.0"
 
 [[bin]]
 name = "quill"
@@ -64,3 +68,15 @@ default = ["static-ssl", "hsm"]
 
 [profile.release]
 opt-level = 2
+
+[package.metadata.binstall]
+pkg-fmt = "bin"
+bin-dir = ""
+
+[package.metadata.binstall.overrides]
+x86_64-pc-windows-msvc.pkg-url = "{ repo }/releases/download/v{ version }/quill-windows-x86_64.exe"
+x86_64-unknown-linux-gnu.pkg-url = "{ repo }/releases/download/v{ version }/quill-linux-x86_64"
+x86_64-unknown-linux-musl.pkg-url = "{ repo }/releases/download/v{ version }/quill-linux-x86_64-musl"
+arm-unknown-linux-gnueabihf.pkg-url = "{ repo }/releases/download/v{ version }/quill-linux-arm32"
+armv7-unknown-linux-gnueabihf.pkg-url = "{ repo }/releases/download/v{ version }/quill-linux-arm32"   # binary compatible
+x86_64-apple-darwin.pkg-url = "{ repo }/releases/download/v{ version }/quill-macos-x86_64"
