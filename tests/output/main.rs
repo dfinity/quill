@@ -154,7 +154,7 @@ impl Default for AuthSettings {
             args: vec!["--pem-file".into(), default_pem().into()],
             principal: "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae".into(),
             account_id: "345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752".into(),
-            outputs_dir: "outputs".into(),
+            outputs_dir: "default".into(),
         }
     }
 }
@@ -166,7 +166,7 @@ impl AuthSettings {
             args: vec!["--ledger".into()],
             principal: "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe".into(),
             account_id: "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676".into(),
-            outputs_dir: "outputs_ledger".into(),
+            outputs_dir: "ledger".into(),
         }
     }
 }
@@ -249,7 +249,7 @@ Stderr:
     fn diff(&self, output_file: &str) {
         let output_file = AUTH_SETTINGS.with(|auth| {
             format!(
-                "{}/tests/output-tests/{}/{output_file}",
+                "{}/tests/output/{}/{output_file}",
                 env!("CARGO_MANIFEST_DIR"),
                 auth.borrow().outputs_dir,
             )
@@ -284,7 +284,7 @@ Generated output:
         self.assert_err();
         let output_file = AUTH_SETTINGS.with(|auth| {
             format!(
-                "{}/tests/output-tests/{}/{output_file}",
+                "{}/tests/output/{}/{output_file}",
                 env!("CARGO_MANIFEST_DIR"),
                 auth.borrow().outputs_dir,
             )
