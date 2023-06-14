@@ -26,7 +26,7 @@ pub struct CliOpts {
     group(ArgGroup::new("pkcs11").multiple(true).conflicts_with_all(&["seeded", "ledgerhq"])),
     group(ArgGroup::new("seeded").multiple(true).conflicts_with_all(&["pkcs11", "ledgerhq"])),
     group(ArgGroup::new("ledgerhq").multiple(true).conflicts_with_all(&["seeded", "pkcs11"])),
-    group(ArgGroup::new("auth").multiple(false)),
+    group(ArgGroup::new("auth").multiple(true)),
 )]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
