@@ -16,7 +16,7 @@ fn hot_key() {
 
 #[test]
 fn additional_dissolve_delay_seconds() {
-    quill_send(&format!("neuron-manage {NEURON_ID} -a 3600"))
+    quill_send(&format!("dissolve {NEURON_ID} --increase-delay-by 1h"))
         .diff("neuron_manage/additional_dissolve_delay_seconds.txt");
 }
 

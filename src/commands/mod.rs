@@ -9,6 +9,7 @@ use std::io::{self, Write};
 mod balance;
 mod ckbtc;
 mod claim_neurons;
+mod dissolve;
 mod generate;
 mod get_neuron_info;
 mod get_proposal_info;
@@ -34,6 +35,7 @@ pub enum Command {
     Transfer(transfer::TransferOpts),
     ClaimNeurons(claim_neurons::ClaimNeuronOpts),
     NeuronStake(neuron_stake::StakeOpts),
+    Dissolve(dissolve::DissolveOpts),
     NeuronManage(neuron_manage::ManageOpts),
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
@@ -56,6 +58,10 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
         Command::PublicIds(opts) => public::exec(auth, opts)?,
         Command::Transfer(opts) => {
             let out = transfer::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Dissolve(opts) => {
+            let out = dissolve::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::NeuronStake(opts) => {

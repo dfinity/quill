@@ -16,6 +16,7 @@ use ic_agent::{
 use ic_base_types::PrincipalId;
 #[cfg(feature = "hsm")]
 use ic_identity_hsm::HardwareIdentity;
+use ic_nns_common::pb::v1::NeuronId;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
     SNS_WASM_CANISTER_ID,
@@ -360,6 +361,23 @@ pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
     Ok(AccountIdentifier::new(base_types_principal, None))
+}
+
+pub fn parse_neuron_id(id: &str) -> AnyhowResult<u64> {
+    id.replace('_', "")
+        .parse()
+        .context("Invalid digit in neuron ID")
+}
+
+pub struct ParsedNeuron(pub NeuronId);
+
+impl FromStr for ParsedNeuron {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(NeuronId {
+            id: parse_neuron_id(s)?,
+        }))
+    }
 }
 
 /// Converts menmonic to PEM format

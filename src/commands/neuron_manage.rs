@@ -1,4 +1,5 @@
 use crate::commands::transfer::parse_tokens;
+use crate::lib::parse_neuron_id;
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -130,7 +131,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
-        id: parse_neuron_id(opts.neuron_id)?,
+        id: parse_neuron_id(&opts.neuron_id)?,
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
@@ -278,7 +279,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             id: id.clone(),
             command: Some(Command::Merge(Merge {
                 source_neuron_id: Some(NeuronId {
-                    id: parse_neuron_id(neuron_id)?
+                    id: parse_neuron_id(&neuron_id)?
                 }),
             })),
             neuron_id_or_subaccount: None,
@@ -384,10 +385,4 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         )?);
     }
     Ok(generated)
-}
-
-fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
-    id.replace('_', "")
-        .parse()
-        .context("Failed to parse the neuron id")
 }
