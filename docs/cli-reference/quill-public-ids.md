@@ -12,10 +12,11 @@ quill public-ids [option]
 
 ## Flags
 
-| Flag            | Description                                                    |
-|-----------------|----------------------------------------------------------------|
-| `-h`, `--help`  | Displays usage information.                                    |
-| `--genesis-dfn` | Additionally prints the legacy DFN address for Genesis claims. |
+| Flag                  | Description                                                     |
+|-----------------------|-----------------------------------------------------------------|
+| `-h`, `--help`        | Displays usage information.                                     |
+| `--genesis-dfn`       | Additionally prints the legacy DFN address for Genesis claims.  |
+| `--display-on-ledger` | Additionally prints the principal on an attached Ledger device. |
 
 ## Options
 

@@ -1,0 +1,40 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: icrc1_transfer
+  Arguments:   (
+  record {
+    to = record {
+      owner = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+      subaccount = opt blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+    };
+    fee = null;
+    memo = opt blob "\00\00\00\00\00\00\03\09";
+    from_subaccount = null;
+    created_at_time = opt (1_669_073_904_187_044_208 : nat64);
+    amount = 1_200_000_000 : nat;
+  },
+)
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    subaccount = blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+    command = opt variant {
+      ClaimOrRefresh = record {
+        by = opt variant {
+          MemoAndController = record {
+            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+            memo = 777 : nat64;
+          }
+        };
+      }
+    };
+  },
+)

@@ -1,10 +1,12 @@
-use crate::commands::send::{Memo, SendArgs};
+use crate::commands::send::{Memo, SendArgs, TimeStamp};
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use crate::lib::{ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER};
+use crate::lib::{
+    now_nanos, ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
+};
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
@@ -47,7 +49,9 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
                 fee,
                 from_subaccount: opts.from_subaccount.map(|x| x.0),
                 to: to.to_hex(),
-                created_at_time: None,
+                created_at_time: Some(TimeStamp {
+                    timestamp_nanos: now_nanos()
+                }),
             })?;
 
             let msg = sign_ingress_with_request_status_query(
@@ -66,7 +70,7 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
                 fee: Some(fee.get_e8s().into()),
                 from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
                 to,
-                created_at_time: None,
+                created_at_time: Some(now_nanos()),
             })?;
             let msg = sign_ingress_with_request_status_query(
                 auth,

@@ -1,0 +1,30 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: send_dfx
+  Arguments:   (
+  record {
+    to = "9bc4e24ff90c6898938d5fb339e779cea4edad4de592e591b22429289851b563";
+    fee = record { e8s = 10_000 : nat64 };
+    memo = 7_888_422_419_985_231_726 : nat64;
+    from_subaccount = null;
+    created_at_time = opt record {
+      timestamp_nanos = 1_669_073_904_187_044_208 : nat64;
+    };
+    amount = record { e8s = 1_200_000_000 : nat64 };
+  },
+)
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: claim_or_refresh_neuron_from_account
+  Arguments:   (
+  record {
+    controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+    memo = 7_888_422_419_985_231_726 : nat64;
+  },
+)

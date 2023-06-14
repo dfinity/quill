@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::lib::AnyhowResult;
 use anyhow::Context;
 use bip39::{Language, Mnemonic};
-use clap::{crate_version, Args, Parser};
+use clap::{crate_version, ArgGroup, Args, Parser};
 use lib::AuthInfo;
 
 mod commands;
@@ -22,18 +22,24 @@ pub struct CliOpts {
 }
 
 #[derive(Args)]
+#[clap(
+    group(ArgGroup::new("pkcs11").multiple(true).conflicts_with_all(&["seeded", "ledgerhq"])),
+    group(ArgGroup::new("seeded").multiple(true).conflicts_with_all(&["pkcs11", "ledgerhq"])),
+    group(ArgGroup::new("ledgerhq").multiple(true).conflicts_with_all(&["seeded", "pkcs11"])),
+    group(ArgGroup::new("auth").multiple(true)),
+)]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long, group = "auth", global = true)]
+    #[clap(long, groups = &["seeded", "auth"], global = true)]
     pem_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.
-    #[cfg_attr(feature = "hsm", clap(hidden = true))]
-    #[clap(long, group = "auth", global = true)]
+    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
+    #[clap(long, groups = &["pkcs11", "auth"], global = true)]
     hsm: bool,
 
     /// Path to the PKCS#11 module to use.
-    #[cfg_attr(feature = "hsm", clap(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
     #[cfg_attr(
         target_os = "windows",
         doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
@@ -46,22 +52,27 @@ struct GlobalOpts {
         target_os = "linux",
         doc = "Defaults to /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
     )]
-    #[clap(long, global = true)]
+    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_libpath: Option<PathBuf>,
 
     /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
-    #[cfg_attr(feature = "hsm", clap(hidden = true))]
-    #[clap(long, global = true)]
+    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
+    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_slot: Option<usize>,
 
     /// The ID of the key to use. Consult your hardware key's documentation.
-    #[cfg_attr(feature = "hsm", clap(hidden = true))]
-    #[clap(long, global = true)]
+    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
+    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_id: Option<String>,
 
     /// Path to your seed file (use "-" for STDIN)
-    #[clap(long, global = true)]
+    #[clap(long, global = true, groups = &["seeded", "auth"])]
     seed_file: Option<PathBuf>,
+
+    /// Authenticate using a Ledger hardware wallet.
+    #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
+    #[clap(long, global = true, groups = &["ledgerhq", "auth"])]
+    ledger: bool,
 
     /// Output the result(s) as UTF-8 QR codes.
     #[clap(long, global = true)]
@@ -91,13 +102,9 @@ fn main() -> AnyhowResult {
 }
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
-    #[cfg(feature = "hsm")]
-    {
-        // Get PEM from the file if provided, or try to convert from the seed file
-        if opts.hsm
-            || opts.hsm_libpath.is_some()
-            || opts.hsm_slot.is_some()
-            || opts.hsm_id.is_some()
+    // Get PEM from the file if provided, or try to convert from the seed file
+    if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
+        #[cfg(feature = "hsm")]
         {
             let mut hsm = lib::HSMInfo::new();
             if let Some(path) = opts.hsm_libpath {
@@ -110,19 +117,21 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
                 hsm.ident = id;
             }
             Ok(AuthInfo::Pkcs11Hsm(hsm))
-        } else {
-            pem_auth(opts)
         }
-    }
-    #[cfg(not(feature = "hsm"))]
-    {
-        if opts.hsm
-            || opts.hsm_libpath.is_some()
-            || opts.hsm_slot.is_some()
-            || opts.hsm_id.is_some()
+        #[cfg(not(feature = "hsm"))]
         {
             anyhow::bail!("This build of quill does not support HSM functionality.")
         }
+    } else if opts.ledger {
+        #[cfg(feature = "ledger")]
+        {
+            Ok(AuthInfo::Ledger)
+        }
+        #[cfg(not(feature = "ledger"))]
+        {
+            anyhow::bail!("This build of quill does not support Ledger functionality.")
+        }
+    } else {
         pem_auth(opts)
     }
 }
@@ -172,8 +181,14 @@ fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::read_pem;
+    use crate::{read_pem, CliOpts};
     use bip39::{Language, Mnemonic};
+    use clap::CommandFactory;
+
+    #[test]
+    fn check_cli() {
+        CliOpts::command().debug_assert()
+    }
 
     #[test]
     fn test_read_pem_none_none() {

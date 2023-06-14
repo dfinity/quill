@@ -126,15 +126,16 @@ cargo build --release --locked
 
 After this, find the binary at `target/release/quill`.
 
-Quill has two optional features, both activated by default:
+Quill has three optional features, all activated by default:
 
 - `static-ssl`, to build OpenSSL from source instead of dynamically linking a preinstalled version (requires a C compiler)
 - `hsm`, to enable PKCS#11 HSM support (requires runtime dynamic linking)
+- `ledger`, to enable Ledger Nano support (requires runtime dynamic linking, and incompatible with armv6)
 
 To build a version of Quill that links OpenSSL dynamically, but retains HSM support, run:
 
 ```sh
-cargo build --release --locked --no-default-features --feature hsm
+cargo build --release --locked --no-default-features --features hsm,ledger
 ```
 
 To build a version of Quill compatible with statically-linked-only environments, such as Alpine, run:
@@ -148,8 +149,8 @@ cargo build --release --locked --no-default-features --feature static-ssl
 Quill can be reproducibly built or cross-compiled in a Docker container using [`cross`](https://github.com/cross-rs/cross).
 
 1. Follow the instructions at [cross-rs/cross](https://github.com/cross-rs/cross) to install `cross`.
-2. If using a target with particular restrictions, such as `x86_64-apple-darwin`, ensure you have built a local image via the instructions at [cross-rs/cross-toolchains](https://github.com/cross-rs/cross-toolchains).
-3. Run `cross build --release --locked --target <target platform>`, e.g. `--target x86_64-unknown-linux-gnu`.
+2. If using a target with particular restrictions, such as `x86_64-apple-darwin` or `x86_64-pc-windows-msvc`, ensure you have built a local image via the instructions at [cross-rs/cross-toolchains](https://github.com/cross-rs/cross-toolchains).
+3. Run `cross build --release --locked --target <target platform>`, e.g. `--target x86_64-unknown-linux-gnu` or `--target armv7-unknown-linux-gnueabihf`.
 
 ## Testnets
 

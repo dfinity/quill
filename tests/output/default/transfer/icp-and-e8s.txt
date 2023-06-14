@@ -1,0 +1,18 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: send_dfx
+  Arguments:   (
+  record {
+    to = "345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752";
+    fee = record { e8s = 10_000 : nat64 };
+    memo = 0 : nat64;
+    from_subaccount = null;
+    created_at_time = opt record {
+      timestamp_nanos = 1_669_073_904_187_044_208 : nat64;
+    };
+    amount = record { e8s = 123_456_000 : nat64 };
+  },
+)

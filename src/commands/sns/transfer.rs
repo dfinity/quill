@@ -1,10 +1,10 @@
 use crate::commands::get_account;
 use crate::commands::transfer::parse_tokens;
+use crate::lib::{now_nanos, ParsedAccount, ROLE_ICRC1_LEDGER};
 use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ParsedSubaccount,
 };
-use crate::lib::{ParsedAccount, ROLE_ICRC1_LEDGER};
 use candid::Encode;
 use clap::Parser;
 use icp_ledger::Tokens;
@@ -55,7 +55,7 @@ pub fn exec(
         amount,
         fee,
         from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
-        created_at_time: None,
+        created_at_time: Some(now_nanos()),
         to,
     };
 

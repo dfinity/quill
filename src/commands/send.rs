@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail, Context};
 use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
-use ic_agent::agent::ReplicaV2Transport;
+use ic_agent::agent::Transport;
 use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
 use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
@@ -173,8 +173,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     match message.call_type.as_str() {
         "query" => {
             let response = parse_query_response(
-                ic_agent::agent::ReplicaV2Transport::query(&transport, canister_id, content)
-                    .await?,
+                ic_agent::agent::Transport::query(&transport, canister_id, content).await?,
                 canister_id,
                 &role,
                 &method_name,

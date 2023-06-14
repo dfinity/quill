@@ -4,7 +4,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use candid::{CandidType, Encode, Principal};
 use clap::{ArgEnum, Parser};
 use ic_base_types::PrincipalId;
@@ -124,9 +124,22 @@ pub struct ManageOpts {
     /// Set whether new maturity should be automatically staked.
     #[clap(long, arg_enum)]
     auto_stake_maturity: Option<EnableState>,
+
+    #[clap(from_global)]
+    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    if opts.ledger {
+        ensure!(
+            opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
+            && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
+            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject,
+            "\
+Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
+--additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
+        )
+    }
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {

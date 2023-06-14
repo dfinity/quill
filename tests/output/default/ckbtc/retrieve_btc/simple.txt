@@ -1,0 +1,31 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: mxzaz-hqaaa-aaaar-qaada-cai
+  Method name: icrc1_transfer
+  Arguments:   (
+  record {
+    to = record {
+      owner = principal "mqygn-kiaaa-aaaar-qaadq-cai";
+      subaccount = opt blob "+\1c\e8\13\03\86\fc\89W5\f1\958\97<\10\9b\f1\deEt\96W\b1\03\9f\ef\d4\fdk\d5\0a";
+    };
+    fee = null;
+    memo = opt blob "\00\00\00\00\00\00\00\09";
+    from_subaccount = null;
+    created_at_time = opt (1_669_073_904_187_044_208 : nat64);
+    amount = 314_000_000 : nat;
+  },
+)
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: mqygn-kiaaa-aaaar-qaadq-cai
+  Method name: retrieve_btc
+  Arguments:   (
+  record {
+    address = "3L2Uyh1eHpfPyPayqrh5WjfnTzWiG4xPLu";
+    amount = 314_000_000 : nat64;
+  },
+)
