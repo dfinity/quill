@@ -149,5 +149,9 @@ fn transfer_icrc1() {
 fn ledger_fail_early() {
     quill("replace-node-provider-id --ledger --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae \
             --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae")
-        .diff_err("ledger_unsupported.txt");
+        .diff_err("ledger_incompatible/by_function.txt");
+    quill("neuron-stake --ledger --amount 12 --name myNeuron")
+        .diff_err("ledger_incompatible/by_command.txt");
+    quill("neuron-manage 1 --ledger --join-community-fund")
+        .diff_err("ledger_incompatible/by_flag.txt");
 }

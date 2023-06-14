@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::Context;
+use anyhow::{ensure, Context};
 use candid::{Deserialize, Principal};
 use clap::{Parser, Subcommand};
 use ic_sns_governance::pb::v1::Account as GovAccount;
@@ -56,6 +56,8 @@ pub struct SnsOpts {
     canister_ids_file: Option<PathBuf>,
     #[clap(subcommand)]
     subcommand: SnsCommand,
+    #[clap(from_global)]
+    ledger: bool,
 }
 
 #[derive(Subcommand)]
@@ -83,6 +85,17 @@ pub enum SnsCommand {
 }
 
 pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) -> AnyhowResult {
+    if opts.ledger {
+        ensure!(matches!(
+            opts.subcommand,
+            SnsCommand::Balance(_)
+                | SnsCommand::NeuronPermission(_)
+                | SnsCommand::Disburse(_)
+                | SnsCommand::ConfigureDissolveDelay(_)
+                | SnsCommand::StakeMaturity(_)
+                | SnsCommand::NeuronId(_)
+        ), "Cannot use --ledger with this command. This version of Quill only supports transfers and certain neuron management operations with a Ledger device");
+    }
     let canister_ids = opts.canister_ids_file
         .context("Cannot sign message without knowing the SNS canister ids, did you forget `--canister-ids-file <json-file>`?")
         .and_then(|file| Ok(serde_json::from_slice::<SnsCanisterIds>(&fs::read(file)?)?));

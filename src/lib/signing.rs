@@ -192,8 +192,10 @@ fn sign_ingress_with_request_status_query_internal(
     if matches!(auth, AuthInfo::Ledger)
         && !super::ledger::supported_transaction(&canister_id, method_name)
     {
-        bail!("Cannot use `--ledger` with this command. This version of Quill only supports transfers \
-            and certain neuron management operations with a Ledger device");
+        bail!(
+            "Cannot use --ledger with this command. This version of Quill only supports transfers \
+            and certain neuron management operations with a Ledger device"
+        );
     }
     let msg_with_req_id = sign(auth, canister_id, method_name, args, role, is_staking)?;
     let request_id = msg_with_req_id

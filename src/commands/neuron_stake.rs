@@ -53,8 +53,7 @@ pub struct StakeOpts {
     #[clap(long)]
     from_subaccount: Option<ParsedSubaccount>,
 
-    #[clap(long)]
-    // Repeated here so it can be checked.
+    #[clap(from_global)]
     ledger: bool,
 }
 

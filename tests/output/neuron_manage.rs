@@ -7,6 +7,7 @@ ledger_compatible![
     // hot_key,
     additional_dissolve_delay_seconds,
     // disburse,
+    dissolve,
     // follow,
     // community_fund,
     maturity,
@@ -43,6 +44,14 @@ fn disburse() {
         "neuron-manage {NEURON_ID} --disburse --stop-dissolving"
     ))
     .diff("neuron_manage/disburse_stop_dissolving.txt");
+}
+
+#[test]
+fn dissolve() {
+    quill_send(&format!("neuron-manage {NEURON_ID} --start-dissolving"))
+        .diff("neuron_manage/start_dissolving.txt");
+    quill_send(&format!("neuron-manage {NEURON_ID} --stop-dissolving"))
+        .diff("neuron_manage/stop_dissolving.txt");
 }
 
 #[test]
