@@ -203,9 +203,9 @@ fn interpret_response<'a>(
             APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "send_dfx") => {
                 Err(format!("Error {action}: Must use a principal or ICRC-1 account ID, not a legacy account ID"))
             }
-            APDUErrorCode::DataInvalid if matches!(content, 
-                Some(EnvelopeContent::Call { method_name, canister_id, .. } 
-                    | EnvelopeContent::Query { method_name, canister_id, .. }) 
+            APDUErrorCode::DataInvalid if matches!(content,
+                Some(EnvelopeContent::Call { method_name, canister_id, .. }
+                    | EnvelopeContent::Query { method_name, canister_id, .. })
                         if !supported_transaction(canister_id, method_name)
             ) => {
                 Err(format!(

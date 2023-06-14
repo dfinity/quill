@@ -88,12 +88,8 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
     if opts.ledger {
         ensure!(matches!(
             opts.subcommand,
-            SnsCommand::Balance(_)
-                | SnsCommand::NeuronPermission(_)
-                | SnsCommand::Disburse(_)
-                | SnsCommand::ConfigureDissolveDelay(_)
-                | SnsCommand::StakeMaturity(_)
-                | SnsCommand::NeuronId(_)
+            SnsCommand::Balance(_) | SnsCommand::Transfer(_) | SnsCommand::NeuronPermission(_) | SnsCommand::Disburse(_)
+                | SnsCommand::ConfigureDissolveDelay(_) | SnsCommand::StakeMaturity(_) | SnsCommand::NeuronId(_)
         ), "Cannot use --ledger with this command. This version of Quill only supports transfers and certain neuron management operations with a Ledger device");
     }
     let canister_ids = opts.canister_ids_file
