@@ -1,0 +1,1 @@
+Error: Cannot use `--ledger` with this command. This version of Quill does not support staking new neurons with a Ledger device

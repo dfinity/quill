@@ -1,0 +1,1 @@
+Error: Cannot use --ledger with this command. This version of Quill only supports transfers and certain neuron management operations with a Ledger device

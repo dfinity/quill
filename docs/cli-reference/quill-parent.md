@@ -25,6 +25,7 @@ You can use the following optional flags with the `quill` parent command or with
 | `--insecure-local-dev-mode` | Enter local testing mode.                       |
 | `--qr`                      | Output the result(s) as UTF-8 QR codes.         |
 | `-V`, `--version`           | Displays version information.                   |
+| `--ledger`                  | Authenticate using a Ledger hardware wallet      |
 
 ## Options
 
@@ -77,6 +78,20 @@ Other PKCS#11 modules than OpenSC can be used as well. For example, to make use 
 ```sh
 quill list-neurons --hsm-slot 0 --hsm-id 05 --hsm-libpath /usr/local/lib/libykcs11.so
 ```
+
+Quill can use a Ledger device such as the Ledger Nano, allowing you to use the same principal and account with Quill that you use with the NNS website.
+
+```sh
+quill list-neurons --ledger
+```
+
+The Ledger device can be signaled to display the principal Quill uses with it:
+
+```sh
+quill public-ids --ledger --display-on-ledger
+```
+
+Note that PKCS#11 is not supported on the linux-musl build and Ledger is not supported on either linux-musl or linux-arm32. The latter is to preserve compatibility with armv6; if you have an armv7 device you can [build Quill from source](https://github.com/dfinity/quill#build).
 
 ## Remarks
 

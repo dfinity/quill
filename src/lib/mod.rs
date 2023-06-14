@@ -1,6 +1,7 @@
 //! All the common functionality.
 
 use anyhow::{anyhow, bail, ensure, Context};
+use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
 use candid::{
     parser::typing::{check_prog, TypeEnv},
@@ -30,7 +31,6 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
-use std::str::FromStr;
 #[cfg(feature = "hsm")]
 use std::{cell::RefCell, path::PathBuf};
 use std::{
@@ -39,6 +39,10 @@ use std::{
     path::Path,
     time::Duration,
 };
+use std::{str::FromStr, time::SystemTime};
+
+#[cfg(feature = "ledger")]
+use self::ledger::LedgerIdentity;
 
 pub const IC_URL: &str = "https://ic0.app";
 
@@ -46,6 +50,8 @@ pub fn get_ic_url() -> String {
     env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
+#[cfg(feature = "ledger")]
+pub mod ledger;
 pub mod signing;
 
 pub type AnyhowResult<T = ()> = anyhow::Result<T>;
@@ -94,6 +100,8 @@ pub enum AuthInfo {
     PemFile(String), // --private-pem file specified
     #[cfg(feature = "hsm")]
     Pkcs11Hsm(HSMInfo),
+    #[cfg(feature = "ledger")]
+    Ledger,
 }
 
 pub fn ledger_canister_id() -> Principal {
@@ -320,6 +328,8 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
                 .context("Unable to use your hardware key")?;
             Ok(Box::new(identity) as _)
         }
+        #[cfg(feature = "ledger")]
+        AuthInfo::Ledger => Ok(Box::new(LedgerIdentity::new()?)),
     }
 }
 
@@ -407,7 +417,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     }
 
     let seed = Seed::new(mnemonic, "");
-    let ext = bip32::XPrv::derive_from_path(seed, &"m/44'/223'/0'/0/0".parse()?)
+    let ext = bip32::XPrv::derive_from_path(seed, &derivation_path())
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();
@@ -423,6 +433,11 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     };
     let key_pem = encode(&pem);
     Ok(key_pem.replace('\r', "").replace("\n\n", "\n"))
+}
+
+const DERIVATION_PATH: &str = "m/44'/223'/0'/0/0";
+fn derivation_path() -> DerivationPath {
+    DERIVATION_PATH.parse().unwrap()
 }
 
 pub struct ParsedSubaccount(pub Subaccount);
@@ -563,6 +578,17 @@ impl ParsedNnsAccount {
                 AccountIdentifier::new(account.owner.into(), account.subaccount.map(Subaccount))
             }
         }
+    }
+}
+
+pub fn now_nanos() -> u64 {
+    if std::env::var("QUILL_TEST_FIXED_TIMESTAMP").is_ok() {
+        1_669_073_904_187_044_208
+    } else {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64
     }
 }
 

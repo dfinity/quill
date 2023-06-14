@@ -20,6 +20,13 @@ jobs:
           command: cargo clippy --all --all-targets --all-features --tests -- -D warnings
         - name: Test
           command: cargo test
+        include:
+          - os: ubuntu-latest
+            build_deps: scripts/workflows/provision-linux-build.sh
+          - os: macos-latest
+            build_deps: scripts/workflows/provision-darwin-build.sh
+          - os: windows-latest
+            build_deps: scripts/workflows/provision-windows-build.ps1
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
@@ -34,14 +41,8 @@ jobs:
             ${{ env.VCPKG_ROOT }}
           key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
 
-      - name: Install dependencies (windows only)
-        if: ${{ contains(matrix.os, 'windows') }}
-        shell: bash
-        run: |
-          vcpkg integrate install
-          vcpkg install openssl:x64-windows-static-md
-          echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static-md" >> $GITHUB_ENV
-          echo "OPENSSL_STATIC=Yes" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: ${{ matrix.build_deps }}
 
       - uses: actions-rs/toolchain@v1
         with:

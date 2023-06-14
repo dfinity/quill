@@ -1,0 +1,7 @@
+Sending message with
+
+  Call type:   update
+  Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: list_neurons
+  Arguments:   (record { neuron_ids = vec {}; include_neurons_readable_by_caller = true })

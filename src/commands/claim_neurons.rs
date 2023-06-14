@@ -1,3 +1,5 @@
+#[cfg(feature = "ledger")]
+use crate::lib::ledger::LedgerIdentity;
 use crate::lib::{
     genesis_token_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -34,8 +36,25 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
             sig,
         )?])
     } else {
+        #[cfg(feature = "ledger")]
+        if let AuthInfo::Ledger = auth {
+            let (_, pk) = LedgerIdentity::new()?.public_key()?;
+            let sig = Encode!(&hex::encode(pk))?;
+            Ok(vec![sign_ingress_with_request_status_query(
+                auth,
+                genesis_token_canister_id(),
+                ROLE_NNS_GTC,
+                "claim_neurons",
+                sig,
+            )?])
+        } else {
+            Err(anyhow!(
+                "claim-neurons command requires --pem-file or --ledger to be specified"
+            ))
+        }
+        #[cfg(not(feature = "ledger"))]
         Err(anyhow!(
-            "claim-neurons command requires a --pem-file to be specified"
+            "claim-neurons command requires --pem-file to be specified"
         ))
     }
 }
