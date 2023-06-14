@@ -25,6 +25,7 @@ You can use the following optional flags with the `quill` parent command or with
 | `--insecure-local-dev-mode` | Enter local testing mode.                       |
 | `--qr`                      | Output the result(s) as UTF-8 QR codes.         |
 | `-V`, `--version`           | Displays version information.                   |
+| `--ledger`                  | Authenticate using a Ledger hardware wallet      |
 
 ## Options
 
