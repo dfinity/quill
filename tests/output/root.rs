@@ -144,3 +144,10 @@ fn transfer_icrc1() {
     quill_send("transfer bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1 --amount 12")
         .diff("transfer/icrc1.txt");
 }
+
+#[test]
+fn ledger_fail_early() {
+    quill("replace-node-provider-id --ledger --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae \
+            --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae")
+        .diff_err("ledger_unsupported.txt");
+}

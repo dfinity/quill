@@ -9,7 +9,7 @@ use crate::{
         AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, ensure};
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
@@ -52,9 +52,17 @@ pub struct StakeOpts {
     /// The subaccount to transfer from.
     #[clap(long)]
     from_subaccount: Option<ParsedSubaccount>,
+
+    #[clap(long)]
+    // Repeated here so it can be checked.
+    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    ensure!(
+        !opts.ledger,
+        "Cannot use `--ledger` with this command. This version of Quill does not support staking new neurons with a Ledger device"
+    );
     let (controller, _) = crate::commands::public::get_ids(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,

@@ -49,6 +49,7 @@ const CHUNK_SIZE: usize = 250;
 static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
     Lazy::new(|| Mutex::new(Weak::new()));
 
+// necessary due to Identity::sign not providing other ways to figure this out
 thread_local! {
     static NEXT_STAKE: Cell<bool> = Cell::new(false);
 }
@@ -57,11 +58,13 @@ struct LedgerIdentityInner {
     transport: Mutex<TransportNativeHID>,
 }
 
+/// An [`Identity`] backed by a Ledger device.
 pub struct LedgerIdentity {
     inner: Arc<LedgerIdentityInner>,
 }
 
 impl LedgerIdentity {
+    /// Creates a new ledger-device-backed identity.
     pub fn new() -> AnyhowResult<Self> {
         let mut global = GLOBAL_HANDLE.lock().unwrap();
         if let Some(existing) = global.upgrade() {
@@ -74,17 +77,27 @@ impl LedgerIdentity {
             Ok(Self { inner })
         }
     }
+    /// Within the provided scope, transfers will be marked as 'staking' transactions.
+    /// The IC app will refuse transfers to the governance canister unless this is used.
     pub fn with_staking<T>(f: impl FnOnce() -> T) -> T {
+        // This is designed the way it is because Ledger signing has two modes and Identity::sign has one.
+        // Short of re-parsing the transaction to figure out if it's transferring to the governance canister,
+        // one must use a way of communicating this magic staking flag other than an Identity::sign parameter.
+        // Global contextual state was judged the simplest way. This value is thread-local and only accessible in a closure,
+        // so it should affect neither other threads nor other async tasks.
+        // A scope-guard is used to reset it as destructors are still run during panics.
         NEXT_STAKE.with(|next_stake| {
             let _guard = scopeguard::guard((), |_| next_stake.set(false));
             next_stake.set(true);
             f()
         })
     }
+    /// Gets the version of the IC app.
     #[allow(unused)]
     pub fn version(&self) -> AnyhowResult<LedgerVersion> {
         get_version(&self.inner.transport.lock().unwrap())
     }
+    /// Displays the principal and legacy account ID on the Ledger, and asks the user to confirm it.
     pub fn display_pk(&self) -> AnyhowResult<()> {
         let spinner = ProgressBar::new_spinner();
         spinner.set_message("Confirm principal on Ledger device...");
@@ -93,6 +106,7 @@ impl LedgerIdentity {
         spinner.finish_and_clear();
         Ok(())
     }
+    /// Gets the public key from the ledger that [`sender`](Self::sender) will return a principal derived from.
     pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
         get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
             .map_err(anyhow::Error::msg)
@@ -105,6 +119,9 @@ impl Identity for LedgerIdentity {
             get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())?;
         Ok(principal)
     }
+    /// Sign a request ID from a content map.
+    ///
+    /// The behavior of this function is affected by whether it is in a [`with_staking`](Self::with_staking) scope or not.
     #[allow(clippy::bool_to_int_with_if)]
     fn sign(&self, content: &EnvelopeContent) -> Result<Signature, String> {
         let path = derivation_path();
@@ -133,6 +150,7 @@ impl Identity for LedgerIdentity {
         let sig = sign_blob(
             &transport,
             &blob,
+            // See with_staking
             if next_stake { TX_STAKING } else { TX_NORMAL },
             &path,
             content,
@@ -185,7 +203,11 @@ fn interpret_response<'a>(
             APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "send_dfx") => {
                 Err(format!("Error {action}: Must use a principal or ICRC-1 account ID, not a legacy account ID"))
             }
-            APDUErrorCode::DataInvalid if matches!(content, Some(content) if !supported_transaction(content)) => {
+            APDUErrorCode::DataInvalid if matches!(content, 
+                Some(EnvelopeContent::Call { method_name, canister_id, .. } 
+                    | EnvelopeContent::Query { method_name, canister_id, .. }) 
+                        if !supported_transaction(canister_id, method_name)
+            ) => {
                 Err(format!(
                     "Error {action}: The IC app for Ledger only supports transfers and certain neuron management operations"
                 ))
@@ -211,35 +233,21 @@ fn interpret_response<'a>(
     }
 }
 
-fn supported_transaction(content: &EnvelopeContent) -> bool {
-    match content {
-        EnvelopeContent::Call {
-            canister_id,
-            method_name,
-            ..
-        }
-        | EnvelopeContent::Query {
-            canister_id,
-            method_name,
-            ..
-        } => {
-            if *canister_id == genesis_token_canister_id() {
-                method_name == "claim_neurons"
-            } else if *canister_id == governance_canister_id() {
-                method_name == "manage_neuron"
-                    || method_name == "manage_neuron_pb"
-                    || method_name == "list_neurons"
-                    || method_name == "list_neurons_pb"
-                    || method_name == "update_node_provider"
-            } else if *canister_id == ledger_canister_id() {
-                method_name == "send_pb" || method_name == "icrc1_transfer"
-            } else {
-                method_name == "icrc1_transfer"
-                    || method_name == "manage_neuron"
-                    || method_name == "list_neurons"
-            }
-        }
-        _ => true,
+pub fn supported_transaction(canister_id: &Principal, method_name: &str) -> bool {
+    if *canister_id == genesis_token_canister_id() {
+        method_name == "claim_neurons"
+    } else if *canister_id == governance_canister_id() {
+        method_name == "manage_neuron"
+            || method_name == "manage_neuron_pb"
+            || method_name == "list_neurons"
+            || method_name == "list_neurons_pb"
+            || method_name == "update_node_provider"
+    } else if *canister_id == ledger_canister_id() {
+        method_name == "send_pb" || method_name == "icrc1_transfer"
+    } else {
+        method_name == "icrc1_transfer"
+            || method_name == "manage_neuron"
+            || method_name == "list_neurons"
     }
 }
 

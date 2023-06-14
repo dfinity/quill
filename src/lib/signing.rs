@@ -1,6 +1,6 @@
 use crate::lib::get_idl_string;
 use crate::lib::{AnyhowResult, AuthInfo};
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
@@ -188,6 +188,13 @@ fn sign_ingress_with_request_status_query_internal(
     args: Vec<u8>,
     is_staking: bool,
 ) -> AnyhowResult<IngressWithRequestId> {
+    #[cfg(feature = "ledger")]
+    if matches!(auth, AuthInfo::Ledger)
+        && !super::ledger::supported_transaction(&canister_id, method_name)
+    {
+        bail!("Cannot use `--ledger` with this command. This version of Quill only supports transfers \
+            and certain neuron management operations with a Ledger device");
+    }
     let msg_with_req_id = sign(auth, canister_id, method_name, args, role, is_staking)?;
     let request_id = msg_with_req_id
         .request_id

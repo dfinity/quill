@@ -181,8 +181,14 @@ fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::read_pem;
+    use crate::{read_pem, CliOpts};
     use bip39::{Language, Mnemonic};
+    use clap::CommandFactory;
+
+    #[test]
+    fn check_cli() {
+        CliOpts::command().debug_assert()
+    }
 
     #[test]
     fn test_read_pem_none_none() {
