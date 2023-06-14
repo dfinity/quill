@@ -15,7 +15,7 @@ Depending on the subcommand, the options and flags you specify might apply to th
 When you have quill installed, you can use the following commands to specify the operation you want to perform. For reference information and examples that illustrate using these commands, select an appropriate command.
 
 -   [quill](./quill-parent.md)
--   [quill account-balance](./quill-account-balance.md)
+-   [quill balance](./quill-balance.md)
 -   [quill claim-neurons](./quill-claim-neurons.md)
 -   [quill ckbtc](./ckbtc/quill-ckbtc.md)
     -   [quill ckbtc balance](./ckbtc/quill-ckbtc-balance.md)

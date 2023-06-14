@@ -21,10 +21,10 @@ quill ckbtc balance [option]
 
 ## Options
 
-| Argument                          | Description                                      |
-|-----------------------------------|--------------------------------------------------|
-| `--of <OF>`                       | The account to check. Optional if a key is used. |
-| `--of-subaccount <OF_SUBACCOUNT>` | The subaccount of the account to check.          |
+| Argument                    | Description                                      |
+|-----------------------------|--------------------------------------------------|
+| `--of <OF>`                 | The account to check. Optional if a key is used. |
+| `--subaccount <SUBACCOUNT>` | The subaccount of the account to check.          |
 
 ## Examples
 
@@ -43,7 +43,7 @@ quill ckbtc balance --pem-file ./id.pem
 Subaccounts can be provided explicitly:
 
 ```sh
-quill ckbtc balance --of fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --of-subaccount 01
+quill ckbtc balance --of fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae --subaccount 01
 ```
 
 Or as part of an ICRC-1 account ID:

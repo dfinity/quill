@@ -5,7 +5,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use crate::lib::{ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER};
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use candid::Encode;
 use clap::Parser;
 use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
@@ -16,6 +16,10 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 pub struct TransferOpts {
     /// Destination account.
     pub to: ParsedNnsAccount,
+
+    /// Destination subaccount.
+    #[clap(long)]
+    pub to_subaccount: Option<ParsedSubaccount>,
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
     #[clap(long, value_parser = parse_tokens)]
@@ -41,6 +45,10 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     let to = opts.to;
     match to {
         ParsedNnsAccount::Original(to) => {
+            ensure!(
+                opts.to_subaccount.is_none(),
+                "Cannot specify both --subaccount and a legacy account ID"
+            );
             let args = Encode!(&SendArgs {
                 memo,
                 amount,
@@ -59,7 +67,10 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
             )?;
             Ok(vec![msg])
         }
-        ParsedNnsAccount::Icrc1(to) => {
+        ParsedNnsAccount::Icrc1(mut to) => {
+            if let Some(sub) = opts.to_subaccount {
+                to.subaccount = Some(sub.0 .0);
+            }
             let args = Encode!(&TransferArg {
                 memo: Some(memo.0.into()),
                 amount: amount.get_e8s().into(),

@@ -11,12 +11,15 @@ fn account_balance() {
     quill_query("account-balance ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693")
         .diff("account_balance/simple.txt");
 
-    quill_query_authed("account-balance").diff("account_balance/authed.txt");
+    quill_query_authed("balance").diff("account_balance/authed.txt");
 
     quill_query(
-        "account-balance bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1",
+        "balance --of bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1",
     )
-    .diff("account_balance/icrc1.txt")
+    .diff("account_balance/icrc1.txt");
+
+    quill_query("balance --of bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe --subaccount 1")
+        .diff("account_balance/icrc1.txt");
 }
 
 #[test]

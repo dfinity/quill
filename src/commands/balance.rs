@@ -1,10 +1,11 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
     lib::{
-        ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_ICRC1_LEDGER,
-        ROLE_NNS_LEDGER,
+        ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount,
+        ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
     },
 };
+use anyhow::ensure;
 use candid::{CandidType, Encode};
 use clap::Parser;
 
@@ -17,10 +18,18 @@ pub struct AccountBalanceArgs {
 
 /// Queries a ledger account balance.
 #[derive(Parser)]
-pub struct AccountBalanceOpts {
-    /// The id of the account to query. Optional if a key is used.
-    #[clap(required_unless_present = "auth")]
+#[clap(alias = "account-balance")]
+pub struct BalanceOpts {
+    #[clap(hidden = true)]
     account_id: Option<ParsedNnsAccount>,
+
+    /// The id of the account to query. Optional if a key is used.
+    #[clap(long, required_unless_present_any = ["auth", "account-id"])]
+    of: Option<ParsedNnsAccount>,
+
+    /// The subaccount of the account to query.
+    #[clap(long)]
+    subaccount: Option<ParsedSubaccount>,
 
     /// Skips confirmation and sends the message directly.
     #[clap(long, short)]
@@ -31,10 +40,9 @@ pub struct AccountBalanceOpts {
     dry_run: bool,
 }
 
-// We currently only support a subset of the functionality.
 #[tokio::main]
-pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: bool) -> AnyhowResult {
-    let account_id = if let Some(id) = opts.account_id {
+pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> AnyhowResult {
+    let account_id = if let Some(id) = opts.of.or(opts.account_id) {
         id
     } else {
         let (_, id) = get_ids(auth)?;
@@ -42,6 +50,10 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
     };
     match account_id {
         ParsedNnsAccount::Original(id) => {
+            ensure!(
+                opts.subaccount.is_none(),
+                "Cannot specify both --subaccount and a legacy account ID"
+            );
             let args = Encode!(&AccountBalanceArgs {
                 account: id.to_hex()
             })?;
@@ -56,7 +68,10 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
             )
             .await
         }
-        ParsedNnsAccount::Icrc1(id) => {
+        ParsedNnsAccount::Icrc1(mut id) => {
+            if let Some(sub) = opts.subaccount {
+                id.subaccount = Some(sub.0 .0);
+            }
             let args = Encode!(&id)?;
             submit_unsigned_ingress(
                 ledger_canister_id(),

@@ -6,7 +6,7 @@ use clap::Parser;
 use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
 
-mod account_balance;
+mod balance;
 mod ckbtc;
 mod claim_neurons;
 mod generate;
@@ -39,7 +39,7 @@ pub enum Command {
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
-    AccountBalance(account_balance::AccountBalanceOpts),
+    Balance(balance::BalanceOpts),
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
     ReplaceNodeProviderId(replace_node_provider_id::ReplaceNodeProviderIdOpts),
     #[clap(subcommand)]
@@ -82,8 +82,8 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
         Command::GetNeuronInfo(opts) => {
             get_neuron_info::exec(opts, fetch_root_key)?;
         }
-        Command::AccountBalance(opts) => {
-            account_balance::exec(auth, opts, fetch_root_key)?;
+        Command::Balance(opts) => {
+            balance::exec(auth, opts, fetch_root_key)?;
         }
         Command::UpdateNodeProvider(opts) => {
             let out = update_node_provider::exec(auth, opts)?;
