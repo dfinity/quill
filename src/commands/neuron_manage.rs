@@ -132,7 +132,7 @@ pub struct ManageOpts {
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     if opts.ledger {
         ensure!(
-            opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() /* && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()*/
+            opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
             && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
             && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject,
             "\
