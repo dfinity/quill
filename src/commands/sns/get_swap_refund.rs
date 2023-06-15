@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_swap::pb::v1::ErrorRefundIcpRequest;
 
 use crate::{
-    commands::get_ids,
+    commands::get_principal,
     lib::{
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ROLE_SNS_SWAP,
@@ -31,7 +31,7 @@ pub fn exec(
     let principal = if let Some(principal) = opts.principal {
         principal
     } else {
-        get_ids(auth)?.0
+        get_principal(auth)?
     };
     let message = ErrorRefundIcpRequest {
         source_principal_id: Some(principal.into()),

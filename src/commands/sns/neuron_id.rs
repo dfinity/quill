@@ -1,4 +1,4 @@
-use crate::commands::get_ids;
+use crate::commands::get_principal;
 use crate::lib::{AnyhowResult, AuthInfo};
 use candid::Principal;
 use clap::Parser;
@@ -22,7 +22,7 @@ pub fn exec(auth: &AuthInfo, opts: NeuronIdOpts) -> AnyhowResult {
     let principal_id = if let Some(principal_id) = opts.principal_id {
         principal_id
     } else {
-        get_ids(auth)?.0
+        get_principal(auth)?
     };
 
     let neuron_id = NeuronId::from(ledger::compute_neuron_staking_subaccount_bytes(

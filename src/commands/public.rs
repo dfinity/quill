@@ -1,15 +1,18 @@
 #[cfg(feature = "ledger")]
 use crate::lib::ledger::LedgerIdentity;
-use crate::lib::{get_account_id, get_identity, AnyhowResult, AuthInfo};
+use crate::lib::{
+    get_account_id, get_principal, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
+};
 use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use clap::Parser;
 use icp_ledger::AccountIdentifier;
+use icrc_ledger_types::icrc1::account::Account;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use sha3::{Digest, Keccak256};
 
 #[derive(Parser)]
-/// Prints the principal id and the account id.
+/// Prints the principal and the account IDs.
 pub struct PublicOpts {
     /// Principal for which to get the account_id.
     #[clap(long)]
@@ -21,13 +24,25 @@ pub struct PublicOpts {
     #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
     #[clap(long, requires = "ledgerhq")]
     display_on_ledger: bool,
+    /// Print IDs for the provided subaccount.
+    #[clap(long)]
+    subaccount: Option<ParsedSubaccount>,
 }
 
 /// Prints the account and the principal ids.
 pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
     let (principal_id, account_id) = get_public_ids(auth, &opts)?;
     println!("Principal id: {}", principal_id.to_text());
-    println!("Account id: {}", account_id);
+    println!("Legacy account id: {}", account_id);
+    if let Some(sub) = opts.subaccount {
+        println!(
+            "ICRC1 account id: {}",
+            ParsedAccount(Account {
+                owner: principal_id,
+                subaccount: Some(sub.0 .0)
+            })
+        )
+    }
     if opts.genesis_dfn {
         let AuthInfo::PemFile(pem) = auth else {
             bail!("Must supply a pem or seed file for the DFN address");
@@ -55,7 +70,10 @@ fn get_public_ids(
     match &opts.principal_id {
         Some(principal_id) => {
             let principal_id = Principal::from_text(principal_id)?;
-            Ok((principal_id, get_account_id(principal_id)?))
+            Ok((
+                principal_id,
+                get_account_id(principal_id, opts.subaccount.map(|x| x.0))?,
+            ))
         }
         None => {
             if let AuthInfo::NoAuth = auth {
@@ -63,7 +81,11 @@ fn get_public_ids(
                     "public-ids cannot be used without specifying a private key"
                 ))
             } else {
-                get_ids(auth)
+                let principal_id = get_principal(auth)?;
+                Ok((
+                    principal_id,
+                    get_account_id(principal_id, opts.subaccount.map(|x| x.0))?,
+                ))
             }
         }
     }
@@ -75,10 +97,4 @@ fn get_dfn(pem: &str) -> AnyhowResult<String> {
     let uncompressed = pubk.to_encoded_point(false);
     let hash = Keccak256::digest(&uncompressed.as_bytes()[1..]);
     Ok(hex::encode(&hash[12..]))
-}
-
-/// Returns the account id and the principal id if the private key was provided.
-pub fn get_ids(auth: &AuthInfo) -> AnyhowResult<(Principal, AccountIdentifier)> {
-    let principal_id = get_identity(auth)?.sender().map_err(|e| anyhow!(e))?;
-    Ok((principal_id, get_account_id(principal_id)?))
 }

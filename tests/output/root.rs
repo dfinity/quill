@@ -4,7 +4,7 @@ use tempfile::NamedTempFile;
 
 use crate::{
     escape_p, ledger_compatible, quill, quill_authed, quill_query, quill_query_authed, quill_send,
-    OutputExt, ACCOUNT_ID, PRINCIPAL,
+    OutputExt,
 };
 
 // Uncomment tests on next ledger app update
@@ -78,27 +78,21 @@ fn generate() {
     quill(&format!("public-ids --pem-file {}", escape_p(&pem))).diff_s(
         b"\
 Principal id: beckf-r6bg7-t6ju6-s7k45-b5jtj-mcm57-zjaie-svgrr-7ekzs-55v75-sae
-Account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1866",
+Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1866",
     )
 }
 
 #[test]
 fn public_ids() {
-    quill_authed("public-ids").diff_s(
-        format!(
-            "\
-Principal id: {PRINCIPAL}
-Account id: {ACCOUNT_ID}"
-        )
-        .as_ref(),
-    );
+    quill_authed("public-ids").diff("public_ids/basic.txt");
+    quill_authed("public-ids --subaccount 010203").diff("public_ids/with_subaccount.txt");
     quill(
         "public-ids --principal-id 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe",
     )
     .diff_s(
         b"\
 Principal id: 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe
-Account id: fe09de27b0fc2f9541f6e24ae41d0652aab116212dec7f75f0d502417539e6d4",
+Legacy account id: fe09de27b0fc2f9541f6e24ae41d0652aab116212dec7f75f0d502417539e6d4",
     );
     let mut seed = NamedTempFile::new().unwrap();
     seed.write_all(b"fee tube anger harsh pipe pull since path erase hire ordinary display")
@@ -110,7 +104,7 @@ Account id: fe09de27b0fc2f9541f6e24ae41d0652aab116212dec7f75f0d502417539e6d4",
     .diff_s(
         b"\
 Principal id: ed6vu-jnldn-5wync-3xnlm-jzlg2-5kjds-iqbcj-5pjgi-jhbw3-qawnx-eae
-Account id: 2adf562a6232efe3a3934880edb092ae481651fc961a61d845797d762f437fbd
+Legacy account id: 2adf562a6232efe3a3934880edb092ae481651fc961a61d845797d762f437fbd
 DFN address: bfcc18caabb2b3ca17c50c0d3834e368c4e4b88f",
     );
 }
