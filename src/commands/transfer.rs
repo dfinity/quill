@@ -1,13 +1,10 @@
 use crate::commands::send::{Memo, SendArgs, TimeStamp};
 use crate::lib::{
-    ledger_canister_id,
+    ledger_canister_id, now_nanos, parse_tokens,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
-    AnyhowResult, AuthInfo,
+    AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
 };
-use crate::lib::{
-    now_nanos, ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
-};
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::ensure;
 use candid::Encode;
 use clap::Parser;
 use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
@@ -92,30 +89,5 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
             )?;
             Ok(vec![msg])
         }
-    }
-}
-
-fn new_tokens(tokens: u64, e8s: u64) -> AnyhowResult<Tokens> {
-    Tokens::new(tokens, e8s)
-        .map_err(|err| anyhow!(err))
-        .context("Cannot create new tokens structure")
-}
-
-pub fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
-    let parse = |s: &str| {
-        s.parse::<u64>()
-            .context("Failed to parse tokens as unsigned integer")
-    };
-    match &amount.split('.').collect::<Vec<_>>().as_slice() {
-        [tokens] => new_tokens(parse(tokens)?, 0),
-        [tokens, e8s] => {
-            let mut e8s = e8s.to_string();
-            while e8s.len() < 8 {
-                e8s.push('0');
-            }
-            let e8s = &e8s[..8];
-            new_tokens(parse(tokens)?, parse(e8s)?)
-        }
-        _ => bail!("Cannot parse amount {}", amount),
     }
 }

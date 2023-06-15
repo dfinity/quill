@@ -7,24 +7,25 @@ Signs messages needed to stake governance tokens for a neuron. First, stake-neur
 The basic syntax for running `quill sns stake-neuron` commands is:
 
 ```bash
-quill sns stake-neuron --memo <MEMO> [option]
+quill sns stake-neuron <--name <NAME>|--nonce <NONCE>> --amount <AMOUNT> [option]
 ```
 
 ## Flags
 
-| Flag           | Description                 |
-|----------------|-----------------------------|
-| `-h`, `--help` | Displays usage information. |
-| `--claim-only` | No transfer will be made.   |
+| Flag                    | Description                 |
+|-------------------------|-----------------------------|
+| `-h`, `--help`          | Displays usage information. |
+| `--already-transferred` | No transfer will be made.   |
 
 ## Options
 
-| Option                                | Descriptio                                                                |
+| Option                                | Description                                                               |
 |---------------------------------------|---------------------------------------------------------------------------|
 | `--amount <AMOUNT>`                   | The amount of tokens in e8s to be transferred to the Governance canister. |
 | `--fee <FEE>`                         | The amount that the caller pays for the transaction.                      |
 | `--from-subaccount <FROM_SUBACCOUNT>` | The subaccount to make the transfer from.                                 |
-| `--memo <MEMO> `                      | An arbitrary number used in calculating the neuron's subaccount.          |
+| `--nonce <NONCE>`                     | An arbitrary number to identify this neuron.                              |
+| `--name <NAME>`                       | A name to identify this neuron.                                           |
 
 ## Remarks
 
@@ -34,4 +35,6 @@ The memo must be unique among the neurons claimed for a single principal. More i
 
 The default fee is 0.0001 tokens. Use the `--fee` flag when using an SNS that sets its own transaction fee.
 
-If `--claim-only` is specified, then only the neuron claim message will be generated. This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
+If `--already-transferred` is specified, then only the neuron claim message will be generated. This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
+
+As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.

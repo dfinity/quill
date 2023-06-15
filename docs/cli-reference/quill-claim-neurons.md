@@ -36,8 +36,8 @@ Each number in the `vec` is the ID of one of your neurons.
 
 As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send -`.
 
-For more information about genesis rewards, see the [How-To guide]. For more information about neurons, see [Neurons]. For creating non-genesis neurons, consult the documentation for [`quill neuron-stake`].
+For more information about genesis rewards, see the [How-To guide]. For more information about neurons, see [Neurons]. For creating non-genesis neurons, consult the documentation for [`quill stake-neuron`].
 
 [How-To guide]: https://wiki.internetcomputer.org/wiki/How-To:_Claim_neurons_for_seed_participants
 [Neurons]: https://internetcomputer.org/docs/current/tokenomics/nns/nns-intro#neurons
-[`quill neuron-stake`]: quill-neuron-stake.md
+[`quill stake-neuron`]: quill-stake-neuron.md

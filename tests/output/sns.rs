@@ -17,6 +17,7 @@ ledger_compatible![
     // make_proposal,
     // stake_neuron,
     stake_maturity,
+    // auto_stake_maturity,
     // vote,
 ];
 
@@ -28,21 +29,21 @@ fn balance() {
 #[test]
 fn dissolve_delay() {
     quill_sns_send(&format!(
-        "sns configure-dissolve-delay {NEURON_ID} --additional-dissolve-delay-seconds 1000"
+        "sns dissolve-delay {NEURON_ID} --increase-by 1000s"
     ))
     .diff("sns/dissolve_delay/add_seconds.txt");
+    quill_sns_send(&format!(
+        "sns dissolve-delay {NEURON_ID} --increase-to '6 days'"
+    ))
+    .diff("sns/dissolve_delay/set_seconds.txt");
 }
 
 #[test]
 fn dissolve() {
-    quill_sns_send(&format!(
-        "sns configure-dissolve-delay {NEURON_ID} --start-dissolving"
-    ))
-    .diff("sns/dissolve_delay/start_dissolving.txt");
-    quill_sns_send(&format!(
-        "sns configure-dissolve-delay {NEURON_ID} --stop-dissolving"
-    ))
-    .diff("sns/dissolve_delay/stop_dissolving.txt");
+    quill_sns_send(&format!("sns dissolve {NEURON_ID} --start"))
+        .diff("sns/dissolve_delay/start_dissolving.txt");
+    quill_sns_send(&format!("sns dissolve {NEURON_ID} --stop"))
+        .diff("sns/dissolve_delay/stop_dissolving.txt");
 }
 
 #[test]
@@ -62,6 +63,16 @@ fn stake_maturity() {
 }
 
 #[test]
+fn auto_stake_maturity() {
+    quill_sns_send(&format!("sns stake-maturity {NEURON_ID} --automatic"))
+        .diff("sns/manage_neuron/auto_stake_maturity.txt");
+    quill_sns_send(&format!(
+        "sns stake-maturity {NEURON_ID} --disable-automatic"
+    ))
+    .diff("sns/manage_neuron/disable_auto_stake_maturity.txt");
+}
+
+#[test]
 fn manage_neuron() {
     quill_sns_send(&format!(
         "sns disburse-maturity {NEURON_ID} --percentage 25 --to {PRINCIPAL}"
@@ -71,20 +82,18 @@ fn manage_neuron() {
         "sns disburse-maturity {NEURON_ID} --subaccount 03"
     ))
     .diff("sns/manage_neuron/disburse_subaccount.txt");
-    quill_sns_send(&format!(
-        "sns split-neuron {NEURON_ID} --memo 47 --amount 230.5"
-    ))
-    .diff("sns/manage_neuron/split.txt")
+    quill_sns_send(&format!("sns split {NEURON_ID} --memo 47 --amount 230.5"))
+        .diff("sns/manage_neuron/split.txt")
 }
 
 #[test]
 fn follow() {
     quill_sns_send(&format!(
-        "sns follow-neuron {NEURON_ID} --type transfer-sns-treasury-funds --followees {FOLLOWEE}"
+        "sns follow {NEURON_ID} --type transfer-sns-treasury-funds --followees {FOLLOWEE}"
     ))
     .diff("sns/follow/follow.txt");
     quill_sns_send(&format!(
-        "sns follow-neuron {NEURON_ID} --type upgrade-sns-to-next-version --unfollow"
+        "sns follow {NEURON_ID} --type upgrade-sns-to-next-version --unfollow"
     ))
     .diff("sns/follow/unfollow.txt");
 }
@@ -149,7 +158,7 @@ fn neuron_permission() {
 #[test]
 fn stake_neuron() {
     quill_sns_send("sns stake-neuron --amount 12 --memo 777").diff("sns/stake_neuron/memo.txt");
-    quill_sns_send("sns stake-neuron --memo 777 --claim-only")
+    quill_sns_send("sns stake-neuron --memo 777 --already-transferred")
         .diff("sns/stake_neuron/no_amount.txt");
 }
 
@@ -167,14 +176,10 @@ fn swap() {
 
 #[test]
 fn vote() {
-    quill_sns_send(&format!(
-        "sns register-vote {NEURON_ID} --proposal-id 1 --vote n"
-    ))
-    .diff("sns/vote/no.txt");
-    quill_sns_send(&format!(
-        "sns register-vote {NEURON_ID} --proposal-id 1 --vote y"
-    ))
-    .diff("sns/vote/yes.txt");
+    quill_sns_send(&format!("sns vote {NEURON_ID} --proposal-id 1 --reject"))
+        .diff("sns/vote/no.txt");
+    quill_sns_send(&format!("sns vote {NEURON_ID} --proposal-id 1 --approve"))
+        .diff("sns/vote/yes.txt");
 }
 
 #[test]

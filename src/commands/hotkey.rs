@@ -1,3 +1,4 @@
+use anyhow::ensure;
 use candid::{Encode, Principal};
 use clap::{ArgGroup, Parser};
 use ic_nns_governance::pb::v1::{
@@ -13,21 +14,25 @@ use crate::lib::{
 
 /// Signs a neuron configuration message to add or remove a hotkey.
 #[derive(Parser)]
-#[clap(group = ArgGroup::new("operation"), alias = "hot-key")]
+#[clap(group(ArgGroup::new("operation").required(true)), alias = "hot-key")]
 pub struct HotkeyOpts {
     /// The ID of the neuron to configure.
     neuron_id: ParsedNeuron,
 
     /// Add the specified principal as a hotkey.
-    #[clap(long, group = "operation")]
+    #[clap(long, group = "operation", value_name = "PRINCIPAL")]
     add: Option<Principal>,
 
     /// Remove the specified principal as a hotkey.
-    #[clap(long, group = "operation")]
+    #[clap(long, group = "operation", value_name = "PRINCIPAL")]
     remove: Option<Principal>,
+
+    #[clap(from_global)]
+    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: HotkeyOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    ensure!(!opts.ledger, "Cannot use `--ledger` with this command. This version of Quill does not support modifying hotkeys with a Ledger device.");
     let command = if let Some(add) = opts.add {
         Command::Configure(Configure {
             operation: Some(Operation::AddHotKey(AddHotKey {

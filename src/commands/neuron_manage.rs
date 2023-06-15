@@ -1,4 +1,4 @@
-use crate::commands::transfer::parse_tokens;
+use crate::lib::parse_tokens;
 use crate::lib::parse_neuron_id;
 use crate::lib::{
     governance_canister_id,

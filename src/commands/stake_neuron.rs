@@ -1,15 +1,12 @@
 use crate::{
-    commands::{
-        send::Memo,
-        transfer::{self, parse_tokens},
-    },
+    commands::{send::Memo, transfer},
     lib::{
-        governance_canister_id,
+        governance_canister_id, neuron_name_to_nonce, parse_tokens,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
-use anyhow::{anyhow, ensure};
+use anyhow::ensure;
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
@@ -36,11 +33,11 @@ pub struct StakeOpts {
     /// The name of the neuron (up to 8 ASCII characters).
     #[clap(
         long,
-        validator(neuron_name_validator),
+        value_parser = neuron_name_to_nonce,
         conflicts_with = "nonce",
         required_unless_present = "nonce"
     )]
-    name: Option<String>,
+    name: Option<u64>,
 
     /// The nonce of the neuron.
     #[clap(long)]
@@ -64,11 +61,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
         "Cannot use `--ledger` with this command. This version of Quill does not support staking new neurons with a Ledger device"
     );
     let (controller, _) = crate::commands::public::get_ids(auth)?;
-    let nonce = match (&opts.nonce, &opts.name) {
-        (Some(nonce), _) => *nonce,
-        (_, Some(name)) => convert_name_to_nonce(name),
-        _ => return Err(anyhow!("Either a nonce or a name should be specified")),
-    };
+    let nonce = opts.name.unwrap_or_else(|| opts.nonce.unwrap());
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = Account {
         owner: GOVERNANCE_CANISTER_ID.into(),
@@ -115,21 +108,4 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> [u8; 32] {
     data.update(controller.as_slice());
     data.update(&nonce.to_be_bytes());
     data.finish()
-}
-
-fn convert_name_to_nonce(name: &str) -> u64 {
-    let mut bytes = std::collections::VecDeque::from(name.as_bytes().to_vec());
-    while bytes.len() < 8 {
-        bytes.push_front(0)
-    }
-    let mut arr: [u8; 8] = [0; 8];
-    arr.copy_from_slice(&bytes.into_iter().collect::<Vec<_>>());
-    u64::from_be_bytes(arr)
-}
-
-fn neuron_name_validator(name: &str) -> Result<(), String> {
-    if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
-        return Err("The neuron name must be 8 character or less".to_string());
-    }
-    Ok(())
 }

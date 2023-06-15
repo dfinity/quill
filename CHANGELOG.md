@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Overhauled the command interface; broke up `neuron-manage` and unified command and flag names between NNS and SNS. (#202)
 - Added Ledger support via `--ledger`. (#199)
 - Added `--confirmation-text` to `quill sns pay`. (#195)
 - Fixed `quill ckbtc update-balance` allowing the anonymous principal. (#191)
