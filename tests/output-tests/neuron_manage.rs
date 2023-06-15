@@ -4,14 +4,10 @@ const NEURON_ID: &str = "2313380519530470538";
 
 #[test]
 fn hot_key() {
-    quill_send(&format!(
-        "neuron-manage {NEURON_ID} --add-hot-key {PRINCIPAL}"
-    ))
-    .diff("neuron_manage/add_hot_key.txt");
-    quill_send(&format!(
-        "neuron-manage {NEURON_ID} -a 7200 --remove-hot-key {PRINCIPAL} --start-dissolving"
-    ))
-    .diff("neuron_manage/remove_hot_key_and_dissolve.txt");
+    quill_send(&format!("hotkey {NEURON_ID} --add {PRINCIPAL}"))
+        .diff("neuron_manage/add_hot_key.txt");
+    quill_send(&format!("hotkey {NEURON_ID} --remove {PRINCIPAL}"))
+        .diff("neuron_manage/remove_hot_key.txt");
 }
 
 #[test]

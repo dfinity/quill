@@ -13,6 +13,7 @@ mod dissolve;
 mod generate;
 mod get_neuron_info;
 mod get_proposal_info;
+mod hotkey;
 mod list_neurons;
 mod list_proposals;
 mod neuron_manage;
@@ -36,6 +37,7 @@ pub enum Command {
     ClaimNeurons(claim_neurons::ClaimNeuronOpts),
     NeuronStake(neuron_stake::StakeOpts),
     Dissolve(dissolve::DissolveOpts),
+    Hotkey(hotkey::HotkeyOpts),
     NeuronManage(neuron_manage::ManageOpts),
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
@@ -62,6 +64,10 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
         }
         Command::Dissolve(opts) => {
             let out = dissolve::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Hotkey(opts) => {
+            let out = hotkey::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::NeuronStake(opts) => {
