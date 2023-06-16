@@ -22,7 +22,8 @@ quill public-ids [option]
 
 | Option                          | Description                                |
 |---------------------------------|--------------------------------------------|
-| `--principal-id <PRINCIPAL_ID>` | Principal for which to get the account_id. |
+| `--principal-id <PRINCIPAL_ID>` | Principal for which to get the account id. |
+| `--subaccount <SUBACCOUNT>`     | Subaccount to include in the account ID.   |
 
 ## Examples
 
@@ -38,5 +39,19 @@ This will produce the output:
 
 ```
 Principal id: 2vxsx-fae
-Account id: 1c7a48ba6a562aa9eaa2481a9049cdf0433b9738c992d698c31d8abf89cadc79
+Legacy account id: 1c7a48ba6a562aa9eaa2481a9049cdf0433b9738c992d698c31d8abf89cadc79
+```
+
+It can also be used to display ICRC-1 account IDs:
+
+```sh
+quill public-ids --subaccount 010203
+```
+
+This will produce output like:
+
+```
+Principal id: fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+Legacy account id: 0ae94165785f2ffb9c56ebc84f3d13299f28db78c80b1db43c0d114eed6105af
+ICRC-1 account id: fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae-al4mwai.10203
 ```

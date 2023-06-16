@@ -1,14 +1,14 @@
 use crate::{
     commands::send::submit_unsigned_ingress,
     lib::{
-        ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_ICRC1_LEDGER,
-        ROLE_NNS_LEDGER,
+        get_account_id, ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount,
+        ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
     },
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
 
-use super::get_ids;
+use super::get_principal;
 
 #[derive(CandidType)]
 pub struct AccountBalanceArgs {
@@ -37,7 +37,7 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
     let account_id = if let Some(id) = opts.account_id {
         id
     } else {
-        let (_, id) = get_ids(auth)?;
+        let id = get_account_id(get_principal(auth)?, None)?;
         ParsedNnsAccount::Original(id)
     };
     match account_id {

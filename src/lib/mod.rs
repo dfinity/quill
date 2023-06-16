@@ -366,10 +366,19 @@ pub fn parse_query_response(
     Err(anyhow!("Invalid cbor content"))
 }
 
-pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
+/// Returns the account id and the principal id if the private key was provided.
+pub fn get_principal(auth: &AuthInfo) -> AnyhowResult<Principal> {
+    let principal_id = get_identity(auth)?.sender().map_err(|e| anyhow!(e))?;
+    Ok(principal_id)
+}
+
+pub fn get_account_id(
+    principal_id: Principal,
+    subaccount: Option<Subaccount>,
+) -> AnyhowResult<AccountIdentifier> {
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
-    Ok(AccountIdentifier::new(base_types_principal, None))
+    Ok(AccountIdentifier::new(base_types_principal, subaccount))
 }
 
 /// Converts menmonic to PEM format
@@ -422,6 +431,7 @@ fn derivation_path() -> DerivationPath {
     DERIVATION_PATH.parse().unwrap()
 }
 
+#[derive(Copy, Clone)]
 pub struct ParsedSubaccount(pub Subaccount);
 
 impl FromStr for ParsedSubaccount {

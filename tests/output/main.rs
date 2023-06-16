@@ -14,7 +14,6 @@ mod root;
 mod sns;
 
 const PRINCIPAL: PrincipalPlaceholder = PrincipalPlaceholder;
-const ACCOUNT_ID: AccountIdPlaceholder = AccountIdPlaceholder;
 const ALICE: &str = "pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae";
 #[allow(unused)]
 const BOB: &str = "jndu2-vwnnt-bpu6t-2jrke-fg3kj-vbrgf-ajecf-gv6ju-onyol-wc3e5-kqe";
@@ -144,7 +143,6 @@ macro_rules! ledger_compatible {
 struct AuthSettings {
     args: Vec<String>,
     principal: String,
-    account_id: String,
     outputs_dir: String,
 }
 
@@ -153,7 +151,6 @@ impl Default for AuthSettings {
         Self {
             args: vec!["--pem-file".into(), default_pem().into()],
             principal: "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae".into(),
-            account_id: "345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752".into(),
             outputs_dir: "default".into(),
         }
     }
@@ -165,7 +162,6 @@ impl AuthSettings {
         Self {
             args: vec!["--ledger".into()],
             principal: "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe".into(),
-            account_id: "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676".into(),
             outputs_dir: "ledger".into(),
         }
     }
@@ -176,14 +172,6 @@ struct PrincipalPlaceholder;
 impl Display for PrincipalPlaceholder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AUTH_SETTINGS.with(|auth| auth.borrow().principal.fmt(f))
-    }
-}
-
-struct AccountIdPlaceholder;
-
-impl Display for AccountIdPlaceholder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        AUTH_SETTINGS.with(|auth| auth.borrow().account_id.fmt(f))
     }
 }
 

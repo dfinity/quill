@@ -51,7 +51,7 @@ pub fn exec(
     sns_canister_ids: &SnsCanisterIds,
     opts: PayOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (controller, _) = crate::commands::public::get_ids(auth)?;
+    let controller = crate::lib::get_principal(auth)?;
     let mut messages = vec![];
     if !opts.notify_only {
         let subaccount = Subaccount::from(&PrincipalId(controller));
