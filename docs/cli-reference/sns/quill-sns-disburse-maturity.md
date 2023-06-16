@@ -31,6 +31,38 @@ quill sns disburse-maturity <NEURON_ID> [option]
 | `--to <TO>`                 | The account to transfer the SNS utility tokens to    |
 | `--subaccount <SUBACCOUNT>` | The subaccount to transfer the SNS utility tokens to |
 
+## Examples
+
+The `quill sns disburse-maturity` command is used to liquidate a neuron's maturity into tokens.
+
+The simplest case is to disburse all the maturity to yourself:
+
+```sh
+quill sns disburse-maturity $neuron
+```
+
+But to disburse, for example, 30% of the maturity to the anonymous principal `2vxsx-fae`:
+
+```sh
+quill sns disburse-maturity $neuron --to 2vxsx-fae --percentage 30
+```
+
+This will return a response like:
+
+```candid
+(
+    record {
+        command = opt variant {
+            DisburseMaturity = record {
+                amount_disbursed_e8s = 350_000_000 : nat64;
+            }
+        };
+    }
+)
+```
+
+This number is in e8s, or hundred-millionths of a token; in this case, the user has disbursed 3.5 tokens.
+
 ## Remarks
 
 Unlike [`quill sns disburse`], disbursing maturity can be performed on any neuron that has accrued maturity, not only dissolved neurons; however, it can only be used to disburse voting rewards, not the initial stake. To instead add maturity to the stake, see [`quill sns stake-maturity`].

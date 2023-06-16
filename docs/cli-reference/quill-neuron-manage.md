@@ -235,7 +235,7 @@ As this is an update call, it will not actually make the request, but rather gen
 For more information about neurons, see [Neurons]; for more information about their role in the NNS, see [Network Nervous System][NNS]; for more information about the community fund, see [Community Fund].
 
 [108005]: https://dashboard.internetcomputer.org/proposal/108005
-[IC Dashboard]: https://dashboard.internetcomputer.org/
+[IC dashboard]: https://dashboard.internetcomputer.org/transactions
 [Neurons]: https://internetcomputer.org/docs/current/tokenomics/nns/nns-staking-voting-rewards#neurons
 [NNS]: https://internetcomputer.org/docs/current/tokenomics/nns/nns-intro
 [Community Fund]: https://internetcomputer.org/docs/current/tokenomics/nns/community-fund

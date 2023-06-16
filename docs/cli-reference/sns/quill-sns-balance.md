@@ -1,8 +1,6 @@
 # quill sns balance
 
-Sends a ledger account-balance query call. 
-
-The `--of` parameter is required if a signing key is not provided.
+Sends a ledger account-balance query call.
 
 ## Basic usage
 
@@ -27,6 +25,30 @@ quill sns balance [option]
 | `--of <OF>`                 | The account to query. Optional if a key is used. |
 | `--subaccount <SUBACCOUNT>` | The subaccount of the account to query.          |
 
+## Examples
+
+The `quill sns balance` command is used to get your balance in SNS utility tokens:
+
+```sh
+quill sns balance --pem-file ./identity.pem
+```
+
+Or another user's:
+
+```sh
+quill sns balance --of fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+```
+
+This will return a response like:
+
+```candid
+(350_000_000 : nat)
+```
+
+This number is in e8s, or hundred-millionths of a token; in this case, the user would have 3.5 tokens.
+
 ## Remarks
 
-The queried account can be specified as a separate principal and subaccount, or as a single ICRC-1 account.
+The queried account can be specified as a separate principal and subaccount, or as a single ICRC-1 account. The `--of` parameter is required if a signing key is not provided.
+
+As this is a query call, it cannot be executed on an air-gapped machine, but does not require access to your keys.

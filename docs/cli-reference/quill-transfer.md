@@ -55,5 +55,5 @@ As this is an update call, it will not actually make the request, but rather gen
 
 For more information about ICP and transfers, see [ICP Token].
 
-[IC dashboard]: https://dashboard.internetcomputer.org/
+[IC dashboard]: https://dashboard.internetcomputer.org/transactions
 [ICP Token]: https://wiki.internetcomputer.org/wiki/ICP_token
