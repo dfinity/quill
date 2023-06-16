@@ -49,10 +49,10 @@ See [`quill generate`] to generate a new key file, though Quill should be compat
 quill list-neurons --pem-file identity.pem
 ```
 
-Some commands that do not require your key will still be more useful with it; for example, `quill account-balance` doesn't require authentication, but providing your key prevents you from having to provide your principal or account ID:
+Some commands that do not require your key will still be more useful with it; for example, `quill balance` doesn't require authentication, but providing your key prevents you from having to provide your principal or account ID:
 
 ```sh
-quill account-balance --pem-file identity.pem
+quill balance --pem-file identity.pem
 ```
 
 Quill can also be used with a seed phrase directly, though using [`quill generate`] to convert it into a private key should be preferred instead. To authenticate using a `seed.txt` file containing your seed phrase:

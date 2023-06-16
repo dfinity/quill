@@ -13,9 +13,9 @@ quill sns new-sale-ticket --amount-icp-e8s <AMOUNT_ICP_E8S> [option]
 
 ## Flags
 
-| Flag            | Description                 |
-|-----------------|-----------------------------|
-| `-h`, `--help`  | Displays usage information. |
+| Flag           | Description                 |
+|----------------|-----------------------------|
+| `-h`, `--help` | Displays usage information. |
 
 ## Options
 
@@ -23,3 +23,7 @@ quill sns new-sale-ticket --amount-icp-e8s <AMOUNT_ICP_E8S> [option]
 |-----------------------------|-----------------------------------------------------------|
 | `--amount-icp-e8s <AMOUNT>` | The amount of ICP tokens to participate in this sns sale. |
 | `--subaccount <SUBACCOUNT>` | The subaccount you will use to pay for this ticket.       |
+
+## Remarks
+
+As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.

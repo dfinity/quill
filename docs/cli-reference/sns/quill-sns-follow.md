@@ -1,13 +1,13 @@
-# quill sns follow-neuron
+# quill sns follow
 
 Configures a neuron to follow another neuron or group of neurons.
 
 ## Basic usage
 
-The basic syntax for running `quill sns follow-neuron` commands is:
+The basic syntax for running `quill sns follow` commands is:
 
 ```bash
-quill sns follow-neuron <NEURON_ID> <--type <TYPE>|--function-id <FUNCTION_ID>> <--followees <FOLLOWEES>|--unfollow> [option]
+quill sns follow <NEURON_ID> <--type <TYPE>|--function-id <FUNCTION_ID>> <--followees <FOLLOWEES>|--unfollow> [option]
 ```
 
 ## Arguments

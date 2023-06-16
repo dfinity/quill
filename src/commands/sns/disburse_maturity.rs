@@ -17,6 +17,7 @@ use super::{governance_account, ParsedSnsNeuron, SnsCanisterIds};
 
 /// Converts the maturity from a neuron into SNS utility tokens.
 #[derive(Parser)]
+#[clap(alias = "spawn")]
 pub struct DisburseMaturityOpts {
     /// The neuron ID to disburse maturity from.
     neuron_id: ParsedSnsNeuron,

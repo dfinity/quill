@@ -38,3 +38,5 @@ quill sns pay --amount-icp-e8s <AMOUNT_ICP_E8S> --ticket-creation-time <TICKET_C
 Once the pay has been finalized, if it was successful, you will receive your neurons automatically. Your neuron's share of the governance tokens at sale finalization will be proportional to your share of the contributed ICP.
 
 If `--notify-only` is specified, only the notification message will be generated. This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
+
+As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.

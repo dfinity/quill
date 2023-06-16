@@ -1,14 +1,10 @@
-use crate::commands::transfer::parse_tokens;
-use crate::lib::now_nanos;
-use crate::lib::signing::{
-    sign_ingress_with_request_status_query, sign_staking_ingress_with_request_status_query,
-};
-use crate::{
-    lib::{
-        signing::IngressWithRequestId, AuthInfo, ParsedSubaccount, ROLE_ICRC1_LEDGER,
-        ROLE_SNS_GOVERNANCE,
+use crate::lib::{
+    neuron_name_to_nonce, now_nanos, parse_tokens,
+    signing::IngressWithRequestId,
+    signing::{
+        sign_ingress_with_request_status_query, sign_staking_ingress_with_request_status_query,
     },
-    AnyhowResult,
+    AnyhowResult, AuthInfo, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_SNS_GOVERNANCE,
 };
 use candid::Encode;
 use clap::Parser;
@@ -36,18 +32,27 @@ pub struct StakeNeuronOpts {
     /// The amount of tokens to be transferred to the Governance canister's ledger subaccount
     /// (the neuron's AccountId) from the AccountId derived from the provided private key. This is
     /// known as a staking transfer. These funds will be returned when disbursing the neuron.
-    #[clap(long, value_parser = parse_tokens, required_unless_present = "claim-only")]
+    #[clap(long, value_parser = parse_tokens, required_unless_present = "already-transferred")]
     amount: Option<Tokens>,
 
     /// The subaccount to make the transfer from. Only necessary if `--amount` is specified.
     #[clap(long, requires = "amount")]
     from_subaccount: Option<ParsedSubaccount>,
 
-    /// An arbitrary number used in calculating the neuron's subaccount. The memo must be unique among
-    /// the neurons claimed for a single PrincipalId. More information on ledger accounts and
-    /// subaccounts can be found here: https://smartcontracts.org/docs/integration/ledger-quick-start.html#_ledger_canister_overview
-    #[clap(long)]
-    memo: u64,
+    /// An arbitrary number to identify this neuron. The nonce must be unique among
+    /// the neurons claimed for a single principal.
+    #[clap(long, alias = "memo")]
+    nonce: Option<u64>,
+
+    /// A name to identify this neuron. The name must be unique among the
+    /// neurons claimed for a single principal.
+    #[clap(
+        long,
+        value_parser = neuron_name_to_nonce,
+        conflicts_with = "nonce",
+        required_unless_present = "nonce",
+    )]
+    name: Option<u64>,
 
     /// The amount that the caller pays for the transaction, default is 0.0001 tokens. Specify this amount
     /// when using an SNS that sets its own transaction fee
@@ -57,8 +62,13 @@ pub struct StakeNeuronOpts {
     /// If this flag is set, then no transfer will be made, and only the neuron claim message will be generated.
     /// This is useful if there was an error previously submitting the notification which you have since rectified,
     /// or if you have made the transfer with another tool.
-    #[clap(long, conflicts_with = "amount", conflicts_with = "from-subaccount")]
-    claim_only: bool,
+    #[clap(
+        long,
+        conflicts_with = "amount",
+        conflicts_with = "from-subaccount",
+        alias = "claim-only"
+    )]
+    already_transferred: bool,
 }
 
 pub fn exec(
@@ -66,8 +76,9 @@ pub fn exec(
     sns_canister_ids: &SnsCanisterIds,
     opts: StakeNeuronOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
+    let nonce = opts.name.unwrap_or_else(|| opts.nonce.unwrap());
     let (controller, _) = crate::commands::public::get_ids(auth)?;
-    let neuron_subaccount = ledger::compute_neuron_staking_subaccount(controller.into(), opts.memo);
+    let neuron_subaccount = ledger::compute_neuron_staking_subaccount(controller.into(), nonce);
 
     let governance_canister_id = sns_canister_ids.governance_canister_id;
 
@@ -77,7 +88,7 @@ pub fn exec(
     // account on the ledger to a subaccount of the governance canister.
     if let Some(amount) = opts.amount {
         let args = TransferArg {
-            memo: Some(Memo::from(opts.memo)),
+            memo: Some(Memo::from(nonce)),
             amount: amount.get_e8s().into(),
             fee: opts.fee.map(|fee| fee.get_e8s().into()),
             from_subaccount: opts.from_subaccount.map(|x| x.0 .0),
@@ -103,7 +114,7 @@ pub fn exec(
         subaccount: neuron_subaccount.to_vec(),
         command: Some(manage_neuron::Command::ClaimOrRefresh(ClaimOrRefresh {
             by: Some(By::MemoAndController(MemoAndController {
-                memo: opts.memo,
+                memo: nonce,
                 controller: Some(controller.into()),
             }))
         }))

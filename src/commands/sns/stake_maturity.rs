@@ -1,8 +1,10 @@
 use anyhow::Error;
 use candid::Encode;
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 use ic_sns_governance::pb::v1::{
-    manage_neuron::{Command, StakeMaturity},
+    manage_neuron::{
+        configure::Operation, ChangeAutoStakeMaturity, Command, Configure, StakeMaturity,
+    },
     ManageNeuron,
 };
 
@@ -17,10 +19,18 @@ use super::{ParsedSnsNeuron, SnsCanisterIds};
 ///
 /// A neuron's total stake is the combination of its staked governance tokens and staked maturity.
 #[derive(Parser)]
+#[clap(group(ArgGroup::new("operation").required(true)))]
 pub struct StakeMaturityOpts {
     /// The percentage of the current maturity to stake (1-100).
-    #[clap(long, value_parser = 1..=100)]
-    percentage: i64,
+    #[clap(long, value_parser = 1..=100, group = "operation")]
+    percentage: Option<i64>,
+
+    /// Enable automatic maturity staking.
+    #[clap(long, group = "operation")]
+    automatic: bool,
+    /// Disable automatic maturity staking.
+    #[clap(long, group = "operation")]
+    disable_automatic: bool,
 
     /// The id of the neuron to configure as a hex encoded string.
     neuron_id: ParsedSnsNeuron,
@@ -35,10 +45,29 @@ pub fn exec(
 
     let governance_canister_id = sns_canister_ids.governance_canister_id;
 
-    let command = ManageNeuron {
-        command: Some(Command::StakeMaturity(StakeMaturity {
-            percentage_to_stake: Some(opts.percentage as u32),
-        })),
+    let command = if opts.automatic {
+        Command::Configure(Configure {
+            operation: Some(Operation::ChangeAutoStakeMaturity(
+                ChangeAutoStakeMaturity {
+                    requested_setting_for_auto_stake_maturity: true,
+                },
+            )),
+        })
+    } else if opts.disable_automatic {
+        Command::Configure(Configure {
+            operation: Some(Operation::ChangeAutoStakeMaturity(
+                ChangeAutoStakeMaturity {
+                    requested_setting_for_auto_stake_maturity: false,
+                },
+            )),
+        })
+    } else {
+        Command::StakeMaturity(StakeMaturity {
+            percentage_to_stake: Some(opts.percentage.unwrap_or(100) as u32),
+        })
+    };
+    let arg = ManageNeuron {
+        command: Some(command),
         subaccount: neuron_subaccount.to_vec(),
     };
 
@@ -47,7 +76,7 @@ pub fn exec(
         governance_canister_id,
         ROLE_SNS_GOVERNANCE,
         "manage_neuron",
-        Encode!(&command)?,
+        Encode!(&arg)?,
     )?;
     Ok(vec![message])
 }

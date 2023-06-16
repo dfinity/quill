@@ -7,8 +7,9 @@ use ic_sns_governance::pb::v1::{
 use icp_ledger::Tokens;
 
 use crate::{
-    commands::{get_account, transfer::parse_tokens},
+    commands::get_account,
     lib::{
+        parse_tokens,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_SNS_GOVERNANCE,
     },

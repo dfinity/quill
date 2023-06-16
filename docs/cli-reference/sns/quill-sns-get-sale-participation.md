@@ -27,3 +27,5 @@ quill sns get-sale-participation [option]
 ## Remarks
 
 If the principal is unspecified, the caller's principal will be used.
+
+As this is a query call, it cannot be executed on an air-gapped machine, but does not require access to your keys.

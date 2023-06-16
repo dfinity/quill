@@ -19,15 +19,18 @@ ledger_compatible![
 
 #[test]
 fn account_balance() {
-    quill_query("account-balance ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693")
+    quill_query("balance --of ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693")
         .diff("account_balance/simple.txt");
 
-    quill_query_authed("account-balance").diff("account_balance/authed.txt");
+    quill_query_authed("balance").diff("account_balance/authed.txt");
 
     quill_query(
-        "account-balance bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1",
+        "balance --of bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe-ce6fvoi.1",
     )
-    .diff("account_balance/icrc1.txt")
+    .diff("account_balance/icrc1.txt");
+
+    quill_query("balance --of bz3ru-7uwvd-5yubs-mc75n-pbtpy-rz4bh-detlt-qmrls-sprg2-g7vmz-mqe --subaccount 1")
+        .diff("account_balance/icrc1.txt");
 }
 
 #[test]
@@ -58,10 +61,10 @@ fn list_proposals() {
 
 #[test]
 fn neuron_stake() {
-    quill_send("neuron-stake --amount 12 --from-subaccount 01 --nonce 777")
+    quill_send("stake-neuron --amount 12 --from-subaccount 01 --nonce 777")
         .diff("neuron_stake/with_nonce.txt");
-    quill_send("neuron-stake --amount 12 --name myNeuron").diff("neuron_stake/with_name.txt");
-    quill_send("neuron-stake --name myNeuron --already-transferred")
+    quill_send("stake-neuron --amount 12 --name myNeuron").diff("neuron_stake/with_name.txt");
+    quill_send("stake-neuron --name myNeuron --already-transferred")
         .diff("neuron_stake/stake_only.txt");
 }
 
@@ -150,7 +153,7 @@ fn ledger_fail_early() {
     quill("replace-node-provider-id --ledger --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae \
             --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae")
         .diff_err("ledger_incompatible/by_function.txt");
-    quill("neuron-stake --ledger --amount 12 --name myNeuron")
+    quill("stake-neuron --ledger --amount 12 --name myNeuron")
         .diff_err("ledger_incompatible/by_command.txt");
     quill("neuron-manage 1 --ledger --join-community-fund")
         .diff_err("ledger_incompatible/by_flag.txt");

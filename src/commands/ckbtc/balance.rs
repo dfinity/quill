@@ -19,8 +19,8 @@ pub struct BalanceOpts {
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to check.
-    #[clap(long)]
-    of_subaccount: Option<ParsedSubaccount>,
+    #[clap(long, alias = "of-subaccount")]
+    subaccount: Option<ParsedSubaccount>,
 
     /// Skips confirmation and sends the message immediately.
     #[clap(long, short)]
@@ -37,7 +37,7 @@ pub struct BalanceOpts {
 
 #[tokio::main]
 pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> AnyhowResult {
-    let account = get_account(Some(auth), opts.of, opts.of_subaccount)?;
+    let account = get_account(Some(auth), opts.of, opts.subaccount)?;
     submit_unsigned_ingress(
         ckbtc_canister_id(opts.testnet),
         ROLE_ICRC1_LEDGER,

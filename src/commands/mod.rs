@@ -6,24 +6,35 @@ use clap::Parser;
 use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
 
-mod account_balance;
+mod balance;
 mod ckbtc;
 mod claim_neurons;
+mod community_fund;
+mod disburse;
+mod dissolve;
+mod dissolve_delay;
+mod follow;
 mod generate;
 mod get_neuron_info;
 mod get_proposal_info;
+mod hotkey;
 mod list_neurons;
 mod list_proposals;
+mod merge;
 mod neuron_manage;
-mod neuron_stake;
 mod public;
 mod qrcode;
 mod replace_node_provider_id;
 mod request_status;
 mod send;
 mod sns;
+mod spawn;
+mod split;
+mod stake_maturity;
+mod stake_neuron;
 mod transfer;
 mod update_node_provider;
+mod vote;
 
 pub use public::get_ids;
 
@@ -33,13 +44,25 @@ pub enum Command {
     Send(send::SendOpts),
     Transfer(transfer::TransferOpts),
     ClaimNeurons(claim_neurons::ClaimNeuronOpts),
-    NeuronStake(neuron_stake::StakeOpts),
+    CommunityFund(community_fund::CommunityFundOpts),
+    StakeNeuron(stake_neuron::StakeOpts),
+    Disburse(disburse::DisburseOpts),
+    Dissolve(dissolve::DissolveOpts),
+    DissolveDelay(dissolve_delay::DissolveDelayOpts),
+    Follow(follow::FollowOpts),
+    Hotkey(hotkey::HotkeyOpts),
+    Merge(merge::MergeOpts),
+    #[clap(hide = true)]
     NeuronManage(neuron_manage::ManageOpts),
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
+    Spawn(spawn::SpawnOpts),
+    Split(split::SplitOpts),
+    StakeMaturity(stake_maturity::StakeMaturityOpts),
+    Vote(vote::VoteOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
-    AccountBalance(account_balance::AccountBalanceOpts),
+    Balance(balance::BalanceOpts),
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
     ReplaceNodeProviderId(replace_node_provider_id::ReplaceNodeProviderIdOpts),
     #[clap(subcommand)]
@@ -58,12 +81,56 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             let out = transfer::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
-        Command::NeuronStake(opts) => {
-            let out = neuron_stake::exec(auth, opts)?;
+        Command::Disburse(opts) => {
+            let out = disburse::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Dissolve(opts) => {
+            let out = dissolve::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::DissolveDelay(opts) => {
+            let out = dissolve_delay::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::CommunityFund(opts) => {
+            let out = community_fund::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Follow(opts) => {
+            let out = follow::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Hotkey(opts) => {
+            let out = hotkey::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Merge(opts) => {
+            let out = merge::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::StakeNeuron(opts) => {
+            let out = stake_neuron::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::NeuronManage(opts) => {
             let out = neuron_manage::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Spawn(opts) => {
+            let out = spawn::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Split(opts) => {
+            let out = split::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::StakeMaturity(opts) => {
+            let out = stake_maturity::exec(auth, opts)?;
+            print_vec(qr, &out)?;
+        }
+        Command::Vote(opts) => {
+            let out = vote::exec(auth, opts)?;
             print_vec(qr, &out)?;
         }
         Command::ListNeurons(opts) => {
@@ -82,8 +149,8 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
         Command::GetNeuronInfo(opts) => {
             get_neuron_info::exec(opts, fetch_root_key)?;
         }
-        Command::AccountBalance(opts) => {
-            account_balance::exec(auth, opts, fetch_root_key)?;
+        Command::Balance(opts) => {
+            balance::exec(auth, opts, fetch_root_key)?;
         }
         Command::UpdateNodeProvider(opts) => {
             let out = update_node_provider::exec(auth, opts)?;

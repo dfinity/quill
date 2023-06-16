@@ -24,15 +24,16 @@ use super::{ParsedSnsNeuron, SnsCanisterIds};
 #[clap(
     group(ArgGroup::new("function").required(true)),
     group(ArgGroup::new("following").required(true)),
+    alias = "follow-neuron"
 )]
-pub struct FollowNeuronOpts {
+pub struct FollowOpts {
     /// The neuron to configure.
     neuron_id: ParsedSnsNeuron,
     /// The name of the built-in proposal function to restrict following to.
     #[clap(long, group = "function", value_enum)]
     r#type: Option<Type>,
     /// The numeric ID of the proposal function to restrict following to.
-    #[clap(long, group = "function")]
+    #[clap(long, group = "function", alias = "topic-id")]
     function_id: Option<u64>,
     /// A list of neurons to follow for this proposal function, separated by commas.
     #[clap(long, action = ArgAction::Append, value_delimiter = ',', group = "following")]
@@ -60,7 +61,7 @@ enum Type {
 pub fn exec(
     auth: &AuthInfo,
     canister_ids: &SnsCanisterIds,
-    opts: FollowNeuronOpts,
+    opts: FollowOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let function_id = if let Some(id) = opts.function_id {
         id

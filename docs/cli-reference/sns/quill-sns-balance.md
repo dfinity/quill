@@ -30,3 +30,5 @@ quill sns balance [option]
 ## Remarks
 
 The queried account can be specified as a separate principal and subaccount, or as a single ICRC-1 account.
+
+As this is a query call, it cannot be executed on an air-gapped machine, but does not require access to your keys.

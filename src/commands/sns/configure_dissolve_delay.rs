@@ -19,6 +19,10 @@ use ic_sns_governance::pb::v1::{
 
 use super::{ParsedSnsNeuron, SnsCanisterIds};
 
+/*
+   Deprecated. Further functionality should target the dissolve or dissolve-delay commands.
+*/
+
 /// Signs a ManageNeuron message to configure the dissolve delay of a neuron. With this command
 /// neuron holders can start dissolving, stop dissolving, or increase dissolve delay. The
 /// dissolve delay of a neuron determines its voting power, its ability to vote, its ability
