@@ -368,10 +368,19 @@ pub fn parse_query_response(
     Err(anyhow!("Invalid cbor content"))
 }
 
-pub fn get_account_id(principal_id: Principal) -> AnyhowResult<AccountIdentifier> {
+/// Returns the account id and the principal id if the private key was provided.
+pub fn get_principal(auth: &AuthInfo) -> AnyhowResult<Principal> {
+    let principal_id = get_identity(auth)?.sender().map_err(|e| anyhow!(e))?;
+    Ok(principal_id)
+}
+
+pub fn get_account_id(
+    principal_id: Principal,
+    subaccount: Option<Subaccount>,
+) -> AnyhowResult<AccountIdentifier> {
     let base_types_principal =
         PrincipalId::try_from(principal_id.as_slice()).map_err(|err| anyhow!(err))?;
-    Ok(AccountIdentifier::new(base_types_principal, None))
+    Ok(AccountIdentifier::new(base_types_principal, subaccount))
 }
 
 pub fn parse_neuron_id(id: &str) -> AnyhowResult<u64> {
@@ -480,6 +489,7 @@ pub fn neuron_name_to_nonce(name: &str) -> AnyhowResult<u64> {
     Ok(u64::from_be_bytes(arr))
 }
 
+#[derive(Copy, Clone)]
 pub struct ParsedSubaccount(pub Subaccount);
 
 impl FromStr for ParsedSubaccount {

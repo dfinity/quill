@@ -60,7 +60,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
         !opts.ledger,
         "Cannot use `--ledger` with this command. This version of Quill does not support staking new neurons with a Ledger device"
     );
-    let (controller, _) = crate::commands::public::get_ids(auth)?;
+    let controller = crate::lib::get_principal(auth)?;
     let nonce = opts.name.unwrap_or_else(|| opts.nonce.unwrap());
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
     let account = Account {

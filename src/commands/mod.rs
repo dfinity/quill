@@ -1,6 +1,6 @@
 //! This module implements the command-line API.
 
-use crate::lib::{AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
+use crate::lib::{get_principal, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
 use anyhow::Context;
 use clap::Parser;
 use icrc_ledger_types::icrc1::account::Account;
@@ -35,8 +35,6 @@ mod stake_neuron;
 mod transfer;
 mod update_node_provider;
 mod vote;
-
-pub use public::get_ids;
 
 #[derive(Parser)]
 pub enum Command {
@@ -255,7 +253,7 @@ fn get_account(
     let mut account = if let Some(acct) = account {
         acct.0
     } else if let Some(auth) = auth {
-        let (principal, _) = get_ids(auth)?;
+        let principal = get_principal(auth)?;
         Account {
             owner: principal,
             subaccount: None,

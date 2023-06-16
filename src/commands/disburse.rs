@@ -8,14 +8,12 @@ use ic_nns_governance::pb::v1::{
 use icp_ledger::Tokens;
 use icrc_ledger_types::icrc1::account::Account;
 
-use crate::lib::parse_tokens;
+use crate::lib::{get_principal, parse_tokens};
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ParsedNeuron, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
 };
-
-use super::get_ids;
 
 /// Signs a disbursal message to convert a dissolved neuron into ICP.
 #[derive(Parser)]
@@ -51,7 +49,7 @@ pub fn exec(auth: &AuthInfo, opts: DisburseOpts) -> AnyhowResult<Vec<IngressWith
                 bail!("Cannot specify both --subaccount and a legacy account ID")
             }
             None => Some(ParsedNnsAccount::Icrc1(Account {
-                owner: get_ids(auth)?.0,
+                owner: get_principal(auth)?,
                 subaccount: Some(sub.0 .0),
             })),
         }

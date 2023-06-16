@@ -2,7 +2,7 @@ use candid::Principal;
 use clap::Parser;
 
 use crate::{
-    commands::get_ids,
+    commands::get_principal,
     lib::{AnyhowResult, AuthInfo, ParsedAccount},
 };
 
@@ -29,7 +29,7 @@ pub fn exec(auth: &AuthInfo, opts: GetWithdrawalAddressOpts) -> AnyhowResult {
     let principal = if let Some(principal) = opts.of {
         principal
     } else {
-        get_ids(auth)?.0
+        get_principal(auth)?
     };
     let address = ParsedAccount(ckbtc_withdrawal_address(&principal, opts.testnet));
     println!("{address}");

@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_swap::pb::v1::GetBuyerStateRequest;
 
 use crate::{
-    commands::{get_ids, send::submit_unsigned_ingress},
+    commands::{get_principal, send::submit_unsigned_ingress},
     lib::{AnyhowResult, AuthInfo, ROLE_SNS_SWAP},
 };
 
@@ -35,7 +35,7 @@ pub async fn exec(
     let principal = if let Some(principal) = opts.principal {
         principal
     } else {
-        get_ids(auth)?.0
+        get_principal(auth)?
     };
     let message = GetBuyerStateRequest {
         principal_id: Some(principal.into()),

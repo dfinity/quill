@@ -77,7 +77,7 @@ pub fn exec(
     opts: StakeNeuronOpts,
 ) -> AnyhowResult<Vec<IngressWithRequestId>> {
     let nonce = opts.name.unwrap_or_else(|| opts.nonce.unwrap());
-    let (controller, _) = crate::commands::public::get_ids(auth)?;
+    let controller = crate::lib::get_principal(auth)?;
     let neuron_subaccount = ledger::compute_neuron_staking_subaccount(controller.into(), nonce);
 
     let governance_canister_id = sns_canister_ids.governance_canister_id;

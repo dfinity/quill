@@ -1,4 +1,4 @@
-use crate::lib::{mnemonic_to_pem, AnyhowResult, AuthInfo};
+use crate::lib::{get_account_id, mnemonic_to_pem, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use bip39::{Language, Mnemonic};
 use clap::Parser;
@@ -66,8 +66,9 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     if let Some(path) = opts.pem_file {
         std::fs::write(path, &pem)?;
     }
-    let (principal_id, account_id) = crate::commands::public::get_ids(&AuthInfo::PemFile(pem))?;
+    let principal_id = crate::lib::get_principal(&AuthInfo::PemFile(pem))?;
+    let account_id = get_account_id(principal_id, None)?;
     println!("Principal id: {}", principal_id);
-    println!("Account id: {}", account_id);
+    println!("Legacy account id: {}", account_id);
     Ok(())
 }

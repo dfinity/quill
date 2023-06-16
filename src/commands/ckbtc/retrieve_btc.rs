@@ -7,7 +7,7 @@ use ic_ckbtc_minter::updates::retrieve_btc::RetrieveBtcArgs;
 use icrc_ledger_types::icrc1::transfer::{Memo, TransferArg};
 
 use crate::{
-    commands::get_ids,
+    commands::get_principal,
     lib::{
         ckbtc_canister_id, ckbtc_minter_canister_id, now_nanos,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -58,7 +58,7 @@ pub struct RetrieveBtcOpts {
 }
 
 pub fn exec(auth: &AuthInfo, opts: RetrieveBtcOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    let (principal, _) = get_ids(auth)?;
+    let principal = get_principal(auth)?;
     let mut messages = vec![];
     let amount = opts.satoshis.unwrap_or_else(|| opts.amount.unwrap().0);
     if !opts.already_transferred {
