@@ -39,5 +39,5 @@ teardown() {
     # check that increasing dissolve delay worked, this time using list-neurons
     assert_command bash -c "quill list-neurons --pem-file \"$PEM_LOCATION/identity.pem\" > neuron.call"
     assert_command quill send neuron.call --yes --insecure-local-dev-mode
-    assert_string_match "dissolve_delay_seconds = 15_778_800"
+    assert_string_match "dissolve_delay_seconds = 15_780_096"
 }
