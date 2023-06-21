@@ -38,7 +38,7 @@ jobs:
             name: linux-arm32
             target: arm-unknown-linux-gnueabihf
             cross: true
-            target_file: target/arm-unknown-linux-gnueabihf/release-arm/quill
+            target_file: target/arm-unknown-linux-gnueabihf/release/quill
             asset_name: quill-linux-arm32
             features: [static-ssl, hsm]
           - os: ubuntu-latest
