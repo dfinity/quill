@@ -1,5 +1,5 @@
 use crate::commands::get_account;
-use crate::commands::transfer::parse_tokens;
+use crate::lib::parse_tokens;
 use crate::lib::{now_nanos, ParsedAccount, ROLE_ICRC1_LEDGER};
 use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},

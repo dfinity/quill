@@ -32,10 +32,10 @@ quill sns disburse <NEURON_ID> [option]
 
 ## Remarks
 
-Only a neuron that has fully dissolved may be disbursed. To start dissolving a neuron, see [`quill sns configure-dissolve-delay`].
+Only a neuron that has fully dissolved may be disbursed. To start dissolving a neuron, see [`quill sns dissolve`].
 
 If `<TO>` is unset, it will default to the caller; if `<AMOUNT>` is unset, it will fully consume the neuron.
 
 As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.
 
-[`quill sns configure-dissolve-delay`]: quill-sns-configure-dissolve-delay.md
+[`quill sns dissolve`]: quill-sns-dissolve.md

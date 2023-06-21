@@ -1,4 +1,5 @@
-use crate::commands::transfer::parse_tokens;
+use crate::lib::parse_neuron_id;
+use crate::lib::parse_tokens;
 use crate::lib::{
     governance_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -143,7 +144,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
-        id: parse_neuron_id(opts.neuron_id)?,
+        id: parse_neuron_id(&opts.neuron_id)?,
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
@@ -291,7 +292,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
             id: id.clone(),
             command: Some(Command::Merge(Merge {
                 source_neuron_id: Some(NeuronId {
-                    id: parse_neuron_id(neuron_id)?
+                    id: parse_neuron_id(&neuron_id)?
                 }),
             })),
             neuron_id_or_subaccount: None,
@@ -397,10 +398,4 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
         )?);
     }
     Ok(generated)
-}
-
-fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
-    id.replace('_', "")
-        .parse()
-        .context("Failed to parse the neuron id")
 }

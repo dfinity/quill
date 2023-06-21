@@ -39,11 +39,12 @@ To get the principal and the account id:
 
 This is how you’d stake/top-up a neuron:
 
-    quill neuron-stake --amount 2.5 --name 1 --pem-file <path>
+    quill stake-neuron --amount 2.5 --name 1 --pem-file <path>
 
 Managing the neuron:
 
-    quill neuron-manage <neuron-id> [OPERATIONS] --pem-file <path>
+    quill vote <neuron-id> --proposal-id <id> --approve --pem-file <path>
+    quill spawn <neuron-id> --percentage 75
 
 All the commands above will generate signed messages, which can be sent on the online machine using the `send` command
 from above.

@@ -1,20 +1,14 @@
-# quill account-balance
+# quill balance
 
 Queries a ledger account for its balance.
 
 ## Basic usage
 
-The basic syntax for running `quill account-balance` commands is:
+The basic syntax for running `quill balance` commands is:
 
 ``` bash
-quill account-balance [flag] <account id>
+quill balance [option]
 ```
-
-## Arguments
-
-| Argument       | Description                                                |
-|----------------|------------------------------------------------------------|
-| `<account id>` | The id of the account to query. Optional if a key is used. |
 
 ## Flags
 
@@ -24,14 +18,21 @@ quill account-balance [flag] <account id>
 | `-h`, `--help` | Displays usage information.                        |
 | `-y`, `--yes`  | Skips confirmation and sends the message directly. |
 
+## Options
+
+| Argument                    | Description                                                |
+|-----------------------------|------------------------------------------------------------|
+| `--of <OF>`                 | The id of the account to query. Optional if a key is used. |
+| `--subaccount <SUBACCOUNT>` | The subaccount of the account to query.                    |
+
 ## Examples
 
-The `quill account-balance` command is used to check the ICP balance of a particular NNS ledger account.
+The `quill balance` command is used to check the ICP balance of a particular NNS ledger account.
 
 For example, to check the balance of the account `345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752`, you would say:
 
 ```sh
-quill account-balance 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752
+quill balance 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752
 ```
 
 This will produce a response like 

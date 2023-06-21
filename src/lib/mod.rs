@@ -17,11 +17,12 @@ use ic_agent::{
 use ic_base_types::PrincipalId;
 #[cfg(feature = "hsm")]
 use ic_identity_hsm::HardwareIdentity;
+use ic_nns_common::pb::v1::NeuronId;
 use ic_nns_constants::{
     GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
     SNS_WASM_CANISTER_ID,
 };
-use icp_ledger::{AccountIdentifier, Subaccount};
+use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
 use icrc_ledger_types::icrc1::account::Account;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
@@ -30,6 +31,7 @@ use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
 };
 use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
+use std::str::FromStr;
 #[cfg(feature = "hsm")]
 use std::{cell::RefCell, path::PathBuf};
 use std::{
@@ -38,7 +40,7 @@ use std::{
     path::Path,
     time::Duration,
 };
-use std::{str::FromStr, time::SystemTime};
+use time::OffsetDateTime;
 
 #[cfg(feature = "ledger")]
 use self::ledger::LedgerIdentity;
@@ -381,6 +383,24 @@ pub fn get_account_id(
     Ok(AccountIdentifier::new(base_types_principal, subaccount))
 }
 
+pub fn parse_neuron_id(id: &str) -> AnyhowResult<u64> {
+    id.replace('_', "")
+        .parse()
+        .context("Invalid digit in neuron ID")
+}
+
+#[derive(Clone)]
+pub struct ParsedNeuron(pub NeuronId);
+
+impl FromStr for ParsedNeuron {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(NeuronId {
+            id: parse_neuron_id(s)?,
+        }))
+    }
+}
+
 /// Converts menmonic to PEM format
 pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> AnyhowResult<Vec<u8>> {
@@ -429,6 +449,44 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
 const DERIVATION_PATH: &str = "m/44'/223'/0'/0/0";
 fn derivation_path() -> DerivationPath {
     DERIVATION_PATH.parse().unwrap()
+}
+
+pub fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
+    let parse = |s: &str| {
+        s.parse::<u64>()
+            .context("Failed to parse tokens as unsigned integer")
+    };
+    match &amount.split('.').collect::<Vec<_>>().as_slice() {
+        [tokens] => new_tokens(parse(tokens)?, 0),
+        [tokens, e8s] => {
+            let mut e8s = e8s.to_string();
+            while e8s.len() < 8 {
+                e8s.push('0');
+            }
+            let e8s = &e8s[..8];
+            new_tokens(parse(tokens)?, parse(e8s)?)
+        }
+        _ => bail!("Cannot parse amount {}", amount),
+    }
+}
+
+fn new_tokens(tokens: u64, e8s: u64) -> AnyhowResult<Tokens> {
+    Tokens::new(tokens, e8s)
+        .map_err(|err| anyhow!(err))
+        .context("Cannot create new tokens structure")
+}
+
+pub fn neuron_name_to_nonce(name: &str) -> AnyhowResult<u64> {
+    if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
+        bail!("The neuron name must be 8 character or less");
+    }
+    let mut bytes = std::collections::VecDeque::from(name.as_bytes().to_vec());
+    while bytes.len() < 8 {
+        bytes.push_front(0)
+    }
+    let mut arr: [u8; 8] = [0; 8];
+    arr.copy_from_slice(&bytes.into_iter().collect::<Vec<_>>());
+    Ok(u64::from_be_bytes(arr))
 }
 
 #[derive(Copy, Clone)]
@@ -573,14 +631,19 @@ impl ParsedNnsAccount {
     }
 }
 
+pub fn now() -> OffsetDateTime {
+    if std::env::var("QUILL_TEST_FIXED_TIMESTAMP").is_ok() {
+        OffsetDateTime::from_unix_timestamp_nanos(1_669_073_904_187_044_208).unwrap()
+    } else {
+        OffsetDateTime::now_utc()
+    }
+}
+
 pub fn now_nanos() -> u64 {
     if std::env::var("QUILL_TEST_FIXED_TIMESTAMP").is_ok() {
         1_669_073_904_187_044_208
     } else {
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as u64
+        OffsetDateTime::now_utc().unix_timestamp_nanos() as u64
     }
 }
 

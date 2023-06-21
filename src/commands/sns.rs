@@ -21,7 +21,9 @@ mod balance;
 mod configure_dissolve_delay;
 mod disburse;
 mod disburse_maturity;
-mod follow_neuron;
+mod dissolve;
+mod dissolve_delay;
+mod follow;
 mod get_sale_participation;
 mod get_swap_refund;
 mod list_deployed_snses;
@@ -31,12 +33,12 @@ mod neuron_id;
 mod neuron_permission;
 mod new_sale_ticket;
 mod pay;
-mod register_vote;
-mod split_neuron;
+mod split;
 mod stake_maturity;
 mod stake_neuron;
 mod status;
 mod transfer;
+mod vote;
 
 /// Commands for interacting with a Service Nervous System's Ledger & Governance canisters.
 ///
@@ -63,10 +65,13 @@ pub struct SnsOpts {
 #[derive(Subcommand)]
 pub enum SnsCommand {
     Balance(balance::BalanceOpts),
+    #[clap(hide = true)]
     ConfigureDissolveDelay(configure_dissolve_delay::ConfigureDissolveDelayOpts),
     Disburse(disburse::DisburseOpts),
     DisburseMaturity(disburse_maturity::DisburseMaturityOpts),
-    FollowNeuron(follow_neuron::FollowNeuronOpts),
+    Dissolve(dissolve::DissolveOpts),
+    DissolveDelay(dissolve_delay::DissolveDelayOpts),
+    Follow(follow::FollowOpts),
     GetSwapRefund(get_swap_refund::GetSwapRefundOpts),
     ListDeployedSnses(list_deployed_snses::ListDeployedSnsesOpts),
     MakeProposal(make_proposal::MakeProposalOpts),
@@ -74,9 +79,9 @@ pub enum SnsCommand {
     NeuronId(neuron_id::NeuronIdOpts),
     NeuronPermission(neuron_permission::NeuronPermissionOpts),
     NewSaleTicket(new_sale_ticket::NewSaleTicketOpts),
-    RegisterVote(register_vote::RegisterVoteOpts),
+    Vote(vote::VoteOpts),
     GetSaleParticipation(get_sale_participation::GetSaleParticipationOpts),
-    SplitNeuron(split_neuron::SplitNeuronOpts),
+    Split(split::SplitOpts),
     StakeMaturity(stake_maturity::StakeMaturityOpts),
     StakeNeuron(stake_neuron::StakeNeuronOpts),
     Status(status::StatusOpts),
@@ -90,6 +95,7 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             opts.subcommand,
             SnsCommand::Balance(_) | SnsCommand::Transfer(_) | SnsCommand::NeuronPermission(_) | SnsCommand::Disburse(_)
                 | SnsCommand::ConfigureDissolveDelay(_) | SnsCommand::StakeMaturity(_) | SnsCommand::NeuronId(_)
+                | SnsCommand::Dissolve(_) | SnsCommand::DissolveDelay(_)
         ), "Cannot use --ledger with this command. This version of Quill only supports transfers and certain neuron management operations with a Ledger device");
     }
     let canister_ids = opts.canister_ids_file
@@ -111,8 +117,16 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             let out = disburse_maturity::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
-        SnsCommand::FollowNeuron(opts) => {
-            let out = follow_neuron::exec(auth, &canister_ids?, opts)?;
+        SnsCommand::Dissolve(opts) => {
+            let out = dissolve::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::DissolveDelay(opts) => {
+            let out = dissolve_delay::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::Follow(opts) => {
+            let out = follow::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::GetSwapRefund(opts) => {
@@ -139,15 +153,15 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             let out = new_sale_ticket::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
-        SnsCommand::RegisterVote(opts) => {
-            let out = register_vote::exec(auth, &canister_ids?, opts)?;
+        SnsCommand::Vote(opts) => {
+            let out = vote::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::GetSaleParticipation(opts) => {
             get_sale_participation::exec(auth, &canister_ids?, opts, fetch_root_key)?
         }
-        SnsCommand::SplitNeuron(opts) => {
-            let out = split_neuron::exec(auth, &canister_ids?, opts)?;
+        SnsCommand::Split(opts) => {
+            let out = split::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::StakeMaturity(opts) => {

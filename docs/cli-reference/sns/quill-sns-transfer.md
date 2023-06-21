@@ -37,3 +37,5 @@ quill sns transfer <TO> --amount <AMOUNT> [option]
 The default fee is 0.0001 tokens. Use the `--fee` flag when using an SNS that sets its own transaction fee.
 
 The destination account can be specified as a separate principal and subaccount, or as a single ICRC-1 account.
+
+As this is an update call, it will not actually make the request, but rather generate a signed and packaged request that can be sent from anywhere. You can use the `--qr` flag to display it as a QR code, or if you are not working with an air-gapped machine, you can pipe it to `quill send`.
