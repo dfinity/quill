@@ -12,8 +12,8 @@ use crate::{
 use anyhow::{anyhow, ensure};
 use candid::{CandidType, Encode, Principal};
 use clap::Parser;
-use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
+use icp_ledger::Tokens;
+use icrc_ledger_types::icrc1::account::{Account, Subaccount};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
@@ -69,12 +69,15 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
         _ => return Err(anyhow!("Either a nonce or a name should be specified")),
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
-    let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
+    let account = Account {
+        owner: governance_canister_id(),
+        subaccount: Some(gov_subaccount),
+    };
     let mut messages = if !opts.already_transferred {
         transfer::exec(
             auth,
             transfer::TransferOpts {
-                to: ParsedNnsAccount::Original(account),
+                to: ParsedNnsAccount::Icrc1(account),
                 amount: opts.amount.unwrap(),
                 fee: opts.fee,
                 memo: Some(nonce),
@@ -109,7 +112,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     data.update(b"neuron-stake");
     data.update(controller.as_slice());
     data.update(&nonce.to_be_bytes());
-    Subaccount(data.finish())
+    data.finish()
 }
 
 fn convert_name_to_nonce(name: &str) -> u64 {
