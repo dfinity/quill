@@ -137,7 +137,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::AddHotKey(AddHotKey {
                     new_hot_key: opts.add_hot_key.map(PrincipalId)
@@ -150,7 +150,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.remove_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
                     hot_key_to_remove: opts.remove_hot_key.map(PrincipalId)
@@ -163,7 +163,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.stop_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             })),
@@ -174,7 +174,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.start_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             })),
@@ -185,7 +185,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds: match additional_dissolve_delay_seconds
@@ -232,7 +232,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.disburse || opts.disburse_amount.is_some() || opts.disburse_to.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Disburse(Disburse {
                 to_account: opts.disburse_to.map(|to| to.into_identifier().into()),
                 amount: opts.disburse_amount.map(|amount| Amount {
@@ -246,7 +246,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Spawn(Default::default())),
             neuron_id_or_subaccount: None,
         })?;
@@ -255,7 +255,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(amount) = opts.split {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
             })),
@@ -266,7 +266,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.clear_manage_neuron_followees {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Follow(Follow {
                 topic: 1, // Topic::NeuronManagement as i32,
                 followees: Vec::new()
@@ -278,7 +278,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Merge(Merge {
                 source_neuron_id: Some(NeuronId {
                     id: parse_neuron_id(neuron_id)?
@@ -298,7 +298,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             bail!("Percentage to merge must be a number from 1 to 100");
         }
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::StakeMaturity(StakeMaturity {
                 percentage_to_stake: Some(percentage),
             })),
@@ -309,7 +309,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.join_community_fund {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
             })),
@@ -320,7 +320,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
 
     if opts.leave_community_fund {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::LeaveCommunityFund(LeaveCommunityFund {}))
             })),
@@ -332,7 +332,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {
             let args = Encode!(&ManageNeuron {
-                id: id.clone(),
+                id,
                 command: Some(Command::RegisterVote(RegisterVote {
                     vote: if opts.reject { 2 } else { 1 },
                     proposal: Some(ProposalId { id: proposal }),
@@ -346,7 +346,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
     if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons) {
         let followees = neuron_ids.into_iter().map(|x| NeuronId { id: x }).collect();
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Follow(Follow {
                 topic, // Topic::NeuronManagement as i32,
                 followees,

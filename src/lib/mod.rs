@@ -4,8 +4,8 @@ use anyhow::{anyhow, bail, ensure, Context};
 use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
 use candid::{
-    parser::typing::{check_prog, TypeEnv},
-    types::Function,
+    parser::typing::check_prog,
+    types::{type_env::TypeEnv, Function},
     IDLProg, Principal,
 };
 use crc32fast::Hasher;

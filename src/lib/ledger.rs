@@ -160,7 +160,15 @@ impl Identity for LedgerIdentity {
         Ok(Signature {
             public_key: Some(pk),
             signature: Some(sig),
+            delegations: None,
         })
+    }
+
+    fn public_key(&self) -> Option<Vec<u8>> {
+        let transport = self.inner.transport.lock().unwrap();
+        get_identity(&transport, &derivation_path())
+            .ok()
+            .map(|x| x.1)
     }
 }
 
