@@ -34,7 +34,7 @@ ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "b9c57f8b
 anyhow = "1.0.34"
 atty = "0.2.14"
 base64 = "0.13.0"
-bip32 = "0.4.0"
+bip32 = "0.5.0"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
 crc32fast = "1.3.2"
 data-encoding = "2.3.3"
@@ -43,7 +43,7 @@ hex = { version = "0.4.2", features = ["serde"] }
 hidapi = { version = "1.4", default-features = false, optional = true }
 indicatif = "0.17"
 itertools = "0.10.5"
-k256 = { version = "0.11.4", features = ["pem"] }
+k256 = { version = "0.13.1", features = ["pem"] }
 ledger-apdu = { version = "0.10", optional = true }
 ledger-transport-hid = { version = "0.10", optional = true }
 num-bigint = "0.4.3"
