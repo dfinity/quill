@@ -97,7 +97,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     })?;
 
     messages.push(sign_ingress_with_request_status_query(
-        auth,
+        &AuthInfo::NoAuth,
         governance_canister_id(),
         ROLE_NNS_GOVERNANCE,
         "manage_neuron",
