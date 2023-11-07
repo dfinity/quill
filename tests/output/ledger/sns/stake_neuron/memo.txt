@@ -1,14 +1,14 @@
 Sending message with
 
   Call type:   update
-  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
   Method name: icrc1_transfer
   Arguments:   (
   record {
     to = record {
       owner = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
-      subaccount = opt blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+      subaccount = opt blob "f.\d9\1c\ad\0b\1d\22u\ac\80\f3a\220\01@\ac\03\f4\8bL\0c\dc\bes\e2\03\95\9f\94\b4";
     };
     fee = null;
     memo = opt blob "\00\00\00\00\00\00\03\09";
@@ -25,12 +25,12 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    subaccount = blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+    subaccount = blob "f.\d9\1c\ad\0b\1d\22u\ac\80\f3a\220\01@\ac\03\f4\8bL\0c\dc\bes\e2\03\95\9f\94\b4";
     command = opt variant {
       ClaimOrRefresh = record {
         by = opt variant {
           MemoAndController = record {
-            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+            controller = opt principal "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
             memo = 777 : nat64;
           }
         };

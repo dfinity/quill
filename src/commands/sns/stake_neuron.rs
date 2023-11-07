@@ -88,7 +88,7 @@ pub fn exec(
             },
         };
 
-        let msg = sign_ingress_with_request_status_query(
+        let msg = sign_staking_ingress_with_request_status_query(
             auth,
             sns_canister_ids.ledger_canister_id,
             ROLE_ICRC1_LEDGER,
@@ -109,8 +109,8 @@ pub fn exec(
         }))
     })?;
 
-    messages.push(sign_staking_ingress_with_request_status_query(
-        auth,
+    messages.push(sign_ingress_with_request_status_query(
+        &AuthInfo::NoAuth,
         governance_canister_id,
         ROLE_SNS_GOVERNANCE,
         "manage_neuron",
