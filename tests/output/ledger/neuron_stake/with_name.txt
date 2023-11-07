@@ -1,0 +1,43 @@
+Sending message with
+
+  Call type:   update
+  Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
+  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Method name: icrc1_transfer
+  Arguments:   (
+  record {
+    to = record {
+      owner = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+      subaccount = opt blob "\a6c\80\a5V+\d7\8e\83\22F\e6\bd\1c\e8D~ b\de\bfK?eE\b0\b3,\0f\b2\e1*";
+    };
+    fee = opt (10_000 : nat);
+    memo = opt blob "myNeuron";
+    from_subaccount = null;
+    created_at_time = opt (1_669_073_904_187_044_208 : nat64);
+    amount = 1_200_000_000 : nat;
+  },
+)
+Sending message with
+
+  Call type:   update
+  Sender:      2vxsx-fae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = null;
+    command = opt variant {
+      ClaimOrRefresh = record {
+        by = opt variant {
+          MemoAndController = record {
+            controller = opt principal "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            memo = 7_888_422_419_985_231_726 : nat64;
+          }
+        };
+      }
+    };
+    neuron_id_or_subaccount = opt variant {
+      Subaccount = blob "\a6c\80\a5V+\d7\8e\83\22F\e6\bd\1c\e8D~ b\de\bfK?eE\b0\b3,\0f\b2\e1*"
+    };
+  },
+)

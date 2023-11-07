@@ -12,7 +12,7 @@ ledger_compatible![
     account_balance,
     claim_neurons,
     list_neurons,
-    // neuron_stake,
+    neuron_stake,
     public_ids,
     transfer_icrc1,
 ];
