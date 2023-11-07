@@ -124,9 +124,6 @@ pub struct ManageOpts {
     /// Set whether new maturity should be automatically staked.
     #[clap(long, arg_enum)]
     auto_stake_maturity: Option<EnableState>,
-
-    #[clap(from_global)]
-    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
