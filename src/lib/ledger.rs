@@ -199,7 +199,8 @@ fn get_identity(
         Principal::try_from_slice(&response[PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN])
             .map_err(|e| format!("Error interpreting principal from Ledger: {e}"))?;
     let pk = PublicKey::from(VerifyingKey::try_from(&pk[..]).unwrap());
-    Ok((principal, pk.to_public_key_der().unwrap().into_vec()))
+    let pk_der_bytes = pk.to_public_key_der().unwrap().into_vec();
+    Ok((principal, pk_der_bytes))
 }
 
 fn interpret_response<'a>(
