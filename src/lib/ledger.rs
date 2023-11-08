@@ -11,6 +11,7 @@ use candid::Principal;
 use hidapi::HidApi;
 use ic_agent::{agent::EnvelopeContent, Identity, Signature};
 use indicatif::ProgressBar;
+use k256::{ecdsa::VerifyingKey, elliptic_curve::pkcs8::EncodePublicKey, PublicKey};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
@@ -159,7 +160,15 @@ impl Identity for LedgerIdentity {
         Ok(Signature {
             public_key: Some(pk),
             signature: Some(sig),
+            delegations: None,
         })
+    }
+
+    fn public_key(&self) -> Option<Vec<u8>> {
+        let transport = self.inner.transport.lock().unwrap();
+        get_identity(&transport, &derivation_path())
+            .ok()
+            .map(|x| x.1)
     }
 }
 
@@ -189,7 +198,9 @@ fn get_identity(
     let principal =
         Principal::try_from_slice(&response[PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN])
             .map_err(|e| format!("Error interpreting principal from Ledger: {e}"))?;
-    Ok((principal, pk))
+    let pk = PublicKey::from(VerifyingKey::try_from(&pk[..]).unwrap());
+    let pk_der_bytes = pk.to_public_key_der().unwrap().into_vec();
+    Ok((principal, pk_der_bytes))
 }
 
 fn interpret_response<'a>(

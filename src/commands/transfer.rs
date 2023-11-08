@@ -1,11 +1,13 @@
 use crate::commands::send::{Memo, SendArgs, TimeStamp};
+use crate::lib::signing::sign_staking_ingress_with_request_status_query;
+use crate::lib::{
+    governance_canister_id, now_nanos, ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER,
+    ROLE_NNS_LEDGER,
+};
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo,
-};
-use crate::lib::{
-    now_nanos, ParsedNnsAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
 };
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
@@ -72,7 +74,12 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
                 to,
                 created_at_time: Some(now_nanos()),
             })?;
-            let msg = sign_ingress_with_request_status_query(
+            let sign_func = if to.owner == governance_canister_id() {
+                sign_staking_ingress_with_request_status_query
+            } else {
+                sign_ingress_with_request_status_query
+            };
+            let msg = sign_func(
                 auth,
                 ledger_canister_id(),
                 ROLE_ICRC1_LEDGER,

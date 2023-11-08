@@ -112,7 +112,7 @@ pub fn sign(
     method_name: &str,
     args: Vec<u8>,
     role: &str,
-    #[allow(unused)] is_staking: bool,
+    is_staking: bool,
 ) -> AnyhowResult<SignedMessageWithRequestId> {
     let ingress_expiry = Duration::from_secs(5 * 60);
     let agent = get_agent(auth)?;

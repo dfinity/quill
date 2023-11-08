@@ -31,6 +31,8 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
         exclude_topic: vec![2 /*TOPIC_EXCHANGE_RATE*/, 9 /*TOPIC_KYC*/],
         include_reward_status: Vec::new(),
         include_status: Vec::new(),
+        omit_large_fields: Some(true),
+        include_all_manage_neuron_proposals: Some(false),
     })?;
     submit_unsigned_ingress(
         governance_canister_id(),

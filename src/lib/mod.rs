@@ -4,8 +4,8 @@ use anyhow::{anyhow, bail, ensure, Context};
 use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
 use candid::{
-    parser::typing::{check_prog, TypeEnv},
-    types::Function,
+    parser::typing::check_prog,
+    types::{type_env::TypeEnv, Function},
     IDLProg, Principal,
 };
 use crc32fast::Hasher;
@@ -416,7 +416,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
     let public_key = secret_key.public_key();
     let der = der_encode_secret_key(
         public_key.to_encoded_point(false).to_bytes().into(),
-        secret_key.to_be_bytes().to_vec(),
+        secret_key.to_bytes().to_vec(),
     )?;
     let pem = Pem {
         tag: String::from("EC PRIVATE KEY"),

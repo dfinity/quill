@@ -13,9 +13,10 @@ ledger_compatible![
     neuron_id,
     neuron_permission,
     dissolve,
+    // dissolve_delay,
     disburse,
     // make_proposal,
-    // stake_neuron,
+    stake_neuron,
     stake_maturity,
     // vote,
 ];

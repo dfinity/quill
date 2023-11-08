@@ -1,18 +1,18 @@
 Sending message with
 
   Call type:   update
-  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
   Method name: icrc1_transfer
   Arguments:   (
   record {
     to = record {
       owner = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
-      subaccount = opt blob "\e1\ba\ec\1a\91u\f3\ec\fb\c1\87\e5J\eb|\96\01)0S\b9\95\98\0e\ad\b2\ee\19\c3\96\88\bf";
+      subaccount = opt blob "f.\d9\1c\ad\0b\1d\22u\ac\80\f3a\220\01@\ac\03\f4\8bL\0c\dc\bes\e2\03\95\9f\94\b4";
     };
     fee = opt (10_000 : nat);
-    memo = opt blob "myNeuron";
-    from_subaccount = null;
+    memo = opt blob "\00\00\00\00\00\00\03\09";
+    from_subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\01";
     created_at_time = opt (1_669_073_904_187_044_208 : nat64);
     amount = 1_200_000_000 : nat;
   },
@@ -30,14 +30,14 @@ Sending message with
       ClaimOrRefresh = record {
         by = opt variant {
           MemoAndController = record {
-            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
-            memo = 7_888_422_419_985_231_726 : nat64;
+            controller = opt principal "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            memo = 777 : nat64;
           }
         };
       }
     };
     neuron_id_or_subaccount = opt variant {
-      Subaccount = blob "\e1\ba\ec\1a\91u\f3\ec\fb\c1\87\e5J\eb|\96\01)0S\b9\95\98\0e\ad\b2\ee\19\c3\96\88\bf"
+      Subaccount = blob "f.\d9\1c\ad\0b\1d\22u\ac\80\f3a\220\01@\ac\03\f4\8bL\0c\dc\bes\e2\03\95\9f\94\b4"
     };
   },
 )

@@ -2,7 +2,7 @@ use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use candid::Principal;
-use ic_agent::agent::{Replied, RequestStatusResponse, Transport};
+use ic_agent::agent::{ReplyResponse, RequestStatusResponse, Transport};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
 use std::future::Future;
@@ -31,10 +31,10 @@ pub async fn submit(
                 .context("Failed to create an agent")?,
         ),
     });
-    let Replied::CallReplied(blob) = async {
+    let blob = async {
         loop {
             match agent.request_status_raw(&request_id, canister_id).await? {
-                RequestStatusResponse::Replied { reply } => return Ok(reply),
+                RequestStatusResponse::Replied(ReplyResponse { arg }) => return Ok(arg),
                 RequestStatusResponse::Rejected(response) => {
                     return Err(anyhow!(AgentError::ReplicaError(response)))
                 }
@@ -50,7 +50,7 @@ pub async fn submit(
                 }
             };
 
-            std::thread::sleep(std::time::Duration::from_millis(500));
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
     }
     .await?;
@@ -112,6 +112,14 @@ impl Transport for ProxySignTransport {
 
     fn status<'a>(
         &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
+        unimplemented!()
+    }
+
+    fn read_subnet_state<'a>(
+        &'a self,
+        _subnet_id: Principal,
+        _envelope: Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
         unimplemented!()
     }

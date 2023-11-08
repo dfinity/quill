@@ -1,9 +1,6 @@
 name: CI
 
 on: pull_request
-    
-env:
-  rust: 1.66.1
 
 jobs:
   ci:
@@ -39,17 +36,10 @@ jobs:
             ~/.cargo/git
             target
             ${{ env.VCPKG_ROOT }}
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/rust-toolchain.toml') }}-ci-1
 
       - name: Install dependencies
         run: ${{ matrix.build_deps }}
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ env.rust }}
-          override: true
-          components: rustfmt, clippy
 
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.command }}

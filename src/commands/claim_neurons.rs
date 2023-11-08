@@ -39,7 +39,7 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
         #[cfg(feature = "ledger")]
         if let AuthInfo::Ledger = auth {
             let (_, pk) = LedgerIdentity::new()?.public_key()?;
-            let sig = Encode!(&hex::encode(pk))?;
+            let sig = Encode!(&hex::encode(&pk[23..]))?;
             Ok(vec![sign_ingress_with_request_status_query(
                 auth,
                 genesis_token_canister_id(),

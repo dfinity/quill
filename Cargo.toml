@@ -3,7 +3,7 @@ name = "quill"
 version = "0.4.2"
 authors = ["DFINITY Team"]
 edition = "2021"
-rust-version = "1.66.1"
+rust-version = "1.71.1"
 description = "Minimalistic ledger and governance toolkit for cold wallets."
 repository = "https://github.com/dfinity/quill"
 license = "Apache-2.0"
@@ -13,28 +13,28 @@ name = "quill"
 path = "src/main.rs"
 
 [dependencies]
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-icp-ledger = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-icrc-ledger-types = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "5e56d9e6f7da97bbad0ef0269a198e189c6d7120" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+icp-ledger = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+icrc-ledger-types = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "80a6745673a28ee53d257b3fe19dcd6b7efa93d1" }
 
-candid = "0.8.2"
-ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "b9c57f8bab23cc9936dca4560293ffe485471c6d" }
-ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "b9c57f8bab23cc9936dca4560293ffe485471c6d", optional = true }
+candid = { version = "0.9.11", features = ["parser"] }
+ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "65b270817510b0d74638f0b54d9e5bcfbfe31cee" }
+ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "65b270817510b0d74638f0b54d9e5bcfbfe31cee", optional = true }
 
 anyhow = "1.0.34"
 atty = "0.2.14"
 base64 = "0.13.0"
-bip32 = "0.4.0"
+bip32 = "0.5.0"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
 crc32fast = "1.3.2"
 data-encoding = "2.3.3"
@@ -43,7 +43,7 @@ hex = { version = "0.4.2", features = ["serde"] }
 hidapi = { version = "1.4", default-features = false, optional = true }
 indicatif = "0.17"
 itertools = "0.10.5"
-k256 = { version = "0.11.4", features = ["pem"] }
+k256 = { version = "0.13.1", features = ["pem"] }
 ledger-apdu = { version = "0.10", optional = true }
 ledger-transport-hid = { version = "0.10", optional = true }
 num-bigint = "0.4.3"

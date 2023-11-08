@@ -4,7 +4,7 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Encode, Principal};
 use clap::{ArgEnum, Parser};
 use ic_base_types::PrincipalId;
@@ -124,22 +124,9 @@ pub struct ManageOpts {
     /// Set whether new maturity should be automatically staked.
     #[clap(long, arg_enum)]
     auto_stake_maturity: Option<EnableState>,
-
-    #[clap(from_global)]
-    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    if opts.ledger {
-        ensure!(
-            opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
-            && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
-            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject,
-            "\
-Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
---additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
-        )
-    }
     let mut msgs = Vec::new();
 
     let id = Some(NeuronId {
@@ -147,7 +134,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     });
     if opts.add_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::AddHotKey(AddHotKey {
                     new_hot_key: opts.add_hot_key.map(PrincipalId)
@@ -160,7 +147,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.remove_hot_key.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::RemoveHotKey(RemoveHotKey {
                     hot_key_to_remove: opts.remove_hot_key.map(PrincipalId)
@@ -173,7 +160,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.stop_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StopDissolving(StopDissolving {}))
             })),
@@ -184,7 +171,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.start_dissolving {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::StartDissolving(StartDissolving {}))
             })),
@@ -195,7 +182,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
                     additional_dissolve_delay_seconds: match additional_dissolve_delay_seconds
@@ -242,7 +229,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.disburse || opts.disburse_amount.is_some() || opts.disburse_to.is_some() {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Disburse(Disburse {
                 to_account: opts.disburse_to.map(|to| to.into_identifier().into()),
                 amount: opts.disburse_amount.map(|amount| Amount {
@@ -256,7 +243,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.spawn {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Spawn(Default::default())),
             neuron_id_or_subaccount: None,
         })?;
@@ -265,7 +252,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if let Some(amount) = opts.split {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Split(Split {
                 amount_e8s: amount * 100_000_000
             })),
@@ -276,7 +263,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.clear_manage_neuron_followees {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Follow(Follow {
                 topic: 1, // Topic::NeuronManagement as i32,
                 followees: Vec::new()
@@ -288,7 +275,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if let Some(neuron_id) = opts.merge_from_neuron {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Merge(Merge {
                 source_neuron_id: Some(NeuronId {
                     id: parse_neuron_id(neuron_id)?
@@ -308,7 +295,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
             bail!("Percentage to merge must be a number from 1 to 100");
         }
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::StakeMaturity(StakeMaturity {
                 percentage_to_stake: Some(percentage),
             })),
@@ -319,7 +306,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.join_community_fund {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::JoinCommunityFund(JoinCommunityFund {}))
             })),
@@ -330,7 +317,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
 
     if opts.leave_community_fund {
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Configure(Configure {
                 operation: Some(Operation::LeaveCommunityFund(LeaveCommunityFund {}))
             })),
@@ -342,7 +329,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     if let Some(proposals) = opts.register_vote {
         for proposal in proposals {
             let args = Encode!(&ManageNeuron {
-                id: id.clone(),
+                id,
                 command: Some(Command::RegisterVote(RegisterVote {
                     vote: if opts.reject { 2 } else { 1 },
                     proposal: Some(ProposalId { id: proposal }),
@@ -356,7 +343,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     if let (Some(topic), Some(neuron_ids)) = (opts.follow_topic, opts.follow_neurons) {
         let followees = neuron_ids.into_iter().map(|x| NeuronId { id: x }).collect();
         let args = Encode!(&ManageNeuron {
-            id: id.clone(),
+            id,
             command: Some(Command::Follow(Follow {
                 topic, // Topic::NeuronManagement as i32,
                 followees,

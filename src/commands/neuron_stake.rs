@@ -1,25 +1,23 @@
 use crate::{
-    commands::{
-        send::Memo,
-        transfer::{self, parse_tokens},
-    },
+    commands::transfer::{self, parse_tokens},
     lib::{
         governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
-use anyhow::{anyhow, ensure};
-use candid::{CandidType, Encode, Principal};
+use anyhow::anyhow;
+use candid::{Encode, Principal};
 use clap::Parser;
-use ic_nns_constants::GOVERNANCE_CANISTER_ID;
-use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
-
-#[derive(CandidType)]
-pub struct ClaimOrRefreshNeuronFromAccount {
-    pub memo: Memo,
-    pub controller: Option<Principal>,
-}
+use ic_nns_governance::pb::v1::{
+    manage_neuron::{
+        claim_or_refresh::{By, MemoAndController},
+        ClaimOrRefresh, Command, NeuronIdOrSubaccount,
+    },
+    ManageNeuron,
+};
+use icp_ledger::Tokens;
+use icrc_ledger_types::icrc1::account::{Account, Subaccount};
 
 /// Signs topping up of a neuron (new or existing).
 #[derive(Parser)]
@@ -52,16 +50,9 @@ pub struct StakeOpts {
     /// The subaccount to transfer from.
     #[clap(long)]
     from_subaccount: Option<ParsedSubaccount>,
-
-    #[clap(from_global)]
-    ledger: bool,
 }
 
 pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
-    ensure!(
-        !opts.ledger,
-        "Cannot use `--ledger` with this command. This version of Quill does not support staking new neurons with a Ledger device"
-    );
     let controller = crate::lib::get_principal(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
@@ -69,12 +60,15 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
         _ => return Err(anyhow!("Either a nonce or a name should be specified")),
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
-    let account = AccountIdentifier::new(GOVERNANCE_CANISTER_ID.get(), Some(gov_subaccount));
+    let account = Account {
+        owner: governance_canister_id(),
+        subaccount: Some(gov_subaccount),
+    };
     let mut messages = if !opts.already_transferred {
         transfer::exec(
             auth,
             transfer::TransferOpts {
-                to: ParsedNnsAccount::Original(account),
+                to: ParsedNnsAccount::Icrc1(account),
                 amount: opts.amount.unwrap(),
                 fee: opts.fee,
                 memo: Some(nonce),
@@ -84,16 +78,22 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     } else {
         Vec::new()
     };
-    let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
-        memo: Memo(nonce),
-        controller: Some(controller),
+    let args = Encode!(&ManageNeuron {
+        neuron_id_or_subaccount: Some(NeuronIdOrSubaccount::Subaccount(gov_subaccount.to_vec())),
+        id: None,
+        command: Some(Command::ClaimOrRefresh(ClaimOrRefresh {
+            by: Some(By::MemoAndController(MemoAndController {
+                controller: Some(controller.into()),
+                memo: nonce,
+            })),
+        }))
     })?;
 
     messages.push(sign_ingress_with_request_status_query(
-        auth,
+        &AuthInfo::NoAuth,
         governance_canister_id(),
         ROLE_NNS_GOVERNANCE,
-        "claim_or_refresh_neuron_from_account",
+        "manage_neuron",
         args,
     )?);
 
@@ -109,7 +109,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
     data.update(b"neuron-stake");
     data.update(controller.as_slice());
     data.update(&nonce.to_be_bytes());
-    Subaccount(data.finish())
+    data.finish()
 }
 
 fn convert_name_to_nonce(name: &str) -> u64 {
