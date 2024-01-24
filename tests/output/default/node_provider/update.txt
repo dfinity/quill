@@ -7,7 +7,7 @@ Sending message with
   Arguments:   (
   record {
     reward_account = opt record {
-      hash = blob "\fb\9f\f6\c8\0f\1dG[0\1d\9b*\b8sa/\96\e7\fdt\e7\c0\c0\b2\d5\8ef\93";
+      hash = blob "\fb\9f\f6\c8\0f\1d\47\5b\30\1d\9b\2a\b8\73\61\2f\96\e7\fd\74\e7\c0\c0\b2\d5\8e\66\93";
     };
   },
 )

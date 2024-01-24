@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  rust: 1.66.1
+  rust: 1.75.0
 
 jobs:
   build:
