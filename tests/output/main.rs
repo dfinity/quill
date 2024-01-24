@@ -300,7 +300,9 @@ fn output_eq(a: &[u8], b: &[u8]) -> bool {
 }
 
 fn trim(s: &[u8]) -> &[u8] {
-    let Some(start) = s.iter().position(|x| !b" \r\n\t".contains(x)) else { return &[] };
+    let Some(start) = s.iter().position(|x| !b" \r\n\t".contains(x)) else {
+        return &[];
+    };
     let end = s.iter().rposition(|x| !b" \r\n\t".contains(x)).unwrap();
     &s[start..=end]
 }

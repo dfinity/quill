@@ -55,6 +55,7 @@ enum Type {
     TransferSnsTreasuryFunds = 9,
     RegisterDappCanisters = 10,
     DeregisterDappCanisters = 11,
+    MintSnsTokens = 12,
 }
 
 pub fn exec(

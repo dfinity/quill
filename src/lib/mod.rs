@@ -3,11 +3,8 @@
 use anyhow::{anyhow, bail, ensure, Context};
 use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
-use candid::{
-    parser::typing::{check_prog, TypeEnv},
-    types::Function,
-    IDLProg, Principal,
-};
+use candid::{types::Function, Principal, TypeEnv};
+use candid_parser::{typing::check_prog, IDLProg};
 use crc32fast::Hasher;
 use data_encoding::BASE32_NOPAD;
 use ic_agent::{
@@ -237,7 +234,7 @@ pub fn get_idl_string(
 /// Returns the candid type of a specifed method and correspondig idl
 /// description.
 pub fn get_candid_type(idl: &str, method_name: &str) -> Option<(TypeEnv, Function)> {
-    let ast = candid::pretty_parse::<IDLProg>("/dev/null", idl).ok()?;
+    let ast = candid_parser::pretty_parse::<IDLProg>("/dev/null", idl).ok()?;
     let mut env = TypeEnv::new();
     let actor = check_prog(&mut env, &ast).ok()?;
     let method = env.get_method(&actor?, method_name).ok()?.clone();
@@ -265,7 +262,7 @@ pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
     let timeout = Duration::from_secs(60 * 5);
     let builder = Agent::builder()
         .with_transport(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create({
+            ic_agent::agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport::create({
                 get_ic_url()
             })?,
         )
@@ -465,7 +462,7 @@ impl FromStr for ParsedAccount {
             return Ok(Self(Account {
                 owner: Principal::from_str(s)
                     .map_err(|e| anyhow!("Invalid ICRC-1 account: missing subaccount, or: {e}"))?,
-                subaccount: None
+                subaccount: None,
             }));
         };
         let (principal, crc) = rest
@@ -513,8 +510,12 @@ impl Display for ParsedAccount {
 
 fn fmt_account(account: &Account, f: &mut Formatter<'_>) -> fmt::Result {
     write!(f, "{}", account.owner)?;
-    let Some(subaccount) = account.subaccount else { return Ok(()) };
-    let Some(first_digit) = subaccount.iter().position(|x| *x != 0) else { return Ok(()) };
+    let Some(subaccount) = account.subaccount else {
+        return Ok(());
+    };
+    let Some(first_digit) = subaccount.iter().position(|x| *x != 0) else {
+        return Ok(());
+    };
     let mut crc = Hasher::new();
     crc.update(account.owner.as_slice());
     crc.update(&subaccount);
