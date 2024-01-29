@@ -10,6 +10,7 @@ use crate::{
 use anyhow::{Context, Error};
 use candid::Principal;
 use candid::{Encode, IDLArgs};
+use candid_parser::parse_idl_args;
 use clap::Parser;
 use ic_sns_governance::pb::v1::{
     manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister,
@@ -83,7 +84,7 @@ pub fn exec(
     let wasm = std::fs::read(wasm_path).context("Unable to read --wasm-path.")?;
     let canister_upgrade_arg = match (canister_upgrade_arg, canister_upgrade_arg_path) {
         (Some(arg), _) => {
-            let parsed_arg: IDLArgs = arg.parse()?;
+            let parsed_arg: IDLArgs = parse_idl_args(&arg)?;
             Some(parsed_arg.to_bytes()?)
         }
         (_, Some(path)) => {

@@ -7,9 +7,11 @@ Sending message with
   Arguments:   (
   record {
     include_reward_status = vec {};
+    omit_large_fields = opt false;
     before_proposal = null;
     limit = 100 : nat32;
     exclude_topic = vec { 2 : int32; 9 : int32 };
+    include_all_manage_neuron_proposals = opt false;
     include_status = vec {};
   },
 )

@@ -6,7 +6,7 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    subaccount = blob "r\8a\c1;\10I\a3\ac\af\fe\13\f1;\c7\1e\fd\9b4\97e\80\d4\0d\f2y\b2s n\f14$";
+    subaccount = blob "\72\8a\c1\3b\10\49\a3\ac\af\fe\13\f1\3b\c7\1e\fd\9b\34\97\65\80\d4\0d\f2\79\b2\73\20\6e\f1\34\24";
     command = opt variant {
       ClaimOrRefresh = record {
         by = opt variant {

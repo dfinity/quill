@@ -9,7 +9,9 @@ use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::Transport;
-use ic_agent::{agent::http_transport::ReqwestHttpReplicaV2Transport, RequestId};
+use ic_agent::{
+    agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport, RequestId,
+};
 use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

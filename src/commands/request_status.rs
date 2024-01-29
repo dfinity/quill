@@ -2,7 +2,7 @@ use crate::lib::get_ic_url;
 use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
 use anyhow::{anyhow, Context};
 use candid::Principal;
-use ic_agent::agent::{Replied, RequestStatusResponse, Transport};
+use ic_agent::agent::{ReplyResponse, RequestStatusResponse, Transport};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
 use std::future::Future;
@@ -27,14 +27,14 @@ pub async fn submit(
     agent.set_transport(ProxySignTransport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
+            ic_agent::agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
                 .context("Failed to create an agent")?,
         ),
     });
-    let Replied::CallReplied(blob) = async {
+    let ReplyResponse { arg: blob } = async {
         loop {
             match agent.request_status_raw(&request_id, canister_id).await? {
-                RequestStatusResponse::Replied { reply } => return Ok(reply),
+                RequestStatusResponse::Replied(reply) => return Ok(reply),
                 RequestStatusResponse::Rejected(response) => {
                     return Err(anyhow!(AgentError::ReplicaError(response)))
                 }
@@ -91,6 +91,14 @@ impl Transport for ProxySignTransport {
         }
 
         Box::pin(run(self))
+    }
+
+    fn read_subnet_state(
+        &self,
+        subnet_id: Principal,
+        envelope: Vec<u8>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + '_>> {
+        self.http_transport.read_subnet_state(subnet_id, envelope)
     }
 
     fn call<'a>(
