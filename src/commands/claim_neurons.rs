@@ -5,11 +5,10 @@ use crate::lib::{
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ROLE_NNS_GTC,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use candid::Encode;
 use clap::Parser;
-use openssl::bn::BigNumContext;
-use openssl::ec::{EcKey, PointConversionForm};
+use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 
 /// Claim seed neurons from the Genesis Token Canister.
 #[derive(Parser)]
@@ -17,16 +16,15 @@ pub struct ClaimNeuronOpts;
 
 pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
     if let AuthInfo::PemFile(pem) = auth {
-        let private_key = EcKey::private_key_from_pem(pem.as_bytes())?;
-        let group = private_key.group();
-        let public_key = EcKey::from_public_key(group, private_key.public_key())?;
-        let mut context = BigNumContext::new()?;
-        let bytes = public_key.public_key().to_bytes(
-            public_key.group(),
-            PointConversionForm::UNCOMPRESSED,
-            &mut context,
-        )?;
-        let sig = Encode!(&hex::encode(bytes))?;
+        let keyinfo = pem::parse_many(pem)?
+            .into_iter()
+            .find(|p| p.tag == "EC PRIVATE KEY")
+            .context("Pem file did not contain sec1 key")?;
+        let point = SecretKey::from_sec1_der(&keyinfo.contents)
+            .map_err(|e| anyhow!("could not load pem file: {e}"))?
+            .public_key()
+            .to_encoded_point(false);
+        let sig = Encode!(&hex::encode(point.as_bytes()))?;
 
         Ok(vec![sign_ingress_with_request_status_query(
             auth,
