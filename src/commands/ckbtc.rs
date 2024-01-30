@@ -4,8 +4,8 @@ use anyhow::bail;
 use candid::{Nat, Principal};
 use clap::Subcommand;
 use icrc_ledger_types::icrc1::account::Account;
-use openssl::sha::Sha256;
 use rust_decimal::Decimal;
+use sha2::{Digest, Sha256};
 
 use crate::lib::{ckbtc_minter_canister_id, AnyhowResult, AuthInfo};
 
@@ -83,13 +83,13 @@ impl FromStr for Btc {
 fn ckbtc_withdrawal_address(user: &Principal, testnet: bool) -> Account {
     const DOMAIN: &str = "ckbtc";
     let mut hasher = Sha256::new();
-    hasher.update(&[DOMAIN.len() as u8]);
+    hasher.update([DOMAIN.len() as u8]);
     hasher.update(DOMAIN.as_bytes());
     hasher.update(user.as_slice());
-    hasher.update(&[0; 8]);
+    hasher.update([0; 8]);
     Account {
         owner: ckbtc_minter_canister_id(testnet),
-        subaccount: Some(hasher.finish()),
+        subaccount: Some(hasher.finalize().into()),
     }
 }
 

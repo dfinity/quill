@@ -30,4 +30,4 @@ Every change to the command-line interface must contain documentation; we use `c
 
 ## Miscellaneous
 
-Quill employs optional Cargo features for different platforms. Ensure your contribution builds (and lints) on all configurations - this can be automated with the [`cargo-hack`](https://github.com/taiki-e/cargo-hack) tool, as `cargo hack clippy --feature-powerset --features static-ssl`.
+Quill employs optional Cargo features for different platforms. Ensure your contribution builds (and lints) on all configurations - this can be automated with the [`cargo-hack`](https://github.com/taiki-e/cargo-hack) tool, as `cargo hack clippy --feature-powerset`.

@@ -49,7 +49,6 @@ ledger-apdu = { version = "0.10", optional = true }
 ledger-transport-hid = { version = "0.10", optional = true }
 num-bigint = "0.4.3"
 once_cell = "1.17.1"
-openssl = "0.10.48"
 pem = "1.0.1"
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
@@ -61,6 +60,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
 serde_cbor = "0.11.2"
 serde_json = "1.0.57"
+sha2 = "0.10.8"
 sha3 = "0.10.6"
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.18.5", features = ["full"] }
@@ -71,10 +71,9 @@ shellwords = "1"
 serial_test = "2.0.0"
 
 [features]
-static-ssl = ["openssl/vendored"]
 hsm = ["dep:ic-identity-hsm"]
 ledger = ["dep:hidapi", "dep:ledger-apdu", "dep:ledger-transport-hid"]
-default = ["static-ssl", "hsm", "ledger"]
+default = ["hsm", "ledger"]
 
 [profile.release]
 opt-level = 2
