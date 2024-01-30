@@ -78,7 +78,7 @@ jobs:
           command: build
           args: |
             ${{ matrix.target && format('--target {0}', matrix.target) }} 
-            ${{ matrix.features && format('--no-default-features --features {0}', join(matrix.features)) }}
+            ${{ matrix.features && format('--no-default-features --features "{0}"', join(matrix.features)) }}
             --release --locked
 
       - name: Upload binaries to release
