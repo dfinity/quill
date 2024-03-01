@@ -30,7 +30,7 @@ pub fn exec(auth: &AuthInfo, opts: NeuronIdOpts) -> AnyhowResult {
         opts.memo,
     ));
 
-    println!("SNS Neuron Id: {}", neuron_id);
+    println!("SNS Neuron Id: {neuron_id}");
 
     Ok(())
 }

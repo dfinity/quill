@@ -1,7 +1,7 @@
 //! This module implements the command-line API.
 
 use crate::lib::{get_principal, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
-use anyhow::Context;
+use anyhow::{bail, Context};
 use clap::Parser;
 use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
@@ -138,7 +138,7 @@ where
 {
     if let Err(e) = io::stdout().write_all(serde_json::to_string(&arg)?.as_bytes()) {
         if e.kind() != std::io::ErrorKind::BrokenPipe {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
     }
@@ -154,12 +154,12 @@ where
     e.write_all(json.as_bytes()).unwrap();
     let json = e.finish().unwrap();
     let json = base64::encode(json);
-    qrcode::print_qr(json.as_str());
+    qrcode::print_qr(json.as_str())?;
     if pause {
         let mut input_string = String::new();
         std::io::stdin()
             .read_line(&mut input_string)
-            .expect("Failed to read line");
+            .context("Failed to read line")?;
     }
     Ok(())
 }
@@ -168,13 +168,13 @@ fn print_vec<T>(qr: bool, arg: &[T]) -> AnyhowResult
 where
     T: serde::ser::Serialize,
 {
-    if !qr {
-        print(arg)
-    } else {
+    if qr {
         for (i, a) in arg.iter().enumerate() {
             print_qr(&a, i != arg.len() - 1).context("Failed to print QR code")?;
         }
         Ok(())
+    } else {
+        print(arg)
     }
 }
 
@@ -192,7 +192,7 @@ fn get_account(
             subaccount: None,
         }
     } else {
-        panic!("neither auth nor account present")
+        bail!("neither auth nor account present")
     };
     if let Some(subaccount) = subaccount {
         account.subaccount = Some(subaccount.0 .0);

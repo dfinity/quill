@@ -32,8 +32,8 @@ pub struct PublicOpts {
 /// Prints the account and the principal ids.
 pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
     let (principal_id, account_id) = get_public_ids(auth, &opts)?;
-    println!("Principal id: {}", principal_id.to_text());
-    println!("Legacy account id: {}", account_id);
+    println!("Principal id: {principal_id}");
+    println!("Legacy account id: {account_id}");
     if let Some(sub) = opts.subaccount {
         println!(
             "ICRC-1 account id: {}",
@@ -41,13 +41,13 @@ pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
                 owner: principal_id,
                 subaccount: Some(sub.0 .0)
             })
-        )
+        );
     }
     if opts.genesis_dfn {
         let AuthInfo::PemFile(pem) = auth else {
             bail!("Must supply a pem or seed file for the DFN address");
         };
-        println!("DFN address: {}", get_dfn(pem)?)
+        println!("DFN address: {}", get_dfn(pem)?);
     }
     if opts.display_on_ledger {
         #[cfg(feature = "ledger")]

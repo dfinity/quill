@@ -106,7 +106,7 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
         #[cfg(feature = "hsm")]
         {
-            let mut hsm = lib::HSMInfo::new();
+            let mut hsm = lib::HSMInfo::new()?;
             if let Some(path) = opts.hsm_libpath {
                 hsm.libpath = path;
             }
@@ -165,17 +165,17 @@ fn parse_mnemonic(phrase: &str) -> AnyhowResult<Mnemonic> {
 }
 
 fn read_file(path: impl AsRef<Path>, name: &str) -> AnyhowResult<String> {
+    use std::io::Read;
     let path = path.as_ref();
     if path == Path::new("-") {
         // read from STDIN
         let mut buffer = String::new();
-        use std::io::Read;
         std::io::stdin()
             .read_to_string(&mut buffer)
             .map(|_| buffer)
-            .context(format!("Couldn't read {} from STDIN", name))
+            .context(format!("Couldn't read {name} from STDIN"))
     } else {
-        std::fs::read_to_string(path).with_context(|| format!("Couldn't read {} file", name))
+        std::fs::read_to_string(path).with_context(|| format!("Couldn't read {name} file"))
     }
 }
 

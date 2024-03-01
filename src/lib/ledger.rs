@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Context;
+use anyhow::{ensure, Context};
 use bip32::DerivationPath;
 use candid::Principal;
 use hidapi::HidApi;
@@ -193,10 +193,16 @@ fn get_identity(
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "fetching principal from Ledger", None)?;
-    let pk = response[PK_OFFSET..PK_OFFSET + PK_LEN].to_vec();
-    let principal =
-        Principal::try_from_slice(&response[PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN])
-            .map_err(|e| format!("Error interpreting principal from Ledger: {e}"))?;
+    let pk = response
+        .get(PK_OFFSET..PK_OFFSET + PK_LEN)
+        .ok_or_else(|| "Ledger message too short".to_string())?
+        .to_vec();
+    let principal = Principal::try_from_slice(
+        response
+            .get(PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN)
+            .ok_or_else(|| "Ledger message too short".to_string())?,
+    )
+    .map_err(|e| format!("Error interpreting principal from Ledger: {e}"))?;
     Ok((principal, pk))
 }
 
@@ -308,10 +314,15 @@ fn sign_chunk(
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "signing message with Ledger", Some(content))?;
-    if !response.is_empty() {
-        Ok(Some(response[SIG_OFFSET..SIG_OFFSET + SIG_LEN].to_vec()))
-    } else {
+    if response.is_empty() {
         Ok(None)
+    } else {
+        Ok(Some(
+            response
+                .get(SIG_OFFSET..SIG_OFFSET + SIG_LEN)
+                .ok_or_else(|| "Ledger message too short".to_string())?
+                .to_vec(),
+        ))
     }
 }
 
@@ -328,6 +339,7 @@ fn get_version(transport: &TransportNativeHID) -> AnyhowResult<LedgerVersion> {
         .context("Error communicating with ledger")?;
     let response = interpret_response(&response, "fetching version from Ledger", None)
         .map_err(anyhow::Error::msg)?;
+    ensure!(response.len() >= 4, "Ledger message too short");
     Ok(LedgerVersion {
         major: response[1],
         minor: response[2],

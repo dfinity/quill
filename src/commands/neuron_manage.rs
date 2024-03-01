@@ -138,7 +138,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             "\
 Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
 --additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
-        )
+        );
     }
     let mut msgs = Vec::new();
 

@@ -73,7 +73,7 @@ pub fn exec(
             ROLE_NNS_LEDGER,
             "send_dfx",
             Encode!(&request)?,
-        )?)
+        )?);
     }
     let refresh = RefreshBuyerTokensRequest {
         buyer: controller.to_text(),

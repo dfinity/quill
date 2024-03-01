@@ -95,7 +95,7 @@ pub fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
         s.parse::<u64>()
             .context("Failed to parse tokens as unsigned integer")
     };
-    match &amount.split('.').collect::<Vec<_>>().as_slice() {
+    match *amount.split('.').collect::<Vec<_>>().as_slice() {
         [tokens] => new_tokens(parse(tokens)?, 0),
         [tokens, e8s] => {
             let mut e8s = e8s.to_string();

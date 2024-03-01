@@ -144,7 +144,7 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
             print_vec(qr, &out)?;
         }
         SnsCommand::GetSaleParticipation(opts) => {
-            get_sale_participation::exec(auth, &canister_ids?, opts, fetch_root_key)?
+            get_sale_participation::exec(auth, &canister_ids?, opts, fetch_root_key)?;
         }
         SnsCommand::SplitNeuron(opts) => {
             let out = split_neuron::exec(auth, &canister_ids?, opts)?;
