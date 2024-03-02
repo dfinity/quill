@@ -68,7 +68,7 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     }
     let principal_id = crate::lib::get_principal(&AuthInfo::PemFile(pem))?;
     let account_id = get_account_id(principal_id, None)?;
-    println!("Principal id: {}", principal_id);
-    println!("Legacy account id: {}", account_id);
+    println!("Principal id: {principal_id}");
+    println!("Legacy account id: {account_id}");
     Ok(())
 }

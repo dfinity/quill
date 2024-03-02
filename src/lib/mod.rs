@@ -70,22 +70,26 @@ const PKCS11_LIBPATH: &str = r"C:\Program Files\OpenSC Project\OpenSC\pkcs11\ope
 
 #[cfg(feature = "hsm")]
 impl HSMInfo {
-    pub fn new() -> Self {
-        HSMInfo {
-            libpath: PathBuf::from(
-                env::var("QUILL_HSM_LIBPATH")
-                    .or_else(|_| env::var("NITROHSM_LIBPATH"))
-                    .unwrap_or_else(|_| PKCS11_LIBPATH.to_string()),
-            ),
-            slot: env::var("QUILL_HSM_SLOT")
-                .map(|s| usize::from_str_radix(&s, 16).unwrap())
-                .or_else(|_| env::var("NITROHSM_SLOT").map(|s| s.parse().unwrap()))
-                .unwrap_or(0),
-            ident: env::var("QUILL_HSM_ID")
-                .or_else(|_| env::var("NITROHSM_ID"))
-                .unwrap_or_else(|_| "01".to_string()),
-            pin: RefCell::new(None),
+    pub fn new() -> AnyhowResult<Self> {
+        let libpath_var = env::var("QUILL_HSM_LIBPATH").or_else(|_| env::var("NITROHSM_LIBPATH"));
+        let libpath = libpath_var.unwrap_or_else(|_| PKCS11_LIBPATH.to_string());
+        let slot = if let Ok(hex_slot) = env::var("QUILL_HSM_SLOT") {
+            Some(usize::from_str_radix(&hex_slot, 16)?)
+        } else {
+            env::var("NITROHSM_SLOT")
+                .ok()
+                .map(|s| s.parse())
+                .transpose()?
         }
+        .unwrap_or(0);
+        let hsm_id_var = env::var("QUILL_HSM_ID").or_else(|_| env::var("NITROHSM_ID"));
+        let hsm_id = hsm_id_var.unwrap_or_else(|_| "01".to_string());
+        Ok(HSMInfo {
+            libpath: libpath.into(),
+            slot,
+            ident: hsm_id,
+            pin: RefCell::new(None),
+        })
     }
 }
 
@@ -288,7 +292,7 @@ fn read_pkcs11_pin_env_var() -> Result<Option<String>, String> {
     match env::var("QUILL_HSM_PIN").or_else(|_| env::var("NITROHSM_PIN")) {
         Ok(val) => Ok(Some(val)),
         Err(env::VarError::NotPresent) => Ok(None),
-        Err(e) => Err(format!("{}", e)),
+        Err(e) => Err(format!("{e}")),
     }
 }
 
@@ -344,10 +348,7 @@ pub fn parse_query_response(
             m.get(&Value::Text("reject_code".to_string())),
             m.get(&Value::Text("reject_message".to_string())),
         ) {
-            return Ok(format!(
-                "Rejected (code {}): {}",
-                reject_code, reject_message
-            ));
+            return Ok(format!("Rejected (code {reject_code}): {reject_message}",));
         }
 
         // Try to decode a successful response.
@@ -386,7 +387,7 @@ pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
             0,
             vec![
                 Integer(0, BigInt::from(1)),
-                OctetString(32, secret.to_vec()),
+                OctetString(32, secret),
                 Explicit(
                     ASN1Class::ContextSpecific,
                     0,
@@ -580,7 +581,7 @@ pub fn now_nanos() -> u64 {
     } else {
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_nanos() as u64
     }
 }

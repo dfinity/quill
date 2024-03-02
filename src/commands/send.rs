@@ -108,7 +108,7 @@ pub async fn submit_unsigned_ingress(
     submit_ingress_and_check_status(
         &msg,
         &SendOpts {
-            file_name: Default::default(),
+            file_name: None,
             yes,
             dry_run,
         },
@@ -135,21 +135,22 @@ async fn submit_ingress_and_check_status(
     )
     .await
     {
-        Ok(result) => println!("{}\n", result),
-        Err(err) => println!("{}\n", err),
+        Ok(result) => println!("{result}\n"),
+        Err(err) => println!("{err}\n"),
     };
     Ok(())
 }
 
 async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     let (sender, canister_id, method_name, args, role) = message.parse()?;
+    let call_type = &message.call_type;
 
     println!("Sending message with\n");
-    println!("  Call type:   {}", message.call_type);
-    println!("  Sender:      {}", sender);
-    println!("  Canister id: {}", canister_id);
-    println!("  Method name: {}", method_name);
-    println!("  Arguments:   {}", args);
+    println!("  Call type:   {call_type}");
+    println!("  Sender:      {sender}");
+    println!("  Canister id: {canister_id}");
+    println!("  Method name: {method_name}");
+    println!("  Arguments:   {args}");
 
     if opts.dry_run {
         return Ok(());
@@ -180,7 +181,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
                 &role,
                 &method_name,
             )?;
-            println!("Response: {}", response);
+            println!("Response: {response}");
         }
         "update" => {
             let request_id = RequestId::from_str(
@@ -191,7 +192,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
             )?;
             transport.call(canister_id, content, request_id).await?;
             let request_id = format!("0x{}", String::from(request_id));
-            println!("Request ID: {}", request_id);
+            println!("Request ID: {request_id}");
         }
         _ => unreachable!(),
     }

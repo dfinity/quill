@@ -16,7 +16,8 @@ pub async fn submit(
     role: &str,
     fetch_root_key: bool,
 ) -> AnyhowResult<String> {
-    let canister_id = Principal::from_text(&req.canister_id).expect("Couldn't parse canister id");
+    let canister_id =
+        Principal::from_text(&req.canister_id).context("Couldn't parse canister id")?;
     let request_id =
         RequestId::from_str(&req.request_id).context("Invalid argument: request_id")?;
     let mut agent = get_agent(&AuthInfo::NoAuth)?;
@@ -77,11 +78,10 @@ impl Transport for ProxySignTransport {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, AgentError>> + Send + 'a>> {
         async fn run(transport: &ProxySignTransport) -> Result<Vec<u8>, AgentError> {
             let canister_id = Principal::from_text(transport.req.canister_id.clone())
-                .map_err(|err| MessageError(format!("Unable to parse canister_id: {}", err)))?;
+                .map_err(|err| MessageError(format!("Unable to parse canister_id: {err}")))?;
             let envelope = hex::decode(transport.req.content.clone()).map_err(|err| {
                 MessageError(format!(
-                    "Unable to decode request content (should be hexadecimal encoded): {}",
-                    err
+                    "Unable to decode request content (should be hexadecimal encoded): {err}",
                 ))
             })?;
             transport

@@ -32,7 +32,7 @@ pub struct ConfigureDissolveDelayOpts {
     /// already dissolving and this argument is specified, the neuron will stop dissolving
     /// and begin aging
     #[clap(short, long)]
-    additional_dissolve_delay_seconds: Option<String>,
+    additional_dissolve_delay_seconds: Option<u32>,
 
     /// When this argument is specified, the neuron will go into the dissolving state and a
     /// countdown timer will begin. When the timer is exhausted (i.e. dissolve_delay_seconds
@@ -56,7 +56,7 @@ pub fn exec(
     require_mutually_exclusive(
         opts.start_dissolving,
         opts.stop_dissolving,
-        &opts.additional_dissolve_delay_seconds,
+        opts.additional_dissolve_delay_seconds,
     )?;
 
     let neuron_subaccount = opts.neuron_id.0.subaccount().map_err(Error::msg)?;
@@ -83,15 +83,11 @@ pub fn exec(
     }
 
     if let Some(additional_dissolve_delay_seconds) = opts.additional_dissolve_delay_seconds {
-        let parsed_additional_dissolve_delay_seconds = additional_dissolve_delay_seconds
-            .parse::<u32>()
-            .expect("Failed to parse the dissolve delay");
-
         args = Encode!(&ManageNeuron {
             subaccount: neuron_subaccount.to_vec(),
             command: Some(manage_neuron::Command::Configure(Configure {
                 operation: Some(Operation::IncreaseDissolveDelay(IncreaseDissolveDelay {
-                    additional_dissolve_delay_seconds: parsed_additional_dissolve_delay_seconds
+                    additional_dissolve_delay_seconds,
                 }))
             })),
         })?;
@@ -110,12 +106,12 @@ pub fn exec(
 fn require_mutually_exclusive(
     stop_dissolving: bool,
     start_dissolving: bool,
-    additional_dissolve_delay_seconds: &Option<String>,
+    additional_dissolve_delay_seconds: Option<u32>,
 ) -> AnyhowResult {
     match (stop_dissolving, start_dissolving, additional_dissolve_delay_seconds) {
-        (true, false, None) => Ok(()),
-        (false, true, None) => Ok(()),
-        (false, false, Some(_)) => Ok(()),
+        (true, false, None)
+        | (false, true, None)
+        | (false, false, Some(_)) => Ok(()),
         _ => Err(anyhow!("--stop-dissolving, --start-dissolving, --additional-dissolve-delay-seconds are mutually exclusive arguments"))
     }
 }

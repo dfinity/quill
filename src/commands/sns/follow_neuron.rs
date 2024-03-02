@@ -79,8 +79,8 @@ pub fn exec(
     let args = ManageNeuron {
         subaccount: opts.neuron_id.0.id,
         command: Some(Command::Follow(Follow {
-            followees,
             function_id,
+            followees,
         })),
     };
     let message = sign_ingress_with_request_status_query(

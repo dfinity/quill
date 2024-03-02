@@ -115,7 +115,7 @@ fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
 fn convert_name_to_nonce(name: &str) -> u64 {
     let mut bytes = std::collections::VecDeque::from(name.as_bytes().to_vec());
     while bytes.len() < 8 {
-        bytes.push_front(0)
+        bytes.push_front(0);
     }
     let mut arr: [u8; 8] = [0; 8];
     arr.copy_from_slice(&bytes.into_iter().collect::<Vec<_>>());
