@@ -7,9 +7,6 @@ export
 # Enter temporary directory.
 pushd /tmp
 
-# install dfx
-sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
-
 # Install Bats.
 sudo apt-get install --yes bats
 
