@@ -14,6 +14,7 @@ use candid::{CandidType, Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
 use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
+use sha2::{Digest, Sha256};
 
 #[derive(CandidType)]
 pub struct ClaimOrRefreshNeuronFromAccount {
@@ -103,13 +104,12 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
 // This function _must_ correspond to how the governance canister computes the
 // subaccount.
 fn get_neuron_subaccount(controller: &Principal, nonce: u64) -> Subaccount {
-    use openssl::sha::Sha256;
     let mut data = Sha256::new();
-    data.update(&[0x0c]);
+    data.update([0x0c]);
     data.update(b"neuron-stake");
     data.update(controller.as_slice());
-    data.update(&nonce.to_be_bytes());
-    Subaccount(data.finish())
+    data.update(nonce.to_be_bytes());
+    Subaccount(data.finalize().into())
 }
 
 fn convert_name_to_nonce(name: &str) -> u64 {

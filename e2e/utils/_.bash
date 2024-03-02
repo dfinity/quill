@@ -17,10 +17,22 @@ standard_setup() {
     x=$(mktemp -d -t dfx-e2e-XXXXXXXX)
     export DFX_E2E_TEMP_DIR="$x"
 
+    if [ "$(uname)" == "Darwin" ]; then
+        project_relative_path="Library/Application Support/org.dfinity.dfx"
+    elif [ "$(uname)" == "Linux" ]; then
+        project_relative_path=".local/share/dfx"
+    fi
+
     mkdir "$x/working-dir"
     mkdir "$x/cache-root"
     mkdir "$x/config-root"
     mkdir "$x/home-dir"
+
+    # we need to configure dfxvm in the isolated home directory
+    default_dfx_version="$(dfxvm default)"
+    # don't re-download dfx for every test
+    mkdir -p "$x/home-dir/$project_relative_path"
+    ln -s "$HOME/$project_relative_path/versions" "$x/home-dir/$project_relative_path/versions"
 
     cd "$x/working-dir" || exit
 
@@ -29,12 +41,10 @@ standard_setup() {
     export DFX_CONFIG_ROOT="$x/config-root"
     export RUST_BACKTRACE=1
     export PEM_LOCATION="${BATS_TEST_DIRNAME}/../assets"
-    if [ "$(uname)" == "Darwin" ]; then
-        export E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY="$HOME/Library/Application Support/org.dfinity.dfx/network/local"
-    elif [ "$(uname)" == "Linux" ]; then
-        export E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY="$HOME/.local/share/dfx/network/local"
-    fi
+    export E2E_SHARED_LOCAL_NETWORK_DATA_DIRECTORY="$HOME/$project_relative_path/network/local"
     export E2E_NETWORKS_JSON="$DFX_CONFIG_ROOT/.config/dfx/networks.json"
+
+    dfxvm default "$default_dfx_version"
 }
 
 standard_nns_setup() {
