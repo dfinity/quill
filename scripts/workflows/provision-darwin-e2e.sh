@@ -9,9 +9,6 @@ pushd /tmp
 
 brew install coreutils
 
-# install dfx
-sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
-
 # Install Bats.
 if [ "$(uname -r)" = "19.6.0" ]; then
     brew unlink bats

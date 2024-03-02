@@ -26,7 +26,7 @@ jobs:
             build_deps: scripts/workflows/provision-darwin-build.sh
     steps:
       - uses: actions/checkout@master
-      
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -83,6 +83,8 @@ jobs:
           path: /usr/local/bin
       - name: Setup quill binary
         run: chmod +x /usr/local/bin/quill
+      - name: Install dfx
+        uses: dfinity/setup-dfx@main
       - name: Provision Darwin
         if: ${{ contains(matrix.os, 'macos') }}
         run: bash scripts/workflows/provision-darwin-e2e.sh
