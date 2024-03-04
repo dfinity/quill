@@ -1,4 +1,8 @@
+import { MarkdownChipRow } from "/src/components/Chip/MarkdownChipRow";
+
 # quill qr-code
+
+<MarkdownChipRow labels={["Reference"]} />
 
 Print QR code for provided data e.g. principal id.
 
