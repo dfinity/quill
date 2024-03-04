@@ -1,4 +1,8 @@
+import { MarkdownChipRow } from "/src/components/Chip/MarkdownChipRow";
+
 # quill sns neuron-permission
+
+<MarkdownChipRow labels={["Reference"]} />
 
 Signs a ManageNeuron message to add or remove permissions for a principal to/from a neuron.
 
