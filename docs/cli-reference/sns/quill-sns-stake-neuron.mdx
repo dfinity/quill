@@ -1,4 +1,8 @@
+import { MarkdownChipRow } from "/src/components/Chip/MarkdownChipRow";
+
 # quill sns stake-neuron
+
+<MarkdownChipRow labels={["Reference"]} />
 
 Signs messages needed to stake governance tokens for a neuron. First, stake-neuron will sign a ledger transfer to a subaccount of the Governance canister calculated from the provided private key and memo. Second, stake-neuron will sign a ManageNeuron message for Governance to claim the neuron for the principal derived from the provided private key.
 
