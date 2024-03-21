@@ -110,6 +110,23 @@ fn make_proposal() {
         "sns make-proposal {NEURON_ID} --proposal '{proposal}'"
     ))
     .diff("sns/make_proposal/simple.txt");
+    let proposal_with_blob = r#"
+    ( record {
+        title = "Transfer ICP from SNS treasury.";
+        url = "example.com";
+        summary = "";
+        action = opt variant { TransferSnsTreasuryFunds = record {
+            from_treasury = 1 : int32;
+            to_principal = opt principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+            to_subaccount = opt record { subaccount = vec {0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;1} };
+            memo = null;
+            amount_e8s = 1_000_000_000: nat64
+        } };
+    } )"#;
+    quill_sns_send(&format!(
+        "sns make-proposal {NEURON_ID} --proposal '{proposal_with_blob}'"
+    ))
+    .diff("sns/make_proposal/with_blob.txt");
     let proposal_bin = asset("sns_proposal.bin");
     quill_sns_send(&format!(
         "sns make-proposal {NEURON_ID} --proposal-path '{proposal_bin}'",

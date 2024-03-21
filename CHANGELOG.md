@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.4.4] - 2024-03-21
+
+- Fixed `quill sns make-proposal` setting some fields to null.
+
 ## [0.4.3] - 2024-01-29
 
 - Updated dependencies.
