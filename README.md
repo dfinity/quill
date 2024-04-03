@@ -20,30 +20,37 @@ AUTHORS OF THIS SOFTWARE SHALL NOT BE LIABLE FOR DAMAGES OF ANY TYPE, WHETHER DI
 ## Usage
 
 This will sign a transfer transaction and print to STDOUT:
-
-    quill transfer <account-id> --amount <amount> --pem-file <path>
+```shell
+quill transfer <account-id> --amount <amount> --pem-file <path>
+```
 
 To display the signed message in human-readable form:
-
-    quill send --dry-run <path-to-file>
+```shell
+quill send --dry-run <path-to-file>
+```
 
 `quill` could be used on an online computer to send any signed transaction:
 
-    quill send <path-to-file>
+```shell
+quill send <path-to-file>
+```
 
 To get the principal and the account id:
-
-    quill public-ids --pem-file <path>
+```shell
+quill public-ids --pem-file <path>
+```
 
 ### Governance
 
 This is how you’d stake/top-up a neuron:
-
-    quill neuron-stake --amount 2.5 --name 1 --pem-file <path>
+```shell
+quill neuron-stake --amount 2.5 --name 1 --pem-file <path>
+```
 
 Managing the neuron:
-
-    quill neuron-manage <neuron-id> [OPERATIONS] --pem-file <path>
+```shell
+quill neuron-manage <neuron-id> [OPERATIONS] --pem-file <path>
+```
 
 All the commands above will generate signed messages, which can be sent on the online machine using the `send` command
 from above.
@@ -152,8 +159,9 @@ replica binary and NNS running locally), you can target quill at this test
 network by setting the `IC_URL` environment variable to the full URL. In addition
 to that, it is required to use the `--insecure-local-dev-mode` flag. For
 example:
-
-    IC_URL=https://nnsdapp.dfinity.network quill --insecure-local-dev-mode --pem-file <path> list-neurons
+```shell
+IC_URL=https://nnsdapp.dfinity.network quill --insecure-local-dev-mode --pem-file <path> list-neurons
+```
 
 ## Contribution
 
