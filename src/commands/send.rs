@@ -9,9 +9,7 @@ use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::Transport;
-use ic_agent::{
-    agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport, RequestId,
-};
+use ic_agent::{agent::http_transport::ReqwestTransport, RequestId};
 use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -170,7 +168,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
+    let transport = ReqwestTransport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

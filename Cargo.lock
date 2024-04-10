@@ -1722,7 +1722,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap 2.1.0",
  "slab",
  "tokio",
@@ -1843,14 +1843,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.11",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-body"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
+dependencies = [
+ "bytes",
+ "http 1.1.0",
 ]
 
 [[package]]
@@ -1885,8 +1906,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "httparse",
  "httpdate",
  "itoa",
@@ -1905,7 +1926,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
+ "http 0.2.11",
  "hyper",
  "rustls",
  "tokio",
@@ -1937,8 +1958,8 @@ dependencies = [
 
 [[package]]
 name = "ic-agent"
-version = "0.32.0"
-source = "git+https://github.com/dfinity/agent-rs?rev=73da09c1c553193c46d7edef73c8c20beaa8498c#73da09c1c553193c46d7edef73c8c20beaa8498c"
+version = "0.34.0"
+source = "git+https://github.com/dfinity/agent-rs?rev=8c39e26236e3e3db6db51ffa71e34140c19d207e#8c39e26236e3e3db6db51ffa71e34140c19d207e"
 dependencies = [
  "backoff",
  "cached 0.46.1",
@@ -1946,19 +1967,20 @@ dependencies = [
  "ed25519-consensus",
  "futures-util",
  "hex",
- "http",
- "http-body",
+ "http 1.1.0",
+ "http-body 1.0.0",
  "ic-certification",
  "ic-transport-types",
  "ic-verify-bls-signature",
  "k256 0.13.3",
  "leb128",
+ "p256",
  "pem 2.0.1",
  "pkcs8 0.10.2",
  "rand",
  "rangemap",
  "reqwest",
- "ring 0.16.20",
+ "ring",
  "rustls-webpki",
  "sec1 0.7.3",
  "serde",
@@ -2587,8 +2609,8 @@ dependencies = [
 
 [[package]]
 name = "ic-identity-hsm"
-version = "0.32.0"
-source = "git+https://github.com/dfinity/agent-rs?rev=73da09c1c553193c46d7edef73c8c20beaa8498c#73da09c1c553193c46d7edef73c8c20beaa8498c"
+version = "0.34.0"
+source = "git+https://github.com/dfinity/agent-rs?rev=8c39e26236e3e3db6db51ffa71e34140c19d207e#8c39e26236e3e3db6db51ffa71e34140c19d207e"
 dependencies = [
  "hex",
  "ic-agent",
@@ -3256,8 +3278,8 @@ dependencies = [
 
 [[package]]
 name = "ic-transport-types"
-version = "0.32.0"
-source = "git+https://github.com/dfinity/agent-rs?rev=73da09c1c553193c46d7edef73c8c20beaa8498c#73da09c1c553193c46d7edef73c8c20beaa8498c"
+version = "0.34.0"
+source = "git+https://github.com/dfinity/agent-rs?rev=8c39e26236e3e3db6db51ffa71e34140c19d207e#8c39e26236e3e3db6db51ffa71e34140c19d207e"
 dependencies = [
  "candid",
  "hex",
@@ -4826,8 +4848,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "hyper-rustls",
  "ipnet",
@@ -4879,21 +4901,6 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
-dependencies = [
- "cc",
- "libc",
- "once_cell",
- "spin 0.5.2",
- "untrusted 0.7.1",
- "web-sys",
- "winapi",
-]
-
-[[package]]
-name = "ring"
 version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "688c63d65483050968b2a8937f7995f443e27041a0f7700aa59b0822aedebb74"
@@ -4902,7 +4909,7 @@ dependencies = [
  "getrandom",
  "libc",
  "spin 0.9.8",
- "untrusted 0.9.0",
+ "untrusted",
  "windows-sys 0.48.0",
 ]
 
@@ -5032,7 +5039,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9d5a6813c0759e4609cd494e8e725babae6a2ca7b62a5536a13daaec6fcb7ba"
 dependencies = [
  "log",
- "ring 0.17.7",
+ "ring",
  "rustls-webpki",
  "sct",
 ]
@@ -5052,8 +5059,8 @@ version = "0.101.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765"
 dependencies = [
- "ring 0.17.7",
- "untrusted 0.9.0",
+ "ring",
+ "untrusted",
 ]
 
 [[package]]
@@ -5086,8 +5093,8 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
 dependencies = [
- "ring 0.17.7",
- "untrusted 0.9.0",
+ "ring",
+ "untrusted",
 ]
 
 [[package]]
@@ -5926,12 +5933,6 @@ name = "unsafe-libyaml"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab4c90930b95a82d00dc9e9ac071b4991924390d46cbd0dfe566148667605e4b"
-
-[[package]]
-name = "untrusted"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "untrusted"

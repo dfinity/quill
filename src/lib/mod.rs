@@ -265,11 +265,7 @@ pub fn read_from_file(path: impl AsRef<Path>) -> AnyhowResult<String> {
 pub fn get_agent(auth: &AuthInfo) -> AnyhowResult<Agent> {
     let timeout = Duration::from_secs(60 * 5);
     let builder = Agent::builder()
-        .with_transport(
-            ic_agent::agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport::create({
-                get_ic_url()
-            })?,
-        )
+        .with_url(get_ic_url())
         .with_ingress_expiry(Some(timeout));
 
     let identity = get_identity(auth)?;

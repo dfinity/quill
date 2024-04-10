@@ -25,8 +25,8 @@ ledger-canister = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245
 
 candid = "0.10.2"
 candid_parser = "0.1.2"
-ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "73da09c1c553193c46d7edef73c8c20beaa8498c" }
-ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "73da09c1c553193c46d7edef73c8c20beaa8498c", optional = true }
+ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e26236e3e3db6db51ffa71e34140c19d207e" }
+ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e26236e3e3db6db51ffa71e34140c19d207e", optional = true }
 
 anyhow = "1.0.34"
 atty = "0.2.14"
