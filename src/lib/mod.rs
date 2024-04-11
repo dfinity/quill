@@ -22,6 +22,7 @@ use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
+use rust_decimal::Decimal;
 use serde_cbor::Value;
 use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
@@ -46,6 +47,7 @@ pub fn get_ic_url() -> String {
     env::var("IC_URL").unwrap_or_else(|_| IC_URL.to_string())
 }
 
+pub mod format;
 #[cfg(feature = "ledger")]
 pub mod ledger;
 pub mod signing;
@@ -210,7 +212,6 @@ Should be one of:
     })
 }
 
-/// Returns pretty-printed encoding of a candid value.
 pub fn get_idl_string(
     blob: &[u8],
     canister_id: Principal,
@@ -233,6 +234,23 @@ pub fn get_idl_string(
         ),
     };
     Ok(format!("{}", result?))
+}
+
+/// Returns pretty-printed encoding of a candid value.
+pub fn display_response(
+    blob: &[u8],
+    canister_id: Principal,
+    role: &str,
+    method_name: &str,
+    part: &str,
+) -> AnyhowResult<String> {
+    match role {
+        ROLE_NNS_GOVERNANCE => match method_name {
+            "get_neuron_info" => format::nns_governance::display_get_neuron_info(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        _ => get_idl_string(blob, canister_id, role, method_name, part),
+    }
 }
 
 /// Returns the candid type of a specifed method and correspondig idl
@@ -580,6 +598,10 @@ pub fn now_nanos() -> u64 {
             .unwrap_or_default()
             .as_nanos() as u64
     }
+}
+
+pub fn e8s_to_tokens(e8s: i128) -> Decimal {
+    Decimal::from_i128_with_scale(e8s, 8)
 }
 
 #[cfg(test)]

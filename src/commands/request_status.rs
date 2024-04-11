@@ -1,5 +1,7 @@
 use crate::lib::get_ic_url;
-use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
+use crate::lib::{
+    display_response, get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo,
+};
 use anyhow::{anyhow, Context};
 use candid::Principal;
 use ic_agent::agent::http_transport::ReqwestTransport;
@@ -15,6 +17,7 @@ pub async fn submit(
     req: &RequestStatus,
     method_name: Option<String>,
     role: &str,
+    raw: bool,
     fetch_root_key: bool,
 ) -> AnyhowResult<String> {
     let canister_id =
@@ -55,13 +58,23 @@ pub async fn submit(
         }
     }
     .await?;
-    get_idl_string(
-        &blob,
-        canister_id,
-        role,
-        &method_name.unwrap_or_default(),
-        "rets",
-    )
+    if raw {
+        get_idl_string(
+            &blob,
+            canister_id,
+            role,
+            &method_name.unwrap_or_default(),
+            "rets",
+        )
+    } else {
+        display_response(
+            &blob,
+            canister_id,
+            role,
+            &method_name.unwrap_or_default(),
+            "rets",
+        )
+    }
     .context("Invalid IDL blob.")
 }
 

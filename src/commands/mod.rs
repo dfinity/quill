@@ -2,7 +2,7 @@
 
 use crate::lib::{get_principal, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount};
 use anyhow::{bail, Context};
-use clap::Parser;
+use clap::{Args, Parser};
 use icrc_ledger_types::icrc1::account::Account;
 use std::io::{self, Write};
 
@@ -198,4 +198,19 @@ fn get_account(
         account.subaccount = Some(subaccount.0 .0);
     }
     Ok(account)
+}
+
+#[derive(Args)]
+pub struct QueryOpts {
+    /// Skips confirmation and sends the message directly.
+    #[clap(long, short)]
+    yes: bool,
+
+    /// Will display the query, but not send it.
+    #[clap(long)]
+    dry_run: bool,
+
+    /// Always displays the response in IDL format.
+    #[clap(long)]
+    raw: bool,
 }

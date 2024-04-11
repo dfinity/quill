@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use super::QueryOpts;
+
 #[derive(
     Serialize,
     Deserialize,
@@ -59,6 +61,10 @@ pub struct SendOpts {
     /// Skips confirmation and sends the message directly.
     #[clap(long, short)]
     yes: bool,
+
+    /// Always displays the response in IDL format.
+    #[clap(long)]
+    raw: bool,
 }
 
 #[tokio::main]
@@ -92,8 +98,7 @@ pub async fn submit_unsigned_ingress(
     role: &str,
     method_name: &str,
     args: Vec<u8>,
-    yes: bool,
-    dry_run: bool,
+    query_opts: QueryOpts,
     fetch_root_key: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
@@ -107,8 +112,9 @@ pub async fn submit_unsigned_ingress(
         &msg,
         &SendOpts {
             file_name: None,
-            yes,
-            dry_run,
+            yes: query_opts.yes,
+            dry_run: query_opts.dry_run,
+            raw: query_opts.raw,
         },
         fetch_root_key,
     )
@@ -129,12 +135,13 @@ async fn submit_ingress_and_check_status(
         &message.request_status,
         Some(method_name.to_string()),
         role,
+        opts.raw,
         fetch_root_key,
     )
     .await
     {
-        Ok(result) => println!("{result}\n"),
-        Err(err) => println!("{err}\n"),
+        Ok(result) => println!("{result}"),
+        Err(err) => println!("{err}"),
     };
     Ok(())
 }

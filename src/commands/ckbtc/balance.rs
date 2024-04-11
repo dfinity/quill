@@ -2,7 +2,7 @@ use candid::Encode;
 use clap::Parser;
 
 use crate::{
-    commands::{get_account, send::submit_unsigned_ingress},
+    commands::{get_account, send::submit_unsigned_ingress, QueryOpts},
     lib::{
         ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
         ROLE_ICRC1_LEDGER,
@@ -22,13 +22,8 @@ pub struct BalanceOpts {
     #[clap(long)]
     of_subaccount: Option<ParsedSubaccount>,
 
-    /// Skips confirmation and sends the message immediately.
-    #[clap(long, short)]
-    yes: bool,
-
-    /// Will display the signed message, but not send it.
-    #[clap(long)]
-    dry_run: bool,
+    #[clap(flatten)]
+    query_opts: QueryOpts,
 
     /// Uses ckTESTBTC instead of ckBTC.
     #[clap(long)]
@@ -43,8 +38,7 @@ pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> A
         ROLE_ICRC1_LEDGER,
         "icrc1_balance_of",
         Encode!(&account)?,
-        opts.yes,
-        opts.dry_run,
+        opts.query_opts,
         fetch_root_key,
     )
     .await?;
