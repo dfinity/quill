@@ -31,6 +31,7 @@ ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e262
 anyhow = "1.0.34"
 atty = "0.2.14"
 base64 = "0.13.0"
+bigdecimal = "0.4"
 bip32 = "0.4.0"
 chrono = "0.4"
 chrono-tz = "0.9"
@@ -52,7 +53,6 @@ pem = "1.0.1"
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
 rpassword = "6.0.0"
-rust_decimal = "1.26"
 simple_asn1 = "0.6.1"
 scopeguard = "1"
 serde = { version = "1.0.130", features = ["derive"] }

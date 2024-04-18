@@ -2,6 +2,10 @@ use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::{OffsetName, Tz};
 use itertools::Itertools;
 
+pub mod ckbtc;
+pub mod gtc;
+pub mod icp_ledger;
+pub mod icrc1;
 pub mod nns_governance;
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {

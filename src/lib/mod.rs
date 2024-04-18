@@ -1,9 +1,10 @@
 //! All the common functionality.
 
 use anyhow::{anyhow, bail, ensure, Context};
+use bigdecimal::BigDecimal;
 use bip32::DerivationPath;
 use bip39::{Mnemonic, Seed};
-use candid::{types::Function, Principal, TypeEnv};
+use candid::{types::Function, Nat, Principal, TypeEnv};
 use candid_parser::{typing::check_prog, IDLProg};
 use crc32fast::Hasher;
 use data_encoding::BASE32_NOPAD;
@@ -22,7 +23,6 @@ use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
 use pem::{encode, Pem};
-use rust_decimal::Decimal;
 use serde_cbor::Value;
 use simple_asn1::ASN1Block::{
     BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
@@ -247,6 +247,36 @@ pub fn display_response(
     match role {
         ROLE_NNS_GOVERNANCE => match method_name {
             "get_neuron_info" => format::nns_governance::display_get_neuron_info(blob),
+            "manage_neuron" => format::nns_governance::display_manage_neuron(blob),
+            "get_neuron_ids" => format::nns_governance::display_neuron_ids(blob),
+            "update_node_provider" => format::nns_governance::display_update_node_provider(blob),
+            "list_proposals" => format::nns_governance::display_list_proposals(blob),
+            "get_proposal_info" => format::nns_governance::display_get_proposal(blob),
+            "claim_gtc_neurons" => format::nns_governance::display_claim_gtc_neurons(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_NNS_LEDGER => match method_name {
+            "transfer" => format::icp_ledger::display_transfer(blob),
+            "send_dfx" => format::icp_ledger::display_send_dfx(blob),
+            "account_balance" | "account_balance_dfx" => {
+                format::icp_ledger::display_account_balance_or_dfx(blob)
+            }
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_ICRC1_LEDGER => match method_name {
+            "icrc1_transfer" => format::icrc1::display_transfer(blob),
+            "icrc1_balance_of" => format::icrc1::display_balance(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_CKBTC_MINTER => match method_name {
+            "update_balance" => format::ckbtc::display_update_balance(blob),
+            "retrieve_btc" => format::ckbtc::display_retrieve_btc(blob),
+            "retrieve_btc_status" => format::ckbtc::display_retrieve_btc_status(blob),
+            "retrieve_btc_status_v2" => format::ckbtc::display_retrieve_btc_status_v2(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_NNS_GTC => match method_name {
+            "claim_neurons" => format::gtc::format_claim_neurons(blob),
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         _ => get_idl_string(blob, canister_id, role, method_name, part),
@@ -600,8 +630,8 @@ pub fn now_nanos() -> u64 {
     }
 }
 
-pub fn e8s_to_tokens(e8s: i128) -> Decimal {
-    Decimal::from_i128_with_scale(e8s, 8)
+pub fn e8s_to_tokens(e8s: Nat) -> BigDecimal {
+    BigDecimal::new(e8s.0.into(), 8)
 }
 
 #[cfg(test)]

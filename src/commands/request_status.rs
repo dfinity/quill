@@ -58,22 +58,15 @@ pub async fn submit(
         }
     }
     .await?;
+    let method_str = method_name.unwrap_or_default();
     if raw {
-        get_idl_string(
-            &blob,
-            canister_id,
-            role,
-            &method_name.unwrap_or_default(),
-            "rets",
-        )
+        get_idl_string(&blob, canister_id, role, &method_str, "rets")
     } else {
-        display_response(
-            &blob,
-            canister_id,
-            role,
-            &method_name.unwrap_or_default(),
-            "rets",
-        )
+        display_response(&blob, canister_id, role, &method_str, "rets").or_else(|e| {
+            get_idl_string(&blob, canister_id, role, &method_str, "rets").map(|m| {
+                format!("Error pretty-printing response: {e}. Falling back to IDL display\n{m}",)
+            })
+        })
     }
     .context("Invalid IDL blob.")
 }
