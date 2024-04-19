@@ -7,6 +7,7 @@ pub mod gtc;
 pub mod icp_ledger;
 pub mod icrc1;
 pub mod nns_governance;
+pub mod registry;
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
     let fmt = "%b %d %Y %X";

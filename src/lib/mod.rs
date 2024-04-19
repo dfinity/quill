@@ -253,6 +253,9 @@ pub fn display_response(
             "list_proposals" => format::nns_governance::display_list_proposals(blob),
             "get_proposal_info" => format::nns_governance::display_get_proposal(blob),
             "claim_gtc_neurons" => format::nns_governance::display_claim_gtc_neurons(blob),
+            "claim_or_refresh_neuron_from_account" => {
+                format::nns_governance::display_claim_or_refresh_neuron_from_account(blob)
+            }
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         ROLE_NNS_LEDGER => match method_name {
@@ -277,6 +280,12 @@ pub fn display_response(
         },
         ROLE_NNS_GTC => match method_name {
             "claim_neurons" => format::gtc::format_claim_neurons(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_NNS_REGISTRY => match method_name {
+            "update_node_operator_config_direcly" => {
+                format::registry::display_update_node_operator_config_directly(blob)
+            }
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         _ => get_idl_string(blob, canister_id, role, method_name, part),

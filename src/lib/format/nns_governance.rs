@@ -5,12 +5,13 @@ use bigdecimal::BigDecimal;
 use candid::Decode;
 use ic_nns_governance::pb::v1::{
     add_or_remove_node_provider::Change,
+    claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
     manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
     manage_neuron_response::Command,
     proposal::Action,
     reward_node_provider::{RewardMode, RewardToAccount},
-    GovernanceError, ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo,
-    Topic,
+    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListProposalInfoResponse,
+    ManageNeuronResponse, NeuronInfo, ProposalInfo, Topic,
 };
 use itertools::Itertools;
 
@@ -675,6 +676,19 @@ pub fn display_claim_gtc_neurons(blob: &[u8]) -> AnyhowResult<String> {
     let fmt = match res {
         Ok(()) => "Successfully claimed Genesis neurons".to_string(),
         Err(e) => display_governance_error(e),
+    };
+    Ok(fmt)
+}
+
+pub fn display_claim_or_refresh_neuron_from_account(blob: &[u8]) -> AnyhowResult<String> {
+    let res = Decode!(blob, ClaimOrRefreshNeuronFromAccountResponse)?;
+    let fmt = if let Some(res) = res.result {
+        match res {
+            ClaimResult::NeuronId(id) => format!("Successfully staked ICP in neuron {}", id.id),
+            ClaimResult::Error(e) => display_governance_error(e),
+        }
+    } else {
+        "Unknown result of call".to_string()
     };
     Ok(fmt)
 }
