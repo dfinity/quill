@@ -19,7 +19,7 @@ pub fn display_send_dfx(blob: &[u8]) -> AnyhowResult<String> {
 pub fn display_account_balance_or_dfx(blob: &[u8]) -> AnyhowResult<String> {
     let tokens = Decode!(blob, Tokens)?;
     Ok(format!(
-        "Balance: {}",
+        "Balance: {} ICP",
         e8s_to_tokens(tokens.get_e8s().into())
     ))
 }
