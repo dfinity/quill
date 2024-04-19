@@ -11,26 +11,49 @@ use std::fmt::Write;
 use crate::lib::{e8s_to_tokens, AnyhowResult};
 
 pub fn display_update_balance(blob: &[u8]) -> AnyhowResult<String> {
-    let result = Decode!(blob, Result<UtxoStatus, UpdateBalanceError>)?;
+    let result = Decode!(blob, Result<Vec<UtxoStatus>, UpdateBalanceError>)?;
     let fmt = match result {
-        Ok(status) => match status {
-            UtxoStatus::Minted { block_index, minted_amount, .. } => format!("Minted {} ckBTC at block index {block_index}", e8s_to_tokens(minted_amount.into())),
-            UtxoStatus::ValueTooSmall(utxo) => format!("UTXO rejected: too small to cover KYT cost\n{} BTC, transaction ID {}", e8s_to_tokens(utxo.value.into()), utxo.outpoint.txid),
-            UtxoStatus::Tainted(utxo) => format!("UTXO rejected: the KYT process determined the BTC is tainted\n{} BTC, transaction ID {}", e8s_to_tokens(utxo.value.into()), utxo.outpoint.txid),
-            UtxoStatus::Checked(_) => "The deposted BTC cleared the KYT check, but minting ckBTC failed. Retry this command.".to_string(),
+        Ok(statuses) => {
+            let mut fmt = String::new();
+            for status in statuses {
+                match status {
+                    UtxoStatus::Minted { block_index, minted_amount, utxo } => writeln!(fmt, "{txid}({btc} BTC): Minted {ckbtc} ckBTC at block index {block_index}", txid = utxo.outpoint.txid, btc = e8s_to_tokens(utxo.value.into()), ckbtc = e8s_to_tokens(minted_amount.into()))?,
+                    UtxoStatus::ValueTooSmall(utxo) => writeln!(fmt,"{txid}({btc} BTC): UTXO rejected: too small to cover KYT cost", txid = utxo.outpoint.txid, btc = e8s_to_tokens(utxo.value.into()))?,
+                    UtxoStatus::Tainted(utxo) => writeln!(fmt, "{txid}({btc} BTC): UTXO rejected: the KYT process determined the BTC is tainted", txid = utxo.outpoint.txid, btc = e8s_to_tokens(utxo.value.into()))?,
+                    UtxoStatus::Checked(utxo) => writeln!(fmt, "{txid}({btc} BTC): The deposted BTC cleared the KYT check, but minting ckBTC failed. Retry this command.", txid = utxo.outpoint.txid, btc = e8s_to_tokens(utxo.value.into()))?,
+                }
+            }
+            fmt
         }
         Err(e) => match e {
-            UpdateBalanceError::GenericError { error_message , .. } => format!("ckBTC error: {error_message}"),
-            UpdateBalanceError::AlreadyProcessing => "ckBTC error: already processing another update_balance call for the same account".to_string(),
-            UpdateBalanceError::NoNewUtxos { current_confirmations, required_confirmations, pending_utxos } => {
+            UpdateBalanceError::GenericError { error_message, .. } => {
+                format!("ckBTC error: {error_message}")
+            }
+            UpdateBalanceError::AlreadyProcessing => {
+                "ckBTC error: already processing another update_balance call for the same account"
+                    .to_string()
+            }
+            UpdateBalanceError::NoNewUtxos {
+                current_confirmations,
+                required_confirmations,
+                pending_utxos,
+            } => {
                 let mut fmt = "ckBTC error: no new confirmed UTXOs to process".to_string();
                 if let Some(pending_utxos) = pending_utxos {
-                    write!(fmt, " ({} unconfirmed, needing {} confirmations but having {})", pending_utxos.len(), required_confirmations, current_confirmations.unwrap_or_default())?;
+                    write!(
+                        fmt,
+                        " ({} unconfirmed, needing {} confirmations but having {})",
+                        pending_utxos.len(),
+                        required_confirmations,
+                        current_confirmations.unwrap_or_default()
+                    )?;
                 }
                 fmt
             }
-            UpdateBalanceError::TemporarilyUnavailable(e) => format!("ckBTC error: temporarily unavailable: {e}. Try again later."),
-        }
+            UpdateBalanceError::TemporarilyUnavailable(e) => {
+                format!("ckBTC error: temporarily unavailable: {e}. Try again later.")
+            }
+        },
     };
     Ok(fmt)
 }

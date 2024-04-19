@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_swap::pb::v1::GetBuyerStateRequest;
 
 use crate::{
-    commands::{get_principal, send::submit_unsigned_ingress, QueryOpts},
+    commands::{get_principal, send::submit_unsigned_ingress, SendingOpts},
     lib::{AnyhowResult, AuthInfo, ROLE_SNS_SWAP},
 };
 
@@ -17,7 +17,7 @@ pub struct GetSaleParticipationOpts {
     principal: Option<Principal>,
 
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -40,7 +40,7 @@ pub async fn exec(
         ROLE_SNS_SWAP,
         "get_buyer_state",
         Encode!(&message)?,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

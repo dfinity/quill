@@ -201,7 +201,7 @@ fn get_account(
 }
 
 #[derive(Args)]
-pub struct QueryOpts {
+pub struct SendingOpts {
     /// Skips confirmation and sends the message directly.
     #[clap(long, short)]
     yes: bool,

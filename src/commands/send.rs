@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use super::QueryOpts;
+use super::SendingOpts;
 
 #[derive(
     Serialize,
@@ -54,17 +54,8 @@ pub struct SendOpts {
     /// Path to the signed message (`-` for stdin)
     file_name: Option<PathBuf>,
 
-    /// Will display the signed message, but not send it.
-    #[clap(long)]
-    dry_run: bool,
-
-    /// Skips confirmation and sends the message directly.
-    #[clap(long, short)]
-    yes: bool,
-
-    /// Always displays the response in IDL format.
-    #[clap(long)]
-    raw: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -98,7 +89,7 @@ pub async fn submit_unsigned_ingress(
     role: &str,
     method_name: &str,
     args: Vec<u8>,
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
     fetch_root_key: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
@@ -112,9 +103,7 @@ pub async fn submit_unsigned_ingress(
         &msg,
         &SendOpts {
             file_name: None,
-            yes: query_opts.yes,
-            dry_run: query_opts.dry_run,
-            raw: query_opts.raw,
+            sending_opts,
         },
         fetch_root_key,
     )
@@ -127,7 +116,7 @@ async fn submit_ingress_and_check_status(
     fetch_root_key: bool,
 ) -> AnyhowResult {
     send(&message.ingress, opts).await?;
-    if opts.dry_run {
+    if opts.sending_opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _, role) = &message.ingress.parse()?;
@@ -135,12 +124,12 @@ async fn submit_ingress_and_check_status(
         &message.request_status,
         Some(method_name.to_string()),
         role,
-        opts.raw,
+        opts.sending_opts.raw,
         fetch_root_key,
     )
     .await
     {
-        Ok(result) => println!("{result}"),
+        Ok(result) => println!("{}", result.trim()),
         Err(err) => println!("{err}"),
     };
     Ok(())
@@ -157,11 +146,11 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     println!("  Method name: {method_name}");
     println!("  Arguments:   {args}");
 
-    if opts.dry_run {
+    if opts.sending_opts.dry_run {
         return Ok(());
     }
 
-    if message.call_type == "update" && !opts.yes {
+    if message.call_type == "update" && !opts.sending_opts.yes {
         if !atty::is(Stream::Stdin) {
             eprintln!("Cannot confirm y/n if the input is being piped.");
             eprintln!("To confirm sending this message, rerun `quill send` with the `-y` flag.");

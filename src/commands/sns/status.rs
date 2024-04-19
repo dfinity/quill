@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_root::GetSnsCanistersSummaryRequest;
 
 use crate::{
-    commands::{send::submit_unsigned_ingress, QueryOpts},
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{AnyhowResult, ROLE_SNS_ROOT},
 };
 
@@ -14,7 +14,7 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct StatusOpts {
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -28,7 +28,7 @@ pub async fn exec(ids: &SnsCanisterIds, opts: StatusOpts, fetch_root_key: bool) 
         ROLE_SNS_ROOT,
         "get_sns_canisters_summary",
         arg,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

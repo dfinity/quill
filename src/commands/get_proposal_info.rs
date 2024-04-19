@@ -1,5 +1,5 @@
 use crate::{
-    commands::{send::submit_unsigned_ingress, QueryOpts},
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
 use candid::Encode;
@@ -11,7 +11,7 @@ pub struct GetProposalInfoOpts {
     pub ident: u64,
 
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 }
 
 // We currently only support a subset of the functionality.
@@ -23,7 +23,7 @@ pub async fn exec(opts: GetProposalInfoOpts, fetch_root_key: bool) -> AnyhowResu
         ROLE_NNS_GOVERNANCE,
         "get_proposal_info",
         args,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await

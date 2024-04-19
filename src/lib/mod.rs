@@ -251,6 +251,7 @@ pub fn display_response(
             "get_neuron_ids" => format::nns_governance::display_neuron_ids(blob),
             "update_node_provider" => format::nns_governance::display_update_node_provider(blob),
             "list_proposals" => format::nns_governance::display_list_proposals(blob),
+            "list_neurons" => format::nns_governance::display_list_neurons(blob),
             "get_proposal_info" => format::nns_governance::display_get_proposal(blob),
             "claim_gtc_neurons" => format::nns_governance::display_claim_gtc_neurons(blob),
             "claim_or_refresh_neuron_from_account" => {
@@ -283,7 +284,7 @@ pub fn display_response(
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         ROLE_NNS_REGISTRY => match method_name {
-            "update_node_operator_config_direcly" => {
+            "update_node_operator_config_directly" => {
                 format::registry::display_update_node_operator_config_directly(blob)
             }
             _ => get_idl_string(blob, canister_id, role, method_name, part),

@@ -1,5 +1,5 @@
 use crate::{
-    commands::{send::submit_unsigned_ingress, QueryOpts},
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
 use candid::Encode;
@@ -14,7 +14,7 @@ pub struct ListProposalsOpts {
     pub limit: Option<u32>,
 
     #[clap(flatten)]
-    pub query_opts: QueryOpts,
+    pub sending_opts: SendingOpts,
 }
 
 // We currently only support a subset of the functionality.
@@ -34,7 +34,7 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
         ROLE_NNS_GOVERNANCE,
         "list_proposals",
         args,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await

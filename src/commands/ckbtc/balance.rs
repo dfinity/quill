@@ -2,7 +2,7 @@ use candid::Encode;
 use clap::Parser;
 
 use crate::{
-    commands::{get_account, send::submit_unsigned_ingress, QueryOpts},
+    commands::{get_account, send::submit_unsigned_ingress, SendingOpts},
     lib::{
         ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
         ROLE_ICRC1_LEDGER,
@@ -23,7 +23,7 @@ pub struct BalanceOpts {
     of_subaccount: Option<ParsedSubaccount>,
 
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 
     /// Uses ckTESTBTC instead of ckBTC.
     #[clap(long)]
@@ -38,7 +38,7 @@ pub async fn exec(auth: &AuthInfo, opts: BalanceOpts, fetch_root_key: bool) -> A
         ROLE_ICRC1_LEDGER,
         "icrc1_balance_of",
         Encode!(&account)?,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

@@ -3,15 +3,17 @@ use std::fmt::Write;
 use anyhow::{anyhow, bail, Context};
 use bigdecimal::BigDecimal;
 use candid::Decode;
+use chrono::Utc;
 use ic_nns_governance::pb::v1::{
     add_or_remove_node_provider::Change,
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
     manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
     manage_neuron_response::Command,
+    neuron::DissolveState,
     proposal::Action,
     reward_node_provider::{RewardMode, RewardToAccount},
-    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListProposalInfoResponse,
-    ManageNeuronResponse, NeuronInfo, ProposalInfo, Topic,
+    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
+    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, Topic,
 };
 use itertools::Itertools;
 
@@ -30,7 +32,6 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
 Age: {age}
 Total stake: {icp} ICP
 Voting power: {power}
-
 State: {state:?}
 Dissolve delay: {delay}
 Created {creation}
@@ -50,20 +51,152 @@ Created {creation}
                 )?;
             }
             if let Some(known) = info.known_neuron_data {
-                writeln!(fmt, "\nKnown neuron: {}", known.name)?;
+                writeln!(fmt, "Known neuron: \"{}\"", known.name)?;
                 if let Some(desc) = known.description {
-                    writeln!(fmt, "Description: {desc}")?;
+                    writeln!(fmt, "Description: \"{desc}\"")?;
                 }
             }
             write!(
                 fmt,
-                "\nAccurate as of {}",
+                "Accurate as of {}",
                 format_timestamp_seconds(info.retrieved_at_timestamp_seconds)
             )?;
             fmt
         }
         Err(e) => display_governance_error(e),
     };
+    Ok(fmt)
+}
+
+pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
+    let now_seconds = u64::try_from(Utc::now().timestamp()).unwrap();
+    let neurons = Decode!(blob, ListNeuronsResponse)?;
+    let mut fmt = String::new();
+    for neuron in neurons.full_neurons {
+        let neuron_type = neuron.neuron_type();
+        if let Some(id) = neuron.id {
+            writeln!(fmt, "Neuron {}", id.id)?;
+        } else {
+            writeln!(fmt, "Neuron (unknown id)")?;
+        }
+        if neuron.aging_since_timestamp_seconds != u64::MAX {
+            writeln!(
+                fmt,
+                "Aging since: {}",
+                format_duration_seconds(neuron.aging_since_timestamp_seconds)
+            )?;
+        }
+
+        writeln!(
+            fmt,
+            "Staked ICP: {} ICP",
+            e8s_to_tokens(neuron.cached_neuron_stake_e8s.into())
+        )?;
+        if let Some(staked_maturity) = neuron.staked_maturity_e8s_equivalent {
+            writeln!(
+                fmt,
+                "Staked maturity: {}",
+                e8s_to_tokens(staked_maturity.into())
+            )?;
+        }
+        if neuron.auto_stake_maturity() {
+            writeln!(fmt, "Auto staking maturity: Yes")?;
+        }
+        if let Some(timestamp) = neuron.spawn_at_timestamp_seconds {
+            writeln!(
+                fmt,
+                "Spawning maturity as ICP at: {}",
+                format_timestamp_seconds(timestamp)
+            )?;
+        }
+        writeln!(fmt, "State: {:?}", neuron.state(now_seconds))?;
+        if let Some(state) = neuron.dissolve_state {
+            match state {
+                DissolveState::DissolveDelaySeconds(s) => {
+                    writeln!(fmt, "Dissolve delay: {}", format_duration_seconds(s))?
+                }
+                DissolveState::WhenDissolvedTimestampSeconds(s) => {
+                    writeln!(fmt, "Dissolve timestamp: {}", format_timestamp_seconds(s))?
+                }
+            }
+        }
+        writeln!(
+            fmt,
+            "Created {}",
+            format_timestamp_seconds(neuron.created_timestamp_seconds)
+        )?;
+        if let Some(cf) = neuron.joined_community_fund_timestamp_seconds {
+            writeln!(
+                fmt,
+                "Member of the community fund since {}",
+                format_timestamp_seconds(cf)
+            )?;
+        }
+        if let Some(known) = neuron.known_neuron_data {
+            writeln!(fmt, "Known neuron: \"{}\"", known.name)?;
+            if let Some(desc) = known.description {
+                writeln!(fmt, "Description: \"{desc}\"")?;
+            }
+        }
+        if let Some(controller) = neuron.controller {
+            writeln!(fmt, "Controller: {controller}")?;
+        }
+        if !neuron.hot_keys.is_empty() {
+            writeln!(
+                fmt,
+                "Hot keys: {}",
+                neuron.hot_keys.into_iter().format(", ")
+            )?;
+        }
+        if neuron.neuron_type.is_some() {
+            writeln!(fmt, "Neuron type: {:?}", neuron_type)?;
+        }
+        if neuron.kyc_verified {
+            writeln!(fmt, "KYC verified: Yes")?;
+        }
+        if neuron.not_for_profit {
+            writeln!(fmt, "Not-for-profit: Yes")?;
+        }
+        if !neuron.recent_ballots.is_empty() {
+            writeln!(fmt, "Recent votes: {}", neuron.recent_ballots.len())?;
+        }
+        if !neuron.followees.is_empty() {
+            if neuron.followees.len() < 4 {
+                writeln!(
+                    fmt,
+                    "Followees: {}",
+                    neuron
+                        .followees
+                        .into_iter()
+                        .format_with(", ", |(topic, followees), f| {
+                            let topic = Topic::try_from(topic).unwrap_or(Topic::Unspecified);
+                            if followees.followees.len() < 4 {
+                                f(&format_args!(
+                                    "neurons {} ({topic:?})",
+                                    followees.followees.into_iter().map(|id| id.id).format(", ")
+                                ))
+                            } else {
+                                f(&format_args!(
+                                    "{} followees ({topic:?})",
+                                    followees.followees.len(),
+                                ))
+                            }
+                        })
+                )?;
+            } else {
+                writeln!(
+                    fmt,
+                    "Followees: {}",
+                    neuron
+                        .followees
+                        .into_iter()
+                        .map(|followees| followees.1.followees.len())
+                        .sum::<usize>()
+                )?;
+            }
+            fmt.push('\n');
+        }
+    }
     Ok(fmt)
 }
 
@@ -667,8 +800,8 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
 
 pub fn display_neuron_ids(blob: &[u8]) -> AnyhowResult<String> {
     let ids = Decode!(blob, Vec<u64>)?;
-    let fmt = ids.into_iter().join(", ");
-    Ok(fmt)
+    let fmt = ids.into_iter().format(", ");
+    Ok(format!("Neurons: {fmt}"))
 }
 
 pub fn display_claim_gtc_neurons(blob: &[u8]) -> AnyhowResult<String> {

@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_wasm::pb::v1::ListDeployedSnsesRequest;
 
 use crate::{
-    commands::{send::submit_unsigned_ingress, QueryOpts},
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{sns_wasm_canister_id, AnyhowResult, ROLE_SNS_WASM},
 };
 
@@ -11,7 +11,7 @@ use crate::{
 #[derive(Parser)]
 pub struct ListDeployedSnsesOpts {
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -22,7 +22,7 @@ pub async fn exec(opts: ListDeployedSnsesOpts, fetch_root_key: bool) -> AnyhowRe
         ROLE_SNS_WASM,
         "list_deployed_snses",
         arg,
-        opts.query_opts,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

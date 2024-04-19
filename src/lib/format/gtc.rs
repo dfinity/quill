@@ -9,8 +9,7 @@ pub fn format_claim_neurons(blob: &[u8]) -> AnyhowResult<String> {
     let fmt = match result {
         Ok(ids) => format!(
             "Claimed neurons {}",
-            ids.iter()
-                .format_with(", ", |i, f| f(&format_args!("{}", i.id)))
+            ids.iter().map(|id| id.id).format(", ")
         ),
         Err(e) => format!("NNS error: {e}"),
     };

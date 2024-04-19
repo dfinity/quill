@@ -1,5 +1,5 @@
 use crate::{
-    commands::{send::submit_unsigned_ingress, QueryOpts},
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{
         get_account_id, ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount,
         ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
@@ -23,7 +23,7 @@ pub struct AccountBalanceOpts {
     account_id: Option<ParsedNnsAccount>,
 
     #[clap(flatten)]
-    query_opts: QueryOpts,
+    sending_opts: SendingOpts,
 }
 
 // We currently only support a subset of the functionality.
@@ -45,7 +45,7 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
                 ROLE_NNS_LEDGER,
                 "account_balance_dfx",
                 args,
-                opts.query_opts,
+                opts.sending_opts,
                 fetch_root_key,
             )
             .await
@@ -57,7 +57,7 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
                 ROLE_ICRC1_LEDGER,
                 "icrc1_balance_of",
                 args,
-                opts.query_opts,
+                opts.sending_opts,
                 fetch_root_key,
             )
             .await
