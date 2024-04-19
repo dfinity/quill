@@ -27,7 +27,7 @@ Successfully staked ICP in neuron " #fragment of a correct response
 
     # check that staking worked using get-neuron-info
     assert_command bash -c "quill get-neuron-info \"$NEURON_ID\" --yes --insecure-local-dev-mode"
-    assert_string_match 'Totak stake: 3.0'
+    assert_string_match 'Total stake: 3.0'
 
     # increase dissolve delay by 6 months
     assert_command bash -c "quill neuron-manage --additional-dissolve-delay-seconds 15778800 --pem-file \"$PEM_LOCATION/identity.pem\" \"$NEURON_ID\" > more-delay.call"
