@@ -20,16 +20,14 @@ teardown() {
     assert_command echo "$SEND_OUTPUT" # replay the output so string matches work
     echo "$SEND_OUTPUT"
     assert_string_match "Method name: claim_or_refresh_neuron_from_account"
-    NEURON_ID="$(echo "$SEND_OUTPUT" | grep -E 'NeuronId' | sed 's/[^0-9]//g' | sed 's/64$//g')"
+    NEURON_ID="$(echo "$SEND_OUTPUT" | grep -E ' neuron ' | sed 's/[^0-9]//g')"
     echo "NEURON: $NEURON_ID"
     assert_string_match "
-  record {
-    result = opt variant {
-      NeuronId = record { id =" #fragment of a correct response
+Successfully staked ICP in neuron " #fragment of a correct response
 
     # check that staking worked using get-neuron-info
     assert_command bash -c "quill get-neuron-info \"$NEURON_ID\" --yes --insecure-local-dev-mode"
-    assert_string_match 'stake_e8s = 300_000_000'
+    assert_string_match 'Totak stake: 3.0'
 
     # increase dissolve delay by 6 months
     assert_command bash -c "quill neuron-manage --additional-dissolve-delay-seconds 15778800 --pem-file \"$PEM_LOCATION/identity.pem\" \"$NEURON_ID\" > more-delay.call"
@@ -39,5 +37,5 @@ teardown() {
     # check that increasing dissolve delay worked, this time using list-neurons
     assert_command bash -c "quill list-neurons --pem-file \"$PEM_LOCATION/identity.pem\" > neuron.call"
     assert_command quill send neuron.call --yes --insecure-local-dev-mode
-    assert_string_match "dissolve_delay_seconds = 15_778_800"
+    assert_string_match "Dissolve delay: 6 months"
 }
