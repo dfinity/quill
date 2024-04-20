@@ -1,5 +1,4 @@
 use chrono::{DateTime, TimeZone, Utc};
-use chrono_tz::{OffsetName, Tz};
 use itertools::Itertools;
 
 pub mod ckbtc;
@@ -10,18 +9,7 @@ pub mod nns_governance;
 pub mod registry;
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
-    let fmt = "%b %d %Y %X";
-    if let Ok(tz) = iana_time_zone::get_timezone() {
-        let tz = tz.parse::<Tz>().unwrap();
-        format!(
-            "{} {}",
-            datetime.with_timezone(&tz).format(fmt),
-            tz.offset_from_utc_datetime(&datetime.naive_utc())
-                .abbreviation()
-        )
-    } else {
-        format!("{} UTC", datetime.format(fmt))
-    }
+    format!("{} UTC", datetime.format("%b %d %Y %X"))
 }
 
 pub fn format_timestamp_seconds(seconds: u64) -> String {
