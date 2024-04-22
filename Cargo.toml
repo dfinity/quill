@@ -33,7 +33,6 @@ ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "73da09c1c553193
 ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "73da09c1c553193c46d7edef73c8c20beaa8498c", optional = true }
 
 anyhow = "1.0.34"
-atty = "0.2.14"
 base64 = "0.13.0"
 bip32 = "0.4.0"
 clap = { version = "3.1.18", features = ["derive", "cargo"] }
