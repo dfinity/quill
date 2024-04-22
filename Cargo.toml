@@ -29,7 +29,6 @@ ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e26236e3e3d
 ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e26236e3e3db6db51ffa71e34140c19d207e", optional = true }
 
 anyhow = "1.0.34"
-atty = "0.2.14"
 base64 = "0.13.0"
 bigdecimal = "0.4"
 bip32 = "0.4.0"

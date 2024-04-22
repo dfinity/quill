@@ -5,13 +5,13 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, bail, Context};
-use atty::Stream;
 use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::Transport;
 use ic_agent::{agent::http_transport::ReqwestTransport, RequestId};
 use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -62,7 +62,7 @@ pub struct SendOpts {
 pub async fn exec(opts: SendOpts, fetch_root_key: bool) -> AnyhowResult {
     let file_name = if let Some(file_name) = &opts.file_name {
         file_name.as_path()
-    } else if atty::isnt(Stream::Stdin) {
+    } else if !std::io::stdin().is_terminal() {
         "-".as_ref()
     } else {
         bail!("File name must be provided if not being piped")
@@ -151,7 +151,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     }
 
     if message.call_type == "update" && !opts.sending_opts.yes {
-        if !atty::is(Stream::Stdin) {
+        if !std::io::stdin().is_terminal() {
             eprintln!("Cannot confirm y/n if the input is being piped.");
             eprintln!("To confirm sending this message, rerun `quill send` with the `-y` flag.");
             std::process::exit(1);
