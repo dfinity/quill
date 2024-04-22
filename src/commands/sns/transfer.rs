@@ -19,24 +19,24 @@ pub struct TransferOpts {
     pub to: ParsedAccount,
 
     /// The subaccount of the destination account.
-    #[clap(long)]
+    #[arg(long)]
     pub to_subaccount: Option<ParsedSubaccount>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// The subaccount to transfer from.
     pub from_subaccount: Option<ParsedSubaccount>,
 
     /// Amount of governance tokens to transfer (with up to 8 decimal digits after decimal point)
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     pub amount: Tokens,
 
     /// An arbitrary number associated with a transaction. The default is 0
-    #[clap(long)]
+    #[arg(long)]
     pub memo: Option<u64>,
 
     /// The amount that the caller pays for the transaction, default is 0.0001 tokens. Specify this amount
     /// when using an SNS that sets its own transaction fee
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     pub fee: Option<Tokens>,
 }
 

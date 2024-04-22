@@ -10,7 +10,7 @@ use crate::{
 /// Lists all SNSes that have been deployed by the NNS.
 #[derive(Parser)]
 pub struct ListDeployedSnsesOpts {
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

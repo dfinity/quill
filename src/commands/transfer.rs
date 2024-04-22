@@ -20,19 +20,19 @@ pub struct TransferOpts {
     pub to: ParsedNnsAccount,
 
     /// Amount of ICPs to transfer (with up to 8 decimal digits after comma).
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     pub amount: Tokens,
 
     /// Reference number, default is 0.
-    #[clap(long)]
+    #[arg(long)]
     pub memo: Option<u64>,
 
     /// Transaction fee, default is 0.0001 ICP.
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     pub fee: Option<Tokens>,
 
     /// The subaccount to transfer from.
-    #[clap(long)]
+    #[arg(long)]
     pub from_subaccount: Option<ParsedSubaccount>,
 }
 

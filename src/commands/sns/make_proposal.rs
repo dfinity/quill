@@ -39,12 +39,12 @@ pub struct MakeProposalOpts {
     ///         };
     ///     }
     /// )'
-    #[clap(long)]
+    #[arg(long)]
     proposal: Option<String>,
 
     /// Path to a file containing the proposal. The proposal must be the binary encoding of
     /// the proposal candid record.
-    #[clap(
+    #[arg(
         long,
         conflicts_with = "proposal",
         required_unless_present = "proposal"

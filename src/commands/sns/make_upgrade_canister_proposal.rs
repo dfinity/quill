@@ -27,40 +27,40 @@ pub struct MakeUpgradeCanisterProposalOpts {
     proposer_neuron_id: ParsedSnsNeuron,
 
     /// Title of the proposal.
-    #[clap(long, default_value_t = String::from("Upgrade Canister"))]
+    #[arg(long, default_value_t = String::from("Upgrade Canister"))]
     title: String,
 
     /// URL of the proposal.
-    #[clap(long, default_value_t = String::new())]
+    #[arg(long, default_value_t = String::new())]
     url: String,
 
     /// Summary of the proposal.
     /// If neither summary nor summary-path is provided, a somewhat generic summary will be
     /// constructed dynamically.
-    #[clap(long)]
+    #[arg(long)]
     summary: Option<String>,
 
     /// Path to a file containing the summary of the proposal.
     /// If neither summary nor summary-path is provided, a somewhat generic summary will be
     /// constructed dynamically.
-    #[clap(long, conflicts_with("summary"))]
+    #[arg(long, conflicts_with = "summary")]
     summary_path: Option<PathBuf>,
 
     /// Canister to be upgraded.
-    #[clap(long)]
+    #[arg(long)]
     target_canister_id: Principal,
 
     /// Path to the WASM file to be installed onto the target canister.
-    #[clap(long)]
+    #[arg(long)]
     wasm_path: PathBuf,
 
     /// Argument to post-upgrade method of the new canister WASM. The argument must be formatted as a string
     /// wrapped candid record.
-    #[clap(long)]
+    #[arg(long)]
     canister_upgrade_arg: Option<String>,
 
     /// Path to the binary file containing argument to post-upgrade method of the new canister WASM.
-    #[clap(long, conflicts_with("canister-upgrade-arg"))]
+    #[arg(long, conflicts_with = "canister_upgrade_arg")]
     canister_upgrade_arg_path: Option<String>,
 }
 

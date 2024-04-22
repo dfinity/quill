@@ -24,11 +24,11 @@ pub struct RegisterVoteOpts {
     neuron_id: ParsedSnsNeuron,
 
     /// The id of the proposal to voted on.
-    #[clap(long)]
+    #[arg(long)]
     proposal_id: u64,
 
     /// The vote to be cast on the proposal [y/n]
-    #[clap(long)]
+    #[arg(long)]
     vote: String,
 }
 

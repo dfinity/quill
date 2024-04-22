@@ -62,6 +62,7 @@ pub fn dispatch(
     Ok(())
 }
 
+#[derive(Debug, Clone)]
 pub struct Btc(pub Nat);
 
 impl FromStr for Btc {

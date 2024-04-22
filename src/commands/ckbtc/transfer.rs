@@ -19,25 +19,25 @@ pub struct TransferOpts {
     /// The account to transfer ckBTC to.
     to: ParsedAccount,
     /// The subaccount to transfer ckBTC to.
-    #[clap(long)]
+    #[arg(long)]
     to_subaccount: Option<ParsedSubaccount>,
     /// The subaccount to transfer ckBTC from.
-    #[clap(long)]
+    #[arg(long)]
     from_subaccount: Option<ParsedSubaccount>,
     /// The amount, in decimal ckBTC, to transfer.
-    #[clap(long)]
+    #[arg(long)]
     amount: Option<Btc>,
     /// The amount, in integer satoshis, to transfer.
-    #[clap(long, conflicts_with = "amount", required_unless_present = "amount")]
+    #[arg(long, conflicts_with = "amount", required_unless_present = "amount")]
     satoshis: Option<Nat>,
     /// An integer memo for this transaction.
-    #[clap(long)]
+    #[arg(long)]
     memo: Option<u64>,
     /// The expected fee for this transaction.
-    #[clap(long)]
+    #[arg(long)]
     fee: Option<Nat>,
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

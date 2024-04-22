@@ -11,7 +11,7 @@ pub struct GetNeuronInfoOpts {
     /// The neuron identifier.
     pub ident: u64,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub sending_opts: SendingOpts,
 }
 

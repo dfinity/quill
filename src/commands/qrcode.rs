@@ -9,11 +9,11 @@ use qrcodegen::{QrCode, QrCodeEcc};
 #[derive(Parser)]
 pub struct QRCodeOpts {
     /// File the contents of which to be output as a QRCode.
-    #[clap(long)]
+    #[arg(long)]
     file: Option<PathBuf>,
 
     // String to be output as a QRCode.
-    #[clap(long)]
+    #[arg(long)]
     string: Option<String>,
 }
 

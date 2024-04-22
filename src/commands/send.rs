@@ -54,7 +54,7 @@ pub struct SendOpts {
     /// Path to the signed message (`-` for stdin)
     file_name: Option<PathBuf>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

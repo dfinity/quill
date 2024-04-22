@@ -21,13 +21,13 @@ pub struct DisburseMaturityOpts {
     /// The neuron ID to disburse maturity from.
     neuron_id: ParsedSnsNeuron,
     /// The account to transfer the SNS utility tokens to. If not provided, defaults to the caller.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     to: Option<ParsedAccount>,
     /// The subaccount to transfer the SNS utility tokens to.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
     /// The percentage, as a number from 1 to 100, of the maturity to disburse.
-    #[clap(long, value_parser = 1..=100, default_value_t = 100)]
+    #[arg(long, value_parser = 1..=100, default_value_t = 100)]
     percentage: i64,
 }
 

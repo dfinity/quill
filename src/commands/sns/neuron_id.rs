@@ -9,11 +9,11 @@ use ic_sns_governance::pb::v1::NeuronId;
 #[derive(Parser)]
 pub struct NeuronIdOpts {
     /// Principal used when calculating the SNS Neuron Id.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     principal_id: Option<Principal>,
 
     /// Memo used when calculating the SNS Neuron Id.
-    #[clap(long)]
+    #[arg(long)]
     memo: u64,
 }
 

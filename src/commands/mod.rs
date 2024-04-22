@@ -40,7 +40,7 @@ pub enum Command {
     AccountBalance(account_balance::AccountBalanceOpts),
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
     ReplaceNodeProviderId(replace_node_provider_id::ReplaceNodeProviderIdOpts),
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Ckbtc(ckbtc::CkbtcCommand),
     Sns(sns::SnsOpts),
     Generate(generate::GenerateOpts),
@@ -203,14 +203,14 @@ fn get_account(
 #[derive(Args)]
 pub struct SendingOpts {
     /// Skips confirmation and sends the message directly.
-    #[clap(long, short)]
+    #[arg(long, short)]
     yes: bool,
 
     /// Will display the query, but not send it.
-    #[clap(long)]
+    #[arg(long)]
     dry_run: bool,
 
     /// Always displays the response in IDL format.
-    #[clap(long)]
+    #[arg(long)]
     raw: bool,
 }

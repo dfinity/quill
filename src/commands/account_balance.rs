@@ -19,10 +19,10 @@ pub struct AccountBalanceArgs {
 #[derive(Parser)]
 pub struct AccountBalanceOpts {
     /// The id of the account to query. Optional if a key is used.
-    #[clap(required_unless_present = "auth")]
+    #[arg(required_unless_present = "auth")]
     account_id: Option<ParsedNnsAccount>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

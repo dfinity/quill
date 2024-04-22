@@ -13,16 +13,16 @@ mod lib;
 
 /// Ledger & Governance ToolKit for cold wallets.
 #[derive(Parser)]
-#[clap(name("quill"), version = crate_version!())]
+#[command(name("quill"), version = crate_version!())]
 pub struct CliOpts {
-    #[clap(flatten, next_help_heading = "COMMON")]
+    #[command(flatten, next_help_heading = "COMMON")]
     global_opts: GlobalOpts,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: commands::Command,
 }
 
 #[derive(Args)]
-#[clap(
+#[command(
     group(ArgGroup::new("pkcs11").multiple(true).conflicts_with_all(&["seeded", "ledgerhq"])),
     group(ArgGroup::new("seeded").multiple(true).conflicts_with_all(&["pkcs11", "ledgerhq"])),
     group(ArgGroup::new("ledgerhq").multiple(true).conflicts_with_all(&["seeded", "pkcs11"])),
@@ -30,16 +30,16 @@ pub struct CliOpts {
 )]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[clap(long, groups = &["seeded", "auth"], global = true)]
+    #[arg(long, groups = &["seeded", "auth"], global = true)]
     pem_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.
-    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
-    #[clap(long, groups = &["pkcs11", "auth"], global = true)]
+    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[arg(long, groups = &["pkcs11", "auth"], global = true)]
     hsm: bool,
 
     /// Path to the PKCS#11 module to use.
-    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
     #[cfg_attr(
         target_os = "windows",
         doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
@@ -52,35 +52,35 @@ struct GlobalOpts {
         target_os = "linux",
         doc = "Defaults to /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
     )]
-    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
+    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_libpath: Option<PathBuf>,
 
     /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
-    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
-    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
+    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_slot: Option<usize>,
 
     /// The ID of the key to use. Consult your hardware key's documentation.
-    #[cfg_attr(not(feature = "hsm"), clap(hidden = true))]
-    #[clap(long, global = true, groups = &["pkcs11", "auth"])]
+    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_id: Option<String>,
 
     /// Path to your seed file (use "-" for STDIN)
-    #[clap(long, global = true, groups = &["seeded", "auth"])]
+    #[arg(long, global = true, groups = &["seeded", "auth"])]
     seed_file: Option<PathBuf>,
 
     /// Authenticate using a Ledger hardware wallet.
-    #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
-    #[clap(long, global = true, groups = &["ledgerhq", "auth"])]
+    #[cfg_attr(not(feature = "ledger"), arg(hidden = true))]
+    #[arg(long, global = true, groups = &["ledgerhq", "auth"])]
     ledger: bool,
 
     /// Output the result(s) as UTF-8 QR codes.
-    #[clap(long, global = true)]
+    #[arg(long, global = true)]
     qr: bool,
 
     /// Fetches the root key before making requests so that interfacing with local instances is possible.
     /// DO NOT USE WITH ANY REAL INFORMATION
-    #[clap(
+    #[arg(
         long = "insecure-local-dev-mode",
         name = "insecure-local-dev-mode",
         global = true

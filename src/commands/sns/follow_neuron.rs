@@ -21,7 +21,7 @@ use super::{ParsedSnsNeuron, SnsCanisterIds};
 /// functions which this command accepts by name, but new ones can be added at any time via
 /// AddGenericNervousSystemFunction proposals and those must be addressed by integer ID.
 #[derive(Parser)]
-#[clap(
+#[command(
     group(ArgGroup::new("function").required(true)),
     group(ArgGroup::new("following").required(true)),
 )]
@@ -29,16 +29,16 @@ pub struct FollowNeuronOpts {
     /// The neuron to configure.
     neuron_id: ParsedSnsNeuron,
     /// The name of the built-in proposal function to restrict following to.
-    #[clap(long, group = "function", value_enum)]
+    #[arg(long, group = "function", value_enum)]
     r#type: Option<Type>,
     /// The numeric ID of the proposal function to restrict following to.
-    #[clap(long, group = "function")]
+    #[arg(long, group = "function")]
     function_id: Option<u64>,
     /// A list of neurons to follow for this proposal function, separated by commas.
-    #[clap(long, action = ArgAction::Append, value_delimiter = ',', group = "following")]
+    #[arg(long, action = ArgAction::Append, value_delimiter = ',', group = "following")]
     followees: Vec<ParsedSnsNeuron>,
     /// Remove any followees for this proposal function.
-    #[clap(long, group = "following")]
+    #[arg(long, group = "following")]
     unfollow: bool,
 }
 

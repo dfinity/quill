@@ -10,10 +10,10 @@ use ic_nns_governance::pb::v1::ListProposalInfo;
 #[derive(Parser)]
 pub struct ListProposalsOpts {
     /// Only displays <LIMIT> proposals.
-    #[clap(long)]
+    #[arg(long)]
     pub limit: Option<u32>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub sending_opts: SendingOpts,
 }
 

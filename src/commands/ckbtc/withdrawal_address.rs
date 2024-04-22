@@ -17,11 +17,11 @@ use super::ckbtc_withdrawal_address;
 #[derive(Parser)]
 pub struct GetWithdrawalAddressOpts {
     /// The principal to get the withdrawal address for. Optional if a key is used.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     of: Option<Principal>,
 
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

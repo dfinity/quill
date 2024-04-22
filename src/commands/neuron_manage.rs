@@ -6,7 +6,7 @@ use crate::lib::{
 };
 use anyhow::{anyhow, bail, ensure, Context};
 use candid::{CandidType, Encode, Principal};
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
 use ic_nns_governance::pb::v1::{
@@ -29,7 +29,7 @@ pub struct AccountIdentifier {
     hash: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Copy, ArgEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
 enum EnableState {
     Enabled,
     Disabled,
@@ -42,90 +42,90 @@ pub struct ManageOpts {
     neuron_id: String,
 
     /// Principal to be used as a hot key.
-    #[clap(long)]
+    #[arg(long)]
     add_hot_key: Option<Principal>,
 
     /// Principal hot key to be removed.
-    #[clap(long)]
+    #[arg(long)]
     remove_hot_key: Option<Principal>,
 
     /// Number of dissolve seconds to add.
-    #[clap(short, long)]
+    #[arg(short, long)]
     additional_dissolve_delay_seconds: Option<String>,
 
     /// Start dissolving.
-    #[clap(long)]
+    #[arg(long)]
     start_dissolving: bool,
 
     /// Stop dissolving.
-    #[clap(long)]
+    #[arg(long)]
     stop_dissolving: bool,
 
     /// Disburse the entire staked amount to the controller's account.
-    #[clap(long)]
+    #[arg(long)]
     disburse: bool,
 
     /// Disburse only the selected amount, instead of the entire amount, to the controller's account.
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     disburse_amount: Option<Tokens>,
 
     /// Disburse to the selected NNS account instead of the controller.
-    #[clap(long)]
+    #[arg(long)]
     disburse_to: Option<ParsedNnsAccount>,
 
     /// Spawn rewards to a new neuron under the controller's account.
-    #[clap(long)]
+    #[arg(long)]
     spawn: bool,
 
     /// Split off the given number of ICP from a neuron.
-    #[clap(long)]
+    #[arg(long)]
     split: Option<u64>,
 
     /// Remove all followees for the NeuronManagement topic
-    #[clap(long)]
+    #[arg(long)]
     clear_manage_neuron_followees: bool,
 
     /// Merge stake, maturity and age from the neuron specified by this option into the neuron being managed.
-    #[clap(long)]
+    #[arg(long)]
     merge_from_neuron: Option<String>,
 
     /// Merge the percentage (between 1 and 100) of the maturity of a neuron into the current stake.
-    #[clap(hide(true), long)]
+    #[arg(hide(true), long)]
     merge_maturity: Option<u32>,
 
     /// Stake a percentage (between 1 and 100) of the maturity of a neuron.
-    #[clap(long)]
+    #[arg(long)]
     stake_maturity: Option<u32>,
 
     /// Join the Internet Computer's community fund with this neuron's entire stake.
-    #[clap(long)]
+    #[arg(long)]
     join_community_fund: bool,
 
     /// Leave the Internet Computer's community fund.
-    #[clap(long, conflicts_with("join-community-fund"))]
+    #[arg(long, conflicts_with = "join_community_fund")]
     leave_community_fund: bool,
 
     /// Defines the topic of a follow rule.
-    #[clap(long, requires = "follow-neurons")]
+    #[arg(long, requires = "follow_neurons")]
     follow_topic: Option<i32>,
 
     /// Defines the neuron ids of a follow rule.
-    #[clap(long, multiple_values(true), requires = "follow-topic")]
+    #[arg(long, num_args = .., requires = "follow_topic")]
     follow_neurons: Option<Vec<u64>>,
 
     /// Vote on proposal(s) (approve by default, or use --reject).
-    #[clap(long, multiple_values(true))]
+    #[arg(long, num_args = ..)]
     register_vote: Option<Vec<u64>>,
 
     /// Reject the proposal(s) specified with --register-vote.
-    #[clap(long, requires = "register-vote")]
+    #[arg(long, requires = "register_vote")]
     reject: bool,
 
     /// Set whether new maturity should be automatically staked.
-    #[clap(long, arg_enum)]
+    #[arg(long, value_enum)]
     auto_stake_maturity: Option<EnableState>,
 
-    #[clap(from_global)]
+    #[arg(from_global)]
     ledger: bool,
 }
 

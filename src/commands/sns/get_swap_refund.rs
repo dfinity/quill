@@ -19,7 +19,7 @@ use super::SnsCanisterIds;
 pub struct GetSwapRefundOpts {
     /// The principal that made the ICP contribution and should be refunded. The ICP will be
     /// refunded to the main account of this Principal irrespective of the caller.
-    #[clap(long)]
+    #[arg(long)]
     principal: Option<Principal>,
 }
 

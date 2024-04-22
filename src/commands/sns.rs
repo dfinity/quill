@@ -52,11 +52,11 @@ mod transfer;
 #[derive(Parser)]
 pub struct SnsOpts {
     /// Path to a SNS canister JSON file (see `quill sns help`)
-    #[clap(long, global = true, help_heading = "COMMON")]
+    #[arg(long, global = true, help_heading = "COMMON")]
     canister_ids_file: Option<PathBuf>,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     subcommand: SnsCommand,
-    #[clap(from_global)]
+    #[arg(from_global)]
     ledger: bool,
 }
 

@@ -26,35 +26,35 @@ pub struct ClaimOrRefreshNeuronFromAccount {
 #[derive(Parser)]
 pub struct StakeOpts {
     /// ICPs to be staked on the newly created neuron.
-    #[clap(long, value_parser = parse_tokens, conflicts_with = "already-transferred", required_unless_present = "already-transferred")]
+    #[arg(long, value_parser = parse_tokens, conflicts_with = "already_transferred", required_unless_present = "already_transferred")]
     amount: Option<Tokens>,
 
     /// Skips signing the transfer of ICP, signing only the staking request.
-    #[clap(long)]
+    #[arg(long)]
     already_transferred: bool,
 
     /// The name of the neuron (up to 8 ASCII characters).
-    #[clap(
+    #[arg(
         long,
-        validator(neuron_name_validator),
+        value_parser = neuron_name_parser,
         conflicts_with = "nonce",
         required_unless_present = "nonce"
     )]
-    name: Option<String>,
+    name: Option<u64>,
 
     /// The nonce of the neuron.
-    #[clap(long)]
+    #[arg(long)]
     nonce: Option<u64>,
 
     /// Transaction fee, default is 0.0001 ICP.
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     fee: Option<Tokens>,
 
     /// The subaccount to transfer from.
-    #[clap(long)]
+    #[arg(long)]
     from_subaccount: Option<ParsedSubaccount>,
 
-    #[clap(from_global)]
+    #[arg(from_global)]
     ledger: bool,
 }
 
@@ -66,7 +66,7 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     let controller = crate::lib::get_principal(auth)?;
     let nonce = match (&opts.nonce, &opts.name) {
         (Some(nonce), _) => *nonce,
-        (_, Some(name)) => convert_name_to_nonce(name),
+        (_, Some(name)) => *name,
         _ => return Err(anyhow!("Either a nonce or a name should be specified")),
     };
     let gov_subaccount = get_neuron_subaccount(&controller, nonce);
@@ -122,9 +122,9 @@ fn convert_name_to_nonce(name: &str) -> u64 {
     u64::from_be_bytes(arr)
 }
 
-fn neuron_name_validator(name: &str) -> Result<(), String> {
+fn neuron_name_parser(name: &str) -> Result<u64, String> {
     if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
         return Err("The neuron name must be 8 character or less".to_string());
     }
-    Ok(())
+    Ok(convert_name_to_nonce(name))
 }
