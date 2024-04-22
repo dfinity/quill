@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_sns_root::GetSnsCanistersSummaryRequest;
 
 use crate::{
-    commands::send::submit_unsigned_ingress,
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{AnyhowResult, ROLE_SNS_ROOT},
 };
 
@@ -13,13 +13,8 @@ use super::SnsCanisterIds;
 /// cycle balance, memory size, daily cycle burn rate, and module hash, along with their principals.
 #[derive(Parser)]
 pub struct StatusOpts {
-    /// Will display the query, but not send it.
-    #[clap(long)]
-    dry_run: bool,
-
-    /// Skips confirmation and sends the message immediately.
-    #[clap(long, short)]
-    yes: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -33,8 +28,7 @@ pub async fn exec(ids: &SnsCanisterIds, opts: StatusOpts, fetch_root_key: bool) 
         ROLE_SNS_ROOT,
         "get_sns_canisters_summary",
         arg,
-        opts.yes,
-        opts.dry_run,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

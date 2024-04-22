@@ -8,14 +8,14 @@ use anyhow::{anyhow, bail, Context};
 use candid::{CandidType, Principal};
 use clap::Parser;
 use ic_agent::agent::Transport;
-use ic_agent::{
-    agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport, RequestId,
-};
+use ic_agent::{agent::http_transport::ReqwestTransport, RequestId};
 use icp_ledger::{Subaccount, Tokens};
 use serde::{Deserialize, Serialize};
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::str::FromStr;
+
+use super::SendingOpts;
 
 #[derive(
     Serialize,
@@ -54,13 +54,8 @@ pub struct SendOpts {
     /// Path to the signed message (`-` for stdin)
     file_name: Option<PathBuf>,
 
-    /// Will display the signed message, but not send it.
-    #[clap(long)]
-    dry_run: bool,
-
-    /// Skips confirmation and sends the message directly.
-    #[clap(long, short)]
-    yes: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -94,8 +89,7 @@ pub async fn submit_unsigned_ingress(
     role: &str,
     method_name: &str,
     args: Vec<u8>,
-    yes: bool,
-    dry_run: bool,
+    sending_opts: SendingOpts,
     fetch_root_key: bool,
 ) -> AnyhowResult {
     let msg = crate::lib::signing::sign_ingress_with_request_status_query(
@@ -109,8 +103,7 @@ pub async fn submit_unsigned_ingress(
         &msg,
         &SendOpts {
             file_name: None,
-            yes,
-            dry_run,
+            sending_opts,
         },
         fetch_root_key,
     )
@@ -123,7 +116,7 @@ async fn submit_ingress_and_check_status(
     fetch_root_key: bool,
 ) -> AnyhowResult {
     send(&message.ingress, opts).await?;
-    if opts.dry_run {
+    if opts.sending_opts.dry_run {
         return Ok(());
     }
     let (_, _, method_name, _, role) = &message.ingress.parse()?;
@@ -131,12 +124,13 @@ async fn submit_ingress_and_check_status(
         &message.request_status,
         Some(method_name.to_string()),
         role,
+        opts.sending_opts.raw,
         fetch_root_key,
     )
     .await
     {
-        Ok(result) => println!("{result}\n"),
-        Err(err) => println!("{err}\n"),
+        Ok(result) => println!("{}", result.trim()),
+        Err(err) => println!("{err}"),
     };
     Ok(())
 }
@@ -152,11 +146,11 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
     println!("  Method name: {method_name}");
     println!("  Arguments:   {args}");
 
-    if opts.dry_run {
+    if opts.sending_opts.dry_run {
         return Ok(());
     }
 
-    if message.call_type == "update" && !opts.yes {
+    if message.call_type == "update" && !opts.sending_opts.yes {
         if !std::io::stdin().is_terminal() {
             eprintln!("Cannot confirm y/n if the input is being piped.");
             eprintln!("To confirm sending this message, rerun `quill send` with the `-y` flag.");
@@ -170,7 +164,7 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestHttpReplicaV2Transport::create(get_ic_url())?;
+    let transport = ReqwestTransport::create(get_ic_url())?;
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {

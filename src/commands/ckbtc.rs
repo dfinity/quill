@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
 use anyhow::bail;
+use bigdecimal::{BigDecimal, Signed};
 use candid::{Nat, Principal};
 use clap::Subcommand;
 use icrc_ledger_types::icrc1::account::Account;
-use rust_decimal::Decimal;
+use num_bigint::Sign;
 use sha2::{Digest, Sha256};
 
 use crate::lib::{ckbtc_minter_canister_id, AnyhowResult, AuthInfo};
@@ -66,15 +67,19 @@ pub struct Btc(pub Nat);
 impl FromStr for Btc {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut dec = Decimal::from_str(s)?;
-        if dec.scale() > 8 {
+        let dec = BigDecimal::from_str(s)?;
+        if dec.fractional_digit_count() > 8 {
             bail!("Bitcoin can only be specified to the 8th decimal.");
         }
-        if !dec.is_sign_positive() {
+        if !dec.is_positive() {
             bail!("Must specify a positive number");
         }
-        dec.rescale(8);
-        Ok(Self((dec.mantissa() as u128).into()))
+        let dec = dec.with_scale(8);
+        let (mantissa, scale) = dec.into_bigint_and_exponent();
+        let (sign, mantissa) = mantissa.into_parts();
+        assert_eq!(scale, 8);
+        assert_eq!(sign, Sign::Plus);
+        Ok(Self(mantissa.into()))
     }
 }
 

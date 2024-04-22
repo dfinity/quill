@@ -1,5 +1,5 @@
 use crate::{
-    commands::send::submit_unsigned_ingress,
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{
         get_account_id, ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount,
         ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
@@ -22,13 +22,8 @@ pub struct AccountBalanceOpts {
     #[clap(required_unless_present = "auth")]
     account_id: Option<ParsedNnsAccount>,
 
-    /// Skips confirmation and sends the message directly.
-    #[clap(long, short)]
-    yes: bool,
-
-    /// Will display the query, but not send it.
-    #[clap(long)]
-    dry_run: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
 }
 
 // We currently only support a subset of the functionality.
@@ -50,8 +45,7 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
                 ROLE_NNS_LEDGER,
                 "account_balance_dfx",
                 args,
-                opts.yes,
-                opts.dry_run,
+                opts.sending_opts,
                 fetch_root_key,
             )
             .await
@@ -63,8 +57,7 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
                 ROLE_ICRC1_LEDGER,
                 "icrc1_balance_of",
                 args,
-                opts.yes,
-                opts.dry_run,
+                opts.sending_opts,
                 fetch_root_key,
             )
             .await

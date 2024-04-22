@@ -1,7 +1,10 @@
 use crate::lib::get_ic_url;
-use crate::lib::{get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo};
+use crate::lib::{
+    display_response, get_agent, get_idl_string, signing::RequestStatus, AnyhowResult, AuthInfo,
+};
 use anyhow::{anyhow, Context};
 use candid::Principal;
+use ic_agent::agent::http_transport::ReqwestTransport;
 use ic_agent::agent::{ReplyResponse, RequestStatusResponse, Transport};
 use ic_agent::AgentError::MessageError;
 use ic_agent::{AgentError, RequestId};
@@ -14,6 +17,7 @@ pub async fn submit(
     req: &RequestStatus,
     method_name: Option<String>,
     role: &str,
+    raw: bool,
     fetch_root_key: bool,
 ) -> AnyhowResult<String> {
     let canister_id =
@@ -28,8 +32,7 @@ pub async fn submit(
     agent.set_transport(ProxySignTransport {
         req: req.clone(),
         http_transport: Arc::new(
-            ic_agent::agent::http_transport::reqwest_transport::ReqwestHttpReplicaV2Transport::create(get_ic_url())
-                .context("Failed to create an agent")?,
+            ReqwestTransport::create(get_ic_url()).context("Failed to create an agent")?,
         ),
     });
     let ReplyResponse { arg: blob } = async {
@@ -37,7 +40,7 @@ pub async fn submit(
             match agent.request_status_raw(&request_id, canister_id).await? {
                 RequestStatusResponse::Replied(reply) => return Ok(reply),
                 RequestStatusResponse::Rejected(response) => {
-                    return Err(anyhow!(AgentError::ReplicaError(response)))
+                    return Err(anyhow!(AgentError::CertifiedReject(response)))
                 }
                 RequestStatusResponse::Unknown
                 | RequestStatusResponse::Received
@@ -55,13 +58,16 @@ pub async fn submit(
         }
     }
     .await?;
-    get_idl_string(
-        &blob,
-        canister_id,
-        role,
-        &method_name.unwrap_or_default(),
-        "rets",
-    )
+    let method_str = method_name.unwrap_or_default();
+    if raw {
+        get_idl_string(&blob, canister_id, role, &method_str, "rets")
+    } else {
+        display_response(&blob, canister_id, role, &method_str, "rets").or_else(|e| {
+            get_idl_string(&blob, canister_id, role, &method_str, "rets").map(|m| {
+                format!("Error pretty-printing response: {e}. Falling back to IDL display\n{m}",)
+            })
+        })
+    }
     .context("Invalid IDL blob.")
 }
 

@@ -1,5 +1,5 @@
 use crate::{
-    commands::{get_account, send::submit_unsigned_ingress},
+    commands::{get_account, send::submit_unsigned_ingress, SendingOpts},
     lib::{AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER},
     AnyhowResult,
 };
@@ -21,13 +21,8 @@ pub struct BalanceOpts {
     #[clap(long)]
     subaccount: Option<ParsedSubaccount>,
 
-    /// Will display the query, but not send it.
-    #[clap(long)]
-    dry_run: bool,
-
-    /// Skips confirmation and sends the message immediately.
-    #[clap(long, short)]
-    yes: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
 }
 
 #[tokio::main]
@@ -45,8 +40,7 @@ pub async fn exec(
         ROLE_ICRC1_LEDGER,
         "icrc1_balance_of",
         Encode!(&account)?,
-        opts.yes,
-        opts.dry_run,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

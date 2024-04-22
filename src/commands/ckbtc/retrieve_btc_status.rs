@@ -3,7 +3,7 @@ use clap::Parser;
 use ic_ckbtc_minter::queries::RetrieveBtcStatusRequest;
 
 use crate::{
-    commands::send::submit_unsigned_ingress,
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{ckbtc_minter_canister_id, AnyhowResult, ROLE_CKBTC_MINTER},
 };
 
@@ -14,12 +14,8 @@ use crate::{
 pub struct RetrieveBtcStatusOpts {
     /// The block index to check.
     block_index: u64,
-    /// Will display the signed message, but not send it.
-    #[clap(long)]
-    dry_run: bool,
-    /// Skips confirmation and sends the message immediately.
-    #[clap(long, short)]
-    yes: bool,
+    #[clap(flatten)]
+    sending_opts: SendingOpts,
     /// Uses ckTESTBTC instead of ckBTC.
     #[clap(long)]
     testnet: bool,
@@ -35,8 +31,7 @@ pub async fn exec(opts: RetrieveBtcStatusOpts, fetch_root_key: bool) -> AnyhowRe
         ROLE_CKBTC_MINTER,
         "retrieve_btc_status",
         Encode!(&args)?,
-        opts.yes,
-        opts.dry_run,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await?;

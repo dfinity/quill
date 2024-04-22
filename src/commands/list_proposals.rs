@@ -1,5 +1,5 @@
 use crate::{
-    commands::send::submit_unsigned_ingress,
+    commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{governance_canister_id, AnyhowResult, ROLE_NNS_GOVERNANCE},
 };
 use candid::Encode;
@@ -13,13 +13,8 @@ pub struct ListProposalsOpts {
     #[clap(long)]
     pub limit: Option<u32>,
 
-    /// Skips confirmation and sends the message directly.
-    #[clap(long, short)]
-    yes: bool,
-
-    /// Will display the query, but not send it.
-    #[clap(long)]
-    dry_run: bool,
+    #[clap(flatten)]
+    pub sending_opts: SendingOpts,
 }
 
 // We currently only support a subset of the functionality.
@@ -39,8 +34,7 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
         ROLE_NNS_GOVERNANCE,
         "list_proposals",
         args,
-        opts.yes,
-        opts.dry_run,
+        opts.sending_opts,
         fetch_root_key,
     )
     .await
