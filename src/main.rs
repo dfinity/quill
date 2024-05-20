@@ -34,12 +34,12 @@ struct GlobalOpts {
     pem_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.
-    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
     #[arg(long, groups = &["pkcs11", "auth"], global = true)]
     hsm: bool,
 
     /// Path to the PKCS#11 module to use.
-    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
     #[cfg_attr(
         target_os = "windows",
         doc = r"Defaults to C:\Program Files\OpenSC Project\OpenSC\pkcs11\opensc-pkcs11.dll"
@@ -56,12 +56,12 @@ struct GlobalOpts {
     hsm_libpath: Option<PathBuf>,
 
     /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
-    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
     #[arg(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_slot: Option<usize>,
 
     /// The ID of the key to use. Consult your hardware key's documentation.
-    #[cfg_attr(not(feature = "hsm"), arg(hidden = true))]
+    #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
     #[arg(long, global = true, groups = &["pkcs11", "auth"])]
     hsm_id: Option<String>,
 
@@ -70,7 +70,7 @@ struct GlobalOpts {
     seed_file: Option<PathBuf>,
 
     /// Authenticate using a Ledger hardware wallet.
-    #[cfg_attr(not(feature = "ledger"), arg(hidden = true))]
+    #[cfg_attr(not(feature = "ledger"), arg(hide = true))]
     #[arg(long, global = true, groups = &["ledgerhq", "auth"])]
     ledger: bool,
 
