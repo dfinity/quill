@@ -25,8 +25,6 @@ jobs:
           - name: windows-2022
             family: windows
         task: 
-        - name: Format
-          command: cargo fmt -- --check
         - name: Clippy
           command: |
             cargo hack clippy --each-feature --no-dev-deps -- -D warnings
@@ -46,6 +44,13 @@ jobs:
           - os:
               family: windows
             build_deps: scripts/workflows/provision-windows-build.ps1
+          # formatting doesn't depend on build environment, not included in main matrix
+          - task:
+              name: Format
+              command: cargo fmt -- --check
+            os:
+              name: ubuntu-20.04
+              family: ubuntu
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:

@@ -1,6 +1,6 @@
 use crate::lib::get_idl_string;
 use crate::lib::{AnyhowResult, AuthInfo};
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, Context};
 use candid::Principal;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
@@ -136,7 +136,11 @@ pub fn sign(
     })
 }
 
-fn sign_with<T>(auth: &AuthInfo, #[allow(unused)] is_staking: bool, f: impl FnOnce() -> T) -> T {
+fn sign_with<T>(
+    #[allow(unused)] auth: &AuthInfo,
+    #[allow(unused)] is_staking: bool,
+    f: impl FnOnce() -> T,
+) -> T {
     #[cfg(feature = "ledger")]
     if is_staking && matches!(auth, AuthInfo::Ledger) {
         return LedgerIdentity::with_staking(f);
@@ -192,7 +196,7 @@ fn sign_ingress_with_request_status_query_internal(
     if matches!(auth, AuthInfo::Ledger)
         && !super::ledger::supported_transaction(&canister_id, method_name)
     {
-        bail!(
+        anyhow::bail!(
             "Cannot use --ledger with this command. This version of Quill only supports transfers \
             and certain neuron management operations with a Ledger device"
         );
