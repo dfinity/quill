@@ -58,7 +58,7 @@ jobs:
             ~/.cargo/git
             target
             ${{ env.VCPKG_ROOT }}
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
+          key: ${{ matrix.os.name }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
       - name: Install dependencies
         run: ${{ matrix.build_deps }}
