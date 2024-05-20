@@ -16,7 +16,7 @@ test = sorted(test_scripts('quill'))
 
 matrix = {
     'test': test,
-    'os': [ 'macos-latest', 'ubuntu-latest' ],
+    'os': [ 'macos-14-large', 'ubuntu-22.04' ],
     'exclude': [ ]
 }
 
