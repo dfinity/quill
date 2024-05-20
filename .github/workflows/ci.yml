@@ -1,31 +1,46 @@
 name: CI
 
 on: pull_request
-    
-env:
-  rust: 1.75.0
 
 jobs:
   ci:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: 
+          - name: ubuntu-20.04
+            family: ubuntu
+          - name: ubuntu-22.04
+            family: ubuntu
+          - name: macos-12-large
+            family: darwin
+          - name: macos-14-large
+            family: darwin
+          - name: macos-14-xlarge
+            family: darwin-arm64
+          - name: windows-2019
+            family: windows
+          - name: windows-2022
+            family: windows
         task: 
         - name: Format
           command: cargo fmt -- --check
         - name: Clippy
-          command: cargo clippy --all --all-targets --all-features --tests -- -D warnings
+          command: |
+            cargo hack clippy --each-feature --no-dev-deps -- -D warnings
+            cargo clippy --tests --benches -- -D warnings
         - name: Test
           command: cargo test
         include:
-          - os: ubuntu-latest
+          - family: ubuntu
             build_deps: scripts/workflows/provision-linux-build.sh
-          - os: macos-latest
+          - family: darwin
             build_deps: scripts/workflows/provision-darwin-build.sh
-          - os: windows-latest
+          - family: darwin-arm64
+            build_deps: scripts/workflows/provision-darwin-arm64-build.sh
+          - family: windows
             build_deps: scripts/workflows/provision-windows-build.ps1
     env:
       VCPKG_ROOT: 'C:\vcpkg'
@@ -39,17 +54,14 @@ jobs:
             ~/.cargo/git
             target
             ${{ env.VCPKG_ROOT }}
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
       - name: Install dependencies
         run: ${{ matrix.build_deps }}
 
-      - uses: actions-rs/toolchain@v1
+      - uses: taiki-e/install-action@v2
         with:
-          profile: minimal
-          toolchain: ${{ env.rust }}
-          override: true
-          components: rustfmt, clippy
+          tool: cargo-hack@0.6.11
 
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.command }}
