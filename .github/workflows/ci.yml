@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   ci:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    name: ${{ matrix.task.name }} (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.name }}
     strategy:
       fail-fast: false
@@ -34,13 +34,17 @@ jobs:
         - name: Test
           command: cargo test
         include:
-          - family: ubuntu
+          - os:
+              family: ubuntu
             build_deps: scripts/workflows/provision-linux-build.sh
-          - family: darwin
+          - os:
+              family: darwin
             build_deps: scripts/workflows/provision-darwin-build.sh
-          - family: darwin-arm64
+          - os:
+              family: darwin-arm64
             build_deps: scripts/workflows/provision-darwin-arm64-build.sh
-          - family: windows
+          - os:
+              family: windows
             build_deps: scripts/workflows/provision-windows-build.ps1
     env:
       VCPKG_ROOT: 'C:\vcpkg'
