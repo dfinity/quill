@@ -19,7 +19,7 @@ pub struct UpdateNodeProvider {
 #[derive(Parser)]
 pub struct UpdateNodeProviderOpts {
     /// The account identifier of the reward account.
-    #[clap(long)]
+    #[arg(long)]
     reward_account: String,
 }
 

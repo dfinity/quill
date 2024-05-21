@@ -22,13 +22,13 @@ pub struct DisburseOpts {
     /// The neuron to disburse.
     neuron_id: ParsedSnsNeuron,
     /// The account to transfer the SNS utility tokens to. If unset, defaults to the caller.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     to: Option<ParsedAccount>,
     /// The subaccount to transfer the SNS utility tokens to.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
     /// The number of tokens, in decimal form, to disburse. If unset, fully consumes the neuron.
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     amount: Option<Tokens>,
 }
 

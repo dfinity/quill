@@ -31,20 +31,20 @@ pub struct ConfigureDissolveDelayOpts {
     /// Additional number of seconds to add to the dissolve delay of a neuron. If the neuron is
     /// already dissolving and this argument is specified, the neuron will stop dissolving
     /// and begin aging
-    #[clap(short, long)]
+    #[arg(short, long)]
     additional_dissolve_delay_seconds: Option<u32>,
 
     /// When this argument is specified, the neuron will go into the dissolving state and a
     /// countdown timer will begin. When the timer is exhausted (i.e. dissolve_delay_seconds
     /// amount of time has elapsed), the neuron can be disbursed
-    #[clap(long)]
+    #[arg(long)]
     start_dissolving: bool,
 
     /// When this argument is specified, the neuron will exit the dissolving state and whatever
     /// amount of dissolve delay seconds is left in the countdown timer is stored. A neuron's
     /// dissolve delay can be extended (for instance to increase voting power) by using the
     /// additional_dissolve_delay_seconds flag
-    #[clap(long, conflicts_with = "start-dissolving")]
+    #[arg(long, conflicts_with = "start_dissolving")]
     stop_dissolving: bool,
 }
 

@@ -36,28 +36,28 @@ pub struct StakeNeuronOpts {
     /// The amount of tokens to be transferred to the Governance canister's ledger subaccount
     /// (the neuron's AccountId) from the AccountId derived from the provided private key. This is
     /// known as a staking transfer. These funds will be returned when disbursing the neuron.
-    #[clap(long, value_parser = parse_tokens, required_unless_present = "claim-only")]
+    #[arg(long, value_parser = parse_tokens, required_unless_present = "claim_only")]
     amount: Option<Tokens>,
 
     /// The subaccount to make the transfer from. Only necessary if `--amount` is specified.
-    #[clap(long, requires = "amount")]
+    #[arg(long, requires = "amount")]
     from_subaccount: Option<ParsedSubaccount>,
 
     /// An arbitrary number used in calculating the neuron's subaccount. The memo must be unique among
     /// the neurons claimed for a single PrincipalId. More information on ledger accounts and
     /// subaccounts can be found here: https://smartcontracts.org/docs/integration/ledger-quick-start.html#_ledger_canister_overview
-    #[clap(long)]
+    #[arg(long)]
     memo: u64,
 
     /// The amount that the caller pays for the transaction, default is 0.0001 tokens. Specify this amount
     /// when using an SNS that sets its own transaction fee
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     fee: Option<Tokens>,
 
     /// If this flag is set, then no transfer will be made, and only the neuron claim message will be generated.
     /// This is useful if there was an error previously submitting the notification which you have since rectified,
     /// or if you have made the transfer with another tool.
-    #[clap(long, conflicts_with = "amount", conflicts_with = "from-subaccount")]
+    #[arg(long, conflicts_with = "amount", conflicts_with = "from_subaccount")]
     claim_only: bool,
 }
 

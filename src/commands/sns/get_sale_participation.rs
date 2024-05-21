@@ -13,10 +13,10 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct GetSaleParticipationOpts {
     /// The principal to query. If unspecified, the caller will be used.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     principal: Option<Principal>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

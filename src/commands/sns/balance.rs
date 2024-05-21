@@ -14,14 +14,14 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct BalanceOpts {
     /// The account to query. Optional if a key is used.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to query.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

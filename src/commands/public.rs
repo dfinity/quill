@@ -15,17 +15,17 @@ use sha3::{Digest, Keccak256};
 /// Prints the principal and the account IDs.
 pub struct PublicOpts {
     /// Principal for which to get the account_id.
-    #[clap(long)]
+    #[arg(long)]
     principal_id: Option<String>,
     /// Additionally prints the legacy DFN address for Genesis claims.
-    #[clap(long, conflicts_with = "principal-id")]
+    #[arg(long, conflicts_with = "principal_id")]
     genesis_dfn: bool,
     /// If authenticating with a Ledger device, display the public IDs on the device.
-    #[cfg_attr(not(feature = "ledger"), clap(hidden = true))]
-    #[clap(long, requires = "ledgerhq")]
+    #[cfg_attr(not(feature = "ledger"), arg(hide = true))]
+    #[arg(long, requires = "ledgerhq")]
     display_on_ledger: bool,
     /// Print IDs for the provided subaccount.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
 }
 

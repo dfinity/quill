@@ -7,30 +7,30 @@ use std::path::PathBuf;
 
 /// Generate a mnemonic seed phrase and generate or recover PEM.
 #[derive(Parser, Debug)]
-#[clap(about, version, author)]
+#[command(about, version, author)]
 pub struct GenerateOpts {
     /// Number of words: 12 or 24.
-    #[clap(long, default_value = "12")]
+    #[arg(long, default_value = "12")]
     words: u32,
 
     /// File to write the seed phrase to.
-    #[clap(long, default_value = "seed.txt")]
+    #[arg(long, default_value = "seed.txt")]
     seed_file: PathBuf,
 
     /// File to write the PEM to.
-    #[clap(long)]
+    #[arg(long)]
     pem_file: Option<PathBuf>,
 
     /// A seed phrase in quotes to use to generate the PEM file.
-    #[clap(long)]
+    #[arg(long)]
     phrase: Option<String>,
 
     /// Overwrite any existing seed file.
-    #[clap(long)]
+    #[arg(long)]
     overwrite_seed_file: bool,
 
     /// Overwrite any existing PEM file.
-    #[clap(long)]
+    #[arg(long)]
     overwrite_pem_file: bool,
 }
 

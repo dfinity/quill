@@ -15,18 +15,18 @@ use crate::{
 #[derive(Parser)]
 pub struct BalanceOpts {
     /// The account to check. Optional if a key is used.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to check.
-    #[clap(long)]
+    #[arg(long)]
     of_subaccount: Option<ParsedSubaccount>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

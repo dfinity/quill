@@ -13,11 +13,11 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct NewSaleTicketOpts {
     /// The amount of ICP tokens to participate in this sns sale. You will need to make the transfer later.
-    #[clap(long)]
+    #[arg(long)]
     amount_icp_e8s: u64,
 
     /// The subaccount you will use to pay for this ticket. For example: e000d80101.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
 }
 

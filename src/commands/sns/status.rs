@@ -13,7 +13,7 @@ use super::SnsCanisterIds;
 /// cycle balance, memory size, daily cycle burn rate, and module hash, along with their principals.
 #[derive(Parser)]
 pub struct StatusOpts {
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

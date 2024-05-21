@@ -14,11 +14,11 @@ use ic_base_types::PrincipalId;
 pub struct ReplaceNodeProviderIdOpts {
     /// The Principal id of the node operator. This principal is the entity that
     /// is able to add and remove nodes.
-    #[clap(long)]
+    #[arg(long)]
     node_operator_id: String,
 
     /// The new Principal id of the node provider.
-    #[clap(long)]
+    #[arg(long)]
     node_provider_id: String,
 }
 

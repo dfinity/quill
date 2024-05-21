@@ -21,28 +21,28 @@ use super::SnsCanisterIds;
 pub struct PayOpts {
     /// The amount of ICP to transfer. This should be the same as the "amount_icp_e8s" of the sale ticket.
     /// Please note that a 10000 e8s transaction fee will be charged on top of this amount.
-    #[clap(long, required_unless_present("notify-only"))]
+    #[arg(long, required_unless_present = "notify_only")]
     amount_icp_e8s: Option<u64>,
 
     /// Pay from this subaccount. For example: e000d80101. This should be aligned with the "account" of the sale ticket.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
 
     /// The creation_time of the sale ticket. This should be the same as the "creation_time" of the sale ticket.
-    #[clap(long, required_unless_present("notify-only"))]
+    #[arg(long, required_unless_present = "notify_only")]
     ticket_creation_time: Option<u64>,
 
     /// The tocket_id of the sale ticket. This should be the same as the "ticket_id" of the sale ticket.
-    #[clap(long, required_unless_present("notify-only"))]
+    #[arg(long, required_unless_present = "notify_only")]
     ticket_id: Option<u64>,
 
     /// If this flag is specified, then no transfer will be made, and only the notification message will be generated.
     /// This is useful if there was an error previously submitting the notification which you have since rectified, or if you have made the transfer with another tool.
-    #[clap(long)]
+    #[arg(long)]
     notify_only: bool,
 
     /// If a particular SNS requires confirmation text to participate in a sale, enter it using this flag.
-    #[clap(long)]
+    #[arg(long)]
     confirmation_text: Option<String>,
 }
 

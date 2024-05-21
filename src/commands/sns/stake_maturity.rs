@@ -19,7 +19,7 @@ use super::{ParsedSnsNeuron, SnsCanisterIds};
 #[derive(Parser)]
 pub struct StakeMaturityOpts {
     /// The percentage of the current maturity to stake (1-100).
-    #[clap(long, value_parser = 1..=100)]
+    #[arg(long, value_parser = 1..=100)]
     percentage: i64,
 
     /// The id of the neuron to configure as a hex encoded string.

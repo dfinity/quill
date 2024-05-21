@@ -507,7 +507,7 @@ impl FromStr for ParsedSubaccount {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedAccount(pub Account);
 
 impl FromStr for ParsedAccount {

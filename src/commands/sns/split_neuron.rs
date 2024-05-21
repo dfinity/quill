@@ -22,10 +22,10 @@ pub struct SplitNeuronOpts {
     /// The neuron to split.
     neuron_id: ParsedSnsNeuron,
     /// A number to identify this neuron. Must be unique among your neurons for this SNS.
-    #[clap(long)]
+    #[arg(long)]
     memo: u64,
     /// The number of tokens, in decimal form, to split off.
-    #[clap(long, value_parser = parse_tokens)]
+    #[arg(long, value_parser = parse_tokens)]
     amount: Tokens,
 }
 

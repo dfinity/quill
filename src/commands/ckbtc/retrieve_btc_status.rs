@@ -14,10 +14,10 @@ use crate::{
 pub struct RetrieveBtcStatusOpts {
     /// The block index to check.
     block_index: u64,
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

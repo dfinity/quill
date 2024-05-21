@@ -10,7 +10,7 @@ pub struct GetProposalInfoOpts {
     /// The proposal identifier.
     pub ident: u64,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     sending_opts: SendingOpts,
 }
 

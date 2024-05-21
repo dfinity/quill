@@ -30,30 +30,30 @@ pub struct RetrieveBtcOpts {
     /// The Bitcoin address to send the BTC to. Note that Quill does not validate this address.
     to: String,
     /// The quantity, in decimal BTC, to convert.
-    #[clap(long)]
+    #[arg(long)]
     amount: Option<Btc>,
     /// The quantity, in integer satoshis, to convert.
-    #[clap(long, conflicts_with = "amount", required_unless_present = "amount")]
+    #[arg(long, conflicts_with = "amount", required_unless_present = "amount")]
     satoshis: Option<Nat>,
     /// The subaccount to transfer the ckBTC from.
-    #[clap(long)]
+    #[arg(long)]
     from_subaccount: Option<ParsedSubaccount>,
     /// An integer memo for the ckBTC transfer.
-    #[clap(long)]
+    #[arg(long)]
     memo: Option<u64>,
     /// The expected fee for the ckBTC transfer.
-    #[clap(long)]
+    #[arg(long)]
     fee: Option<Nat>,
     /// Skips signing the transfer of ckBTC, signing only the request for BTC.
-    #[clap(
+    #[arg(
         long,
         conflicts_with = "memo",
-        conflicts_with = "from-subaccount",
+        conflicts_with = "from_subaccount",
         conflicts_with = "fee"
     )]
     already_transferred: bool,
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

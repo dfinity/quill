@@ -15,13 +15,13 @@ use crate::{
 #[derive(Parser)]
 pub struct UpdateBalanceOpts {
     /// The account to mint ckBTC to.
-    #[clap(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present = "auth")]
     sender: Option<ParsedAccount>,
     /// The subaccount to mint ckBTC to.
-    #[clap(long)]
+    #[arg(long)]
     subaccount: Option<ParsedSubaccount>,
     /// Uses ckTESTBTC instead of ckBTC.
-    #[clap(long)]
+    #[arg(long)]
     testnet: bool,
 }
 

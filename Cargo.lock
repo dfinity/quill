@@ -4887,7 +4887,7 @@ dependencies = [
  "candid",
  "candid_parser",
  "chrono",
- "clap 3.2.25",
+ "clap 4.5.4",
  "crc32fast",
  "data-encoding",
  "flate2",
