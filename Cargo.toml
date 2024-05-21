@@ -9,19 +9,19 @@ repository = "https://github.com/dfinity/quill"
 license = "Apache-2.0"
 
 [dependencies]
-ic-base-types = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-icp-ledger = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-icrc-ledger-types = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
-ledger-canister = { git = "https://github.com/dfinity/ic", rev = "9adada073bd245a8f9f435b8f9edbb2af990027b" }
+ic-base-types = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-nns-governance = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-sns-governance = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-sns-root = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-sns-swap = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-sns-wasm = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+icp-ledger = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+icrc-ledger-types = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ledger-canister = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
 
 candid = "0.10.2"
 candid_parser = "0.1.2"

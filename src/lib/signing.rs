@@ -136,7 +136,11 @@ pub fn sign(
     })
 }
 
-fn sign_with<T>(auth: &AuthInfo, #[allow(unused)] is_staking: bool, f: impl FnOnce() -> T) -> T {
+fn sign_with<T>(
+    #[allow(unused)] auth: &AuthInfo,
+    #[allow(unused)] is_staking: bool,
+    f: impl FnOnce() -> T,
+) -> T {
     #[cfg(feature = "ledger")]
     if is_staking && matches!(auth, AuthInfo::Ledger) {
         return LedgerIdentity::with_staking(f);

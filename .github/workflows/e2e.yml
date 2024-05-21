@@ -6,9 +6,6 @@ on:
       - master
   pull_request:
 
-env:
-  rust: 1.75.0
-
 jobs:
   build:
     name: e2e build (${{ matrix.os }})
@@ -18,10 +15,10 @@ jobs:
       matrix:
         # windows not supported by dfx
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             binary_path: target/release
             build_deps: scripts/workflows/provision-linux-build.sh
-          - os: macos-latest
+          - os: macos-14-large
             binary_path: target/release
             build_deps: scripts/workflows/provision-darwin-build.sh
     steps:
@@ -33,14 +30,8 @@ jobs:
             ~/.cargo/git
             ~/.cargo/registry
             target
-          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ env.rust }}-ci-1
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ env.rust }}
-          override: true
-          # components: rustfmt, clippy
       - name: Install dependencies
         run: ${{ matrix.build_deps }}
 
@@ -50,7 +41,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: quill-${{ matrix.os }}-rs-${{ env.rust }}
+          name: quill-${{ matrix.os }}-rs
           path: ${{ matrix.binary_path }}/quill
 
   list_tests:
@@ -79,7 +70,7 @@ jobs:
       - name: Download quill binary
         uses: actions/download-artifact@v2
         with:
-          name: quill-${{ matrix.os }}-rs-${{ env.rust }}
+          name: quill-${{ matrix.os }}-rs
           path: /usr/local/bin
       - name: Setup quill binary
         run: chmod +x /usr/local/bin/quill
