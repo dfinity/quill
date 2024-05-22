@@ -11,6 +11,9 @@ use candid::Principal;
 use hidapi::HidApi;
 use ic_agent::{agent::EnvelopeContent, Identity, Signature};
 use indicatif::ProgressBar;
+use k256::{
+    elliptic_curve::sec1::FromEncodedPoint, pkcs8::EncodePublicKey, EncodedPoint, PublicKey,
+};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
@@ -44,11 +47,6 @@ const SIG_OFFSET: usize = 43;
 const SIG_LEN: usize = 64;
 
 const CHUNK_SIZE: usize = 250;
-
-const SECP256K1_PREFIX: &[u8] = &[
-    0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01, 0x06, 0x05, 0x2B,
-    0x81, 0x04, 0x00, 0x0A, 0x03, 0x42, 0x00,
-];
 
 // necessary due to HidApi being a singleton
 static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
@@ -198,13 +196,16 @@ fn get_identity(
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "fetching principal from Ledger", None)?;
-    let pk = [
-        SECP256K1_PREFIX,
+    let pk = PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
         response
             .get(PK_OFFSET..PK_OFFSET + PK_LEN)
-            .ok_or_else(|| "Ledger message too short".to_string())?,
-    ]
-    .concat();
+            .ok_or_else(|| "Ledger message too short".to_string())?[1..]
+            .into(),
+    ))
+    .unwrap()
+    .to_public_key_der()
+    .unwrap()
+    .into_vec();
     let principal = Principal::try_from_slice(
         response
             .get(PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN)
