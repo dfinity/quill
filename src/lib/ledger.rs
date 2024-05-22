@@ -202,9 +202,9 @@ fn get_identity(
             .ok_or_else(|| "Ledger message too short".to_string())?[1..]
             .into(),
     ))
-    .unwrap()
+    .expect("Ledger should return a valid public key")
     .to_public_key_der()
-    .unwrap()
+    .expect("Valid public key should serialize to DER format")
     .into_vec();
     let principal = Principal::try_from_slice(
         response
