@@ -11,6 +11,9 @@ use candid::Principal;
 use hidapi::HidApi;
 use ic_agent::{agent::EnvelopeContent, Identity, Signature};
 use indicatif::ProgressBar;
+use k256::{
+    elliptic_curve::sec1::FromEncodedPoint, pkcs8::EncodePublicKey, EncodedPoint, PublicKey,
+};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
@@ -193,10 +196,16 @@ fn get_identity(
         .exchange(&command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "fetching principal from Ledger", None)?;
-    let pk = response
-        .get(PK_OFFSET..PK_OFFSET + PK_LEN)
-        .ok_or_else(|| "Ledger message too short".to_string())?
-        .to_vec();
+    let pk = PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
+        response
+            .get(PK_OFFSET..PK_OFFSET + PK_LEN)
+            .ok_or_else(|| "Ledger message too short".to_string())?[1..]
+            .into(),
+    ))
+    .expect("Ledger should return a valid public key")
+    .to_public_key_der()
+    .expect("Valid public key should serialize to DER format")
+    .into_vec();
     let principal = Principal::try_from_slice(
         response
             .get(PRINCIPAL_OFFSET..PRINCIPAL_OFFSET + PRINCIPAL_LEN)
