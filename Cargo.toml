@@ -31,27 +31,30 @@ ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "8c39e262
 anyhow = "1.0.34"
 base64 = "0.13.0"
 bigdecimal = "0.4"
-bip32 = "0.4.0"
+bip32 = "0.5.0"
 chrono = "0.4"
 clap = { version = "4.5.4", features = ["derive", "cargo", "color"] }
 crc32fast = "1.3.2"
 data-encoding = "2.3.3"
+dialoguer = "0.11.0"
 flate2 = "1.0.22"
 hex = { version = "0.4.2", features = ["serde"] }
 hidapi = { version = "1.4", default-features = false, optional = true }
 indicatif = "0.17"
 itertools = "0.10.5"
-k256 = { version = "0.11.4", features = ["pem"] }
+k256 = { version = "0.13.0", features = ["pem", "pkcs8"] }
 ledger-apdu = { version = "0.10", optional = true }
 ledger-transport-hid = { version = "0.10", optional = true }
 num-bigint = "0.4.3"
 once_cell = "1.17.1"
-pem = "1.0.1"
+pem = "2.0.1"
+pkcs8 = { version = "0.10.0", features = ["encryption"] }
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
+ring = "0.17.7"
 rpassword = "6.0.0"
-simple_asn1 = "0.6.1"
 scopeguard = "1"
+sec1 = { version = "0.7.0", features = ["std"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.2"
 serde_cbor = "0.11.2"

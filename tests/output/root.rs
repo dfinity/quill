@@ -71,7 +71,7 @@ fn generate() {
     let seed = NamedTempFile::new().unwrap();
     quill(&format!(
         r#"generate --phrase "tornado allow zero warm have deer wool finish tiger ski dynamic strong"
-             --seed-file {seed} --overwrite-seed-file --pem-file {pem} --overwrite-pem-file"#,
+             --seed-file {seed} --overwrite-seed-file --pem-file {pem} --overwrite-pem-file --storage-mode plaintext"#,
         seed = escape_p(&seed),
         pem = escape_p(&pem),
     )).assert_success();
@@ -79,7 +79,36 @@ fn generate() {
         b"\
 Principal id: beckf-r6bg7-t6ju6-s7k45-b5jtj-mcm57-zjaie-svgrr-7ekzs-55v75-sae
 Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1866",
-    )
+    );
+    let mut password = NamedTempFile::new().unwrap();
+    password.write_all(b"pass").unwrap();
+    quill(&format!(
+        "generate --pem-file {pem} --overwrite-pem-file",
+        pem = escape_p(&pem)
+    ))
+    .diff_err("generate/no_password.txt");
+    quill(&format!(
+        "generate --pem-file {pem} --overwrite-pem-file --password-file {password}",
+        pem = escape_p(&pem),
+        password = escape_p(&password)
+    ))
+    .assert_success();
+    quill(&format!(
+        "public-ids --pem-file {pem}",
+        pem = escape_p(&pem)
+    ))
+    .diff_err("base_command/need_password.txt");
+    quill(&format!(
+        "public-ids --pem-file {pem} --password-file {pem}",
+        pem = escape_p(&pem),
+    ))
+    .diff_err("base_command/wrong_password.txt");
+    quill(&format!(
+        "public-ids --pem-file {pem} --password-file {pass}",
+        pem = escape_p(&pem),
+        pass = escape_p(&password)
+    ))
+    .assert_success();
 }
 
 #[test]
@@ -95,17 +124,24 @@ Principal id: 44mwt-bq3um-tqicz-bwhad-iipx4-6wzex-olvaj-z63bj-wkelv-xoua3-rqe
 Legacy account id: fe09de27b0fc2f9541f6e24ae41d0652aab116212dec7f75f0d502417539e6d4",
     );
     let mut seed = NamedTempFile::new().unwrap();
-    seed.write_all(b"fee tube anger harsh pipe pull since path erase hire ordinary display")
-        .unwrap();
+    seed.write_all(
+        b"\
+-----BEGIN EC PRIVATE KEY-----
+MHQCAQEEIIb7zeOCb1+GCE3/zikHvfpNsLEyD/lD7dEDEdkV6Rs9oAcGBSuBBAAK
+oUQDQgAEKmH3zLC+gmKTJr9MRsGpNWzXIAyHf/YUPoFymekUh/3KEEmj3Ut+RbrO
+RJt7Z+jd+BKc8GEzTfxhNW2KtBkLdA==
+-----END EC PRIVATE KEY-----",
+    )
+    .unwrap();
     quill(&format!(
-        "public-ids --genesis-dfn --seed-file {}",
+        "public-ids --genesis-dfn --pem-file {}",
         escape_p(&seed)
     ))
     .diff_s(
         b"\
-Principal id: ed6vu-jnldn-5wync-3xnlm-jzlg2-5kjds-iqbcj-5pjgi-jhbw3-qawnx-eae
-Legacy account id: 2adf562a6232efe3a3934880edb092ae481651fc961a61d845797d762f437fbd
-DFN address: bfcc18caabb2b3ca17c50c0d3834e368c4e4b88f",
+Principal id: 5lfph-rgykk-rizf2-kw7bi-52qsm-j44vi-2c7fu-kmpym-ohxe2-upuuw-oae
+Legacy account id: e4f68df16f65a47e15acdd6089ca9f2a357b3c0f3b0a53f7bc060af350cb560f
+DFN address: f452d283ff8381b9ca3cfa3cbc32e45177ea3ee6",
     );
 }
 

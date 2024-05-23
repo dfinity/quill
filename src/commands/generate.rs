@@ -1,9 +1,19 @@
-use crate::lib::{get_account_id, mnemonic_to_pem, AnyhowResult, AuthInfo};
-use anyhow::{anyhow, Context};
+use crate::{
+    lib::{get_account_id, mnemonic_to_key, AnyhowResult},
+    read_file,
+};
+use anyhow::{anyhow, bail, Context};
 use bip39::{Language, Mnemonic};
-use clap::Parser;
-use rand::{rngs::OsRng, RngCore};
-use std::path::PathBuf;
+use clap::{Parser, ValueEnum};
+use dialoguer::Password;
+use ic_agent::{identity::Secp256k1Identity, Identity};
+use pkcs8::EncodePrivateKey;
+use rand::{rngs::OsRng, thread_rng, RngCore};
+use sec1::LineEnding;
+use std::{
+    io::{stdin, IsTerminal},
+    path::PathBuf,
+};
 
 /// Generate a mnemonic seed phrase and generate or recover PEM.
 #[derive(Parser, Debug)]
@@ -13,13 +23,13 @@ pub struct GenerateOpts {
     #[arg(long, default_value = "12")]
     words: u32,
 
-    /// File to write the seed phrase to.
-    #[arg(long, default_value = "seed.txt")]
-    seed_file: PathBuf,
+    /// File to write the seed phrase to. If unspecified, it will be printed to the terminal.
+    #[arg(long)]
+    seed_file: Option<PathBuf>,
 
     /// File to write the PEM to.
-    #[arg(long)]
-    pem_file: Option<PathBuf>,
+    #[arg(long, default_value = "identity.pem")]
+    pem_file: PathBuf,
 
     /// A seed phrase in quotes to use to generate the PEM file.
     #[arg(long)]
@@ -32,17 +42,43 @@ pub struct GenerateOpts {
     /// Overwrite any existing PEM file.
     #[arg(long)]
     overwrite_pem_file: bool,
+
+    /// Change how PEM files are stored.
+    #[arg(long, value_enum, default_value_t = StorageMode::PasswordProtected)]
+    storage_mode: StorageMode,
+
+    /// Read the encryption password from this file. Use "-" for STDIN. Required if STDIN is being piped.
+    #[arg(long)]
+    password_file: Option<PathBuf>,
+}
+
+#[derive(Debug, ValueEnum, Clone, Copy, PartialEq, Eq)]
+enum StorageMode {
+    PasswordProtected,
+    Plaintext,
 }
 
 /// Generate or recover mnemonic seed phrase and/or PEM file.
 pub fn exec(opts: GenerateOpts) -> AnyhowResult {
-    if opts.seed_file.exists() && !opts.overwrite_seed_file {
-        return Err(anyhow!("Seed file exists and overwrite is not set."));
-    }
-    if let Some(path) = &opts.pem_file {
-        if path.exists() && !opts.overwrite_pem_file {
-            return Err(anyhow!("PEM file exists and overwrite is not set."));
+    if let Some(seed_file) = &opts.seed_file {
+        if !opts.overwrite_seed_file && seed_file.exists() {
+            bail!(
+                "Seed file {} exists and overwrite is not set.",
+                seed_file.display()
+            );
         }
+    }
+    if !opts.overwrite_pem_file && opts.pem_file.exists() {
+        bail!(
+            "PEM file {} exists and overwrite is not set.",
+            opts.pem_file.display()
+        );
+    }
+    if opts.storage_mode == StorageMode::PasswordProtected
+        && opts.password_file.is_none()
+        && !stdin().is_terminal()
+    {
+        bail!("Must use --password-file if using --storage-mode=password-protected and stdin cannot receive terminal input.");
     }
     let bytes = match opts.words {
         12 => 16,
@@ -59,15 +95,44 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
             Mnemonic::from_entropy(&key, Language::English).unwrap()
         }
     };
-    let pem = mnemonic_to_pem(&mnemonic).context("Failed to convert mnemonic to PEM")?;
+    let key = mnemonic_to_key(&mnemonic).context("Failed to convert mnemonic to PEM")?;
     let mut phrase = mnemonic.into_phrase();
     phrase.push('\n');
-    std::fs::write(opts.seed_file, phrase)?;
-    if let Some(path) = opts.pem_file {
-        std::fs::write(path, &pem)?;
+    if let Some(seed_file) = opts.seed_file {
+        std::fs::write(&seed_file, phrase)?;
+        println!("Written seed file to {}.", seed_file.display());
+        println!("Copy the contents of this file to external media or a piece of paper and store it in a safe place.");
+        if opts.storage_mode != StorageMode::Plaintext {
+            println!("Be sure to delete the file afterwards, as it is not password-protected like the PEM file is.")
+        }
+    } else {
+        println!(
+            "\
+Seed phrase: {phrase}
+Copy this onto a piece of paper or external media and store it in a safe place."
+        );
     }
-    let principal_id = crate::lib::get_principal(&AuthInfo::PemFile(pem))?;
+    let pem = match opts.storage_mode {
+        StorageMode::Plaintext => key.to_sec1_pem(LineEnding::default())?,
+        StorageMode::PasswordProtected => {
+            let password = if let Some(password_file) = opts.password_file {
+                read_file(password_file, "password")?
+            } else {
+                Password::new()
+                    .with_prompt("PEM encryption password:")
+                    .with_confirmation("Re-enter password:", "Passwords did not match")
+                    .interact()?
+            };
+            key.to_pkcs8_encrypted_pem(thread_rng(), password, LineEnding::default())?
+        }
+    };
+    std::fs::write(&opts.pem_file, &pem)?;
+    println!("Written PEM file to {}.", opts.pem_file.display());
+    let principal_id = Secp256k1Identity::from_private_key(key)
+        .sender()
+        .map_err(|s| anyhow!(s))?;
     let account_id = get_account_id(principal_id, None)?;
+
     println!("Principal id: {principal_id}");
     println!("Legacy account id: {account_id}");
     Ok(())

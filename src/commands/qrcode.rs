@@ -12,7 +12,7 @@ pub struct QRCodeOpts {
     #[arg(long)]
     file: Option<PathBuf>,
 
-    // String to be output as a QRCode.
+    /// String to be output as a QRCode.
     #[arg(long)]
     string: Option<String>,
 }
