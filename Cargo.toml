@@ -77,6 +77,12 @@ default = ["hsm", "ledger"]
 [profile.release]
 opt-level = 2
 
+[profile.dev.package.aes]
+opt-level = 2
+
+[profile.dev.package.scrypt]
+opt-level = 2
+
 [package.metadata.binstall]
 pkg-fmt = "bin"
 bin-dir = ""
