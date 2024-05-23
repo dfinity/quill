@@ -4,8 +4,8 @@ use std::io::{stdin, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 
 use crate::lib::AnyhowResult;
-use anyhow::{bail, Context};
-use clap::{crate_version, ArgGroup, Args, Parser};
+use anyhow::{bail, ensure, Context};
+use clap::{crate_version, Args, Parser};
 use dialoguer::Password;
 use k256::SecretKey;
 use lib::AuthInfo;
@@ -26,25 +26,29 @@ pub struct CliOpts {
     command: commands::Command,
 }
 
+const AUTH_FLAGS: &[&str] = &[
+    "pem_file",
+    "password_file",
+    "hsm",
+    "hsm_libpath",
+    "hsm_slot",
+    "hsm_id",
+    "ledger",
+];
+
 #[derive(Args)]
-#[command(
-    group(ArgGroup::new("pkcs11").multiple(true).conflicts_with_all(&["seeded", "ledgerhq"])),
-    group(ArgGroup::new("seeded").multiple(true).conflicts_with_all(&["pkcs11", "ledgerhq"])),
-    group(ArgGroup::new("ledgerhq").multiple(true).conflicts_with_all(&["seeded", "pkcs11"])),
-    group(ArgGroup::new("auth").multiple(true)),
-)]
 struct GlobalOpts {
     /// Path to your PEM file (use "-" for STDIN)
-    #[arg(long, groups = &["seeded", "auth"], global = true)]
+    #[arg(long, global = true)]
     pem_file: Option<PathBuf>,
 
     /// If the PEM file is encrypted, read the password from this file (use "-" for STDIN)
-    #[arg(long, groups = &["seeded", "auth"], global = true)]
+    #[arg(long, global = true, requires = "pem_file")]
     password_file: Option<PathBuf>,
 
     /// Use a hardware key to sign messages.
     #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
-    #[arg(long, groups = &["pkcs11", "auth"], global = true)]
+    #[arg(long, global = true)]
     hsm: bool,
 
     /// Path to the PKCS#11 module to use.
@@ -61,17 +65,17 @@ struct GlobalOpts {
         target_os = "linux",
         doc = "Defaults to /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
     )]
-    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
+    #[arg(long, global = true)]
     hsm_libpath: Option<PathBuf>,
 
     /// The slot that the hardware key is in. If OpenSC is installed, `pkcs11-tool --list-slots`
     #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
-    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
+    #[arg(long, global = true)]
     hsm_slot: Option<usize>,
 
     /// The ID of the key to use. Consult your hardware key's documentation.
     #[cfg_attr(not(feature = "hsm"), arg(hide = true))]
-    #[arg(long, global = true, groups = &["pkcs11", "auth"])]
+    #[arg(long, global = true)]
     hsm_id: Option<String>,
 
     /// No longer supported, included for compatibility
@@ -80,7 +84,7 @@ struct GlobalOpts {
 
     /// Authenticate using a Ledger hardware wallet.
     #[cfg_attr(not(feature = "ledger"), arg(hide = true))]
-    #[arg(long, global = true, groups = &["ledgerhq", "auth"])]
+    #[arg(long, global = true)]
     ledger: bool,
 
     /// Output the result(s) as UTF-8 QR codes.
@@ -111,9 +115,20 @@ fn main() -> AnyhowResult {
 }
 
 fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
-    if opts.hsm || opts.hsm_libpath.is_some() || opts.hsm_slot.is_some() || opts.hsm_id.is_some() {
+    if opts.seed_file.is_some() {
+        bail!("Seed phrases are not accepted by commands directly anymore. Use `quill generate --phrase`.");
+    } else if opts.hsm
+        || opts.hsm_libpath.is_some()
+        || opts.hsm_slot.is_some()
+        || opts.hsm_id.is_some()
+    {
         #[cfg(feature = "hsm")]
         {
+            ensure!(!opts.ledger, "Ledger flags cannot be used with HSM flags");
+            ensure!(
+                opts.pem_file.is_none() && opts.password_file.is_none(),
+                "PEM file flags cannot be used with HSM flags"
+            );
             let mut hsm = lib::HSMInfo::new()?;
             if let Some(path) = opts.hsm_libpath {
                 hsm.libpath = path;
@@ -133,6 +148,10 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     } else if opts.ledger {
         #[cfg(feature = "ledger")]
         {
+            ensure!(
+                opts.pem_file.is_none() && opts.password_file.is_none(),
+                "PEM file flags cannot be used with Ledger flags"
+            );
             Ok(AuthInfo::Ledger)
         }
         #[cfg(not(feature = "ledger"))]
@@ -141,8 +160,6 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
         }
     } else if opts.pem_file.is_some() {
         pem_auth(opts)
-    } else if opts.seed_file.is_some() {
-        bail!("Seed phrases are not accepted by commands directly anymore. Use `quill generate --from-phrase`.");
     } else {
         Ok(AuthInfo::NoAuth)
     }
@@ -174,7 +191,7 @@ fn pem_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
                     read_file(password_file, "password")?
                 } else if stdin().is_terminal() {
                     Password::new()
-                        .with_prompt("PEM decryption password:")
+                        .with_prompt("PEM decryption password")
                         .interact()?
                 } else {
                     bail!("Must use --password-file if PEM file is encrypted and stdin cannot receive terminal input.");

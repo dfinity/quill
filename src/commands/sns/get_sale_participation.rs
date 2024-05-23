@@ -5,6 +5,7 @@ use ic_sns_swap::pb::v1::GetBuyerStateRequest;
 use crate::{
     commands::{get_principal, send::submit_unsigned_ingress, SendingOpts},
     lib::{AnyhowResult, AuthInfo, ROLE_SNS_SWAP},
+    AUTH_FLAGS,
 };
 
 use super::SnsCanisterIds;
@@ -13,7 +14,7 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct GetSaleParticipationOpts {
     /// The principal to query. If unspecified, the caller will be used.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     principal: Option<Principal>,
 
     #[command(flatten)]

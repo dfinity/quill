@@ -96,8 +96,7 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
         }
     };
     let key = mnemonic_to_key(&mnemonic).context("Failed to convert mnemonic to PEM")?;
-    let mut phrase = mnemonic.into_phrase();
-    phrase.push('\n');
+    let phrase = mnemonic.into_phrase();
     if let Some(seed_file) = opts.seed_file {
         std::fs::write(&seed_file, phrase)?;
         println!("Written seed file to {}.", seed_file.display());
@@ -119,8 +118,8 @@ Copy this onto a piece of paper or external media and store it in a safe place."
                 read_file(password_file, "password")?
             } else {
                 Password::new()
-                    .with_prompt("PEM encryption password:")
-                    .with_confirmation("Re-enter password:", "Passwords did not match")
+                    .with_prompt("PEM encryption password")
+                    .with_confirmation("Re-enter password", "Passwords did not match")
                     .interact()?
             };
             key.to_pkcs8_encrypted_pem(thread_rng(), password, LineEnding::default())?

@@ -9,13 +9,14 @@ use crate::{
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_CKBTC_MINTER,
     },
+    AUTH_FLAGS,
 };
 
 /// Signs a message to mint ckBTC from previously deposited BTC.
 #[derive(Parser)]
 pub struct UpdateBalanceOpts {
     /// The account to mint ckBTC to.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     sender: Option<ParsedAccount>,
     /// The subaccount to mint ckBTC to.
     #[arg(long)]

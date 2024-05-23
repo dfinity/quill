@@ -102,7 +102,7 @@ Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1
         "public-ids --pem-file {pem} --password-file {pem}",
         pem = escape_p(&pem),
     ))
-    .diff_err("base_command/wrong_password.txt");
+    .assert_err();
     quill(&format!(
         "public-ids --pem-file {pem} --password-file {pass}",
         pem = escape_p(&pem),

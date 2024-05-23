@@ -1,5 +1,6 @@
 use crate::commands::get_principal;
 use crate::lib::{AnyhowResult, AuthInfo};
+use crate::AUTH_FLAGS;
 use candid::Principal;
 use clap::Parser;
 use ic_base_types::PrincipalId;
@@ -9,7 +10,7 @@ use ic_sns_governance::pb::v1::NeuronId;
 #[derive(Parser)]
 pub struct NeuronIdOpts {
     /// Principal used when calculating the SNS Neuron Id.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     principal_id: Option<Principal>,
 
     /// Memo used when calculating the SNS Neuron Id.

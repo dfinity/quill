@@ -22,7 +22,7 @@ pub struct PublicOpts {
     genesis_dfn: bool,
     /// If authenticating with a Ledger device, display the public IDs on the device.
     #[cfg_attr(not(feature = "ledger"), arg(hide = true))]
-    #[arg(long, requires = "ledgerhq")]
+    #[arg(long, requires = "ledger")]
     display_on_ledger: bool,
     /// Print IDs for the provided subaccount.
     #[arg(long)]
