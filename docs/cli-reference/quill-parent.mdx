@@ -22,26 +22,26 @@ To see the available subcommands, please refer to the [index page](index.mdx) of
 
 You can use the following optional flags with the `quill` parent command or with any of the `quill` subcommands.
 
-| Flag                        | Description                                     |
-|-----------------------------|-------------------------------------------------|
-| `-h`, `--help`              | Displays usage information.                     |
-| `--hsm`                     | Enables HSM functionality.                      |
-| `--insecure-local-dev-mode` | Enter local testing mode.                       |
-| `--qr`                      | Output the result(s) as UTF-8 QR codes.         |
-| `-V`, `--version`           | Displays version information.                   |
-| `--ledger`                  | Authenticate using a Ledger hardware wallet      |
+| Flag                        | Description                                 |
+|-----------------------------|---------------------------------------------|
+| `-h`, `--help`              | Displays usage information.                 |
+| `--hsm`                     | Enables HSM functionality.                  |
+| `--insecure-local-dev-mode` | Enter local testing mode.                   |
+| `--qr`                      | Output the result(s) as UTF-8 QR codes.     |
+| `-V`, `--version`           | Displays version information.               |
+| `--ledger`                  | Authenticate using a Ledger hardware wallet |
 
 ## Options
 
 You can use the following options with the `quill` command.
 
-| Option                        | Description                                 |
-|-------------------------------|---------------------------------------------|
-| `--hsm-id <HSM_ID>`           | Specifies the HSM key identifier.           |
-| `--hsm-libpath <HSM_LIBPATH>` | Specifies the path to the HSM library.      |
-| `--hsm-slot <HSM_SLOT>`       | Specifies the HSM slot to use.              |
-| `--pem-file <PEM_FILE>`       | Path to your PEM file (use "-" for STDIN).  |
-| `--seed-file <SEED_FILE>`     | Path to your seed file (use "-" for STDIN). |
+| Option                            | Description                                                                        |
+|-----------------------------------|------------------------------------------------------------------------------------|
+| `--hsm-id <HSM_ID>`               | Specifies the HSM key identifier.                                                  |
+| `--hsm-libpath <HSM_LIBPATH>`     | Specifies the path to the HSM library.                                             |
+| `--hsm-slot <HSM_SLOT>`           | Specifies the HSM slot to use.                                                     |
+| `--pem-file <PEM_FILE>`           | Path to your PEM file (use "-" for STDIN).                                         |
+| `--password-file <PASSWORD_FILE>` | If the PEM file is encrypted, read the password from this file (use "-" for STDIN) |
 
 ## Examples
 
@@ -53,22 +53,29 @@ See [`quill generate`] to generate a new key file, though Quill should be compat
 quill list-neurons --pem-file identity.pem
 ```
 
+This file can be specified to come from stdin:
+
+```sh
+cat identity.pem | quill list-neurons --pem-file -
+```
+
+If the PEM file is password-protected, this will prompt for the password interactively. To use it in a script, specify a password file:
+
+```sh
+quill list-neurons --pem-file identity.pem --password-file password.txt
+```
+
 Some commands that do not require your key will still be more useful with it; for example, `quill account-balance` doesn't require authentication, but providing your key prevents you from having to provide your principal or account ID:
 
 ```sh
 quill account-balance --pem-file identity.pem
 ```
 
-Quill can also be used with a seed phrase directly, though using [`quill generate`] to convert it into a private key should be preferred instead. To authenticate using a `seed.txt` file containing your seed phrase:
+Previous versions of Quill could also be used with a seed phrase directly; it must now be converted to a PEM file. To authenticate using a `seed.txt` file containing your seed phrase:
 
 ```sh
-quill list-neurons --seed-file seed.txt
-```
-
-Both of these files can be specified to come from stdin:
-
-```sh
-cat identity.pem | quill list-neurons --pem-file -
+quill generate --pem-file identity.pem --phrase "$(cat seed.txt)"
+quill list-neurons --pem-file identity.pem
 ```
 
 Quill can also sign transactions using a hardware key (HSM) such as Nitrokey or Yubikey. It will need to have been configured beforehand with a secp256r1 (aka P-256) key, and you will need OpenSC or an equivalent installed. Assuming the HSM is in slot 0 (`pkcs11-tool --list-slots`), and you are signing with the first key it holds, such a signing command might look like:
