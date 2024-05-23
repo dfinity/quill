@@ -4,7 +4,7 @@ use std::io::{stdin, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 
 use crate::lib::AnyhowResult;
-use anyhow::{bail, ensure, Context};
+use anyhow::{bail, Context};
 use clap::{crate_version, Args, Parser};
 use dialoguer::Password;
 use k256::SecretKey;
@@ -124,8 +124,8 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     {
         #[cfg(feature = "hsm")]
         {
-            ensure!(!opts.ledger, "Ledger flags cannot be used with HSM flags");
-            ensure!(
+            anyhow::ensure!(!opts.ledger, "Ledger flags cannot be used with HSM flags");
+            anyhow::ensure!(
                 opts.pem_file.is_none() && opts.password_file.is_none(),
                 "PEM file flags cannot be used with HSM flags"
             );
@@ -148,7 +148,7 @@ fn get_auth(opts: GlobalOpts) -> AnyhowResult<AuthInfo> {
     } else if opts.ledger {
         #[cfg(feature = "ledger")]
         {
-            ensure!(
+            anyhow::ensure!(
                 opts.pem_file.is_none() && opts.password_file.is_none(),
                 "PEM file flags cannot be used with Ledger flags"
             );
