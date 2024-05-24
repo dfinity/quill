@@ -10,16 +10,16 @@ Sending message with
     command = opt variant {
       MakeProposal = record {
         url = "";
-        title = "Upgrade Canister";
+        title = "Install Canister";
         action = opt variant {
           UpgradeSnsControlledCanister = record {
             new_canister_wasm = blob "\00\61\73\6d\01\00\00\00";
-            mode = null;
+            mode = opt (1 : int32);
             canister_id = opt principal "pycv5-3jbbb-ccccc-ddddd-cai";
             canister_upgrade_arg = null;
           }
         };
-        summary = "Upgrade canister:\n\n  ID: pycv5-3jbbb-ccccc-ddddd-cai\n\n  WASM:\n    length: 8\n    fingerprint: 93a44bbb96c751218e4c00d479e4c14358122a389acca16205b1e4d0dc5f9476";
+        summary = "Install canister:\n\n  ID: pycv5-3jbbb-ccccc-ddddd-cai\n\n  WASM:\n    length: 8\n    fingerprint: 93a44bbb96c751218e4c00d479e4c14358122a389acca16205b1e4d0dc5f9476";
       }
     };
   },

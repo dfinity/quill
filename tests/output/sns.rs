@@ -134,16 +134,16 @@ fn make_proposal() {
     .diff("sns/make_proposal/from_file.txt");
 
     let canister_wasm = asset("sns_canister.wasm");
-    quill_sns_send(&format!("sns make-upgrade-canister-proposal {NEURON_ID} --wasm-path '{canister_wasm}' --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai"))
+    quill_sns_send(&format!("sns make-upgrade-canister-proposal {NEURON_ID} --wasm-path '{canister_wasm}' --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai --mode install"))
         .diff("sns/make_proposal/upgrade.txt");
     quill_sns_send(&format!("sns make-upgrade-canister-proposal {NEURON_ID} --wasm-path '{canister_wasm}'
-            --canister-upgrade-arg '(record {{major=2:nat32; minor=3:nat32;}})' --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai"))
+            --canister-upgrade-arg '(record {{major=2:nat32; minor=3:nat32;}})' --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai --mode reinstall"))
         .diff("sns/make_proposal/upgrade_arg.txt");
 
     let upgrade_summary = asset("upgrade_summary.txt");
     quill_sns_send(&format!(
         "sns make-upgrade-canister-proposal {NEURON_ID} --wasm-path '{canister_wasm}' 
-        --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai --summary-path '{upgrade_summary}'"
+        --target-canister-id pycv5-3jbbb-ccccc-ddddd-cai --summary-path '{upgrade_summary}' --mode upgrade"
     ))
     .diff("sns/make_proposal/upgrade_summary_path.txt");
 }

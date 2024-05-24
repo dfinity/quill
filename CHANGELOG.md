@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Overhauled output format. All commands besides `quill sns` should have human-readable output instead of candid IDL. Candid IDL format can be forced with `--raw`.
 
+- Added support for setting the install mode for UpgradeSnsControlledCanister proposals.
+
 ## [0.4.4] - 2024-03-21
 
 - Fixed `quill sns make-proposal` setting some fields to null.
