@@ -11,6 +11,7 @@ use crate::{
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_SNS_GOVERNANCE,
     },
+    AUTH_FLAGS,
 };
 
 use super::{governance_account, ParsedSnsNeuron, SnsCanisterIds};
@@ -21,7 +22,7 @@ pub struct DisburseMaturityOpts {
     /// The neuron ID to disburse maturity from.
     neuron_id: ParsedSnsNeuron,
     /// The account to transfer the SNS utility tokens to. If not provided, defaults to the caller.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     to: Option<ParsedAccount>,
     /// The subaccount to transfer the SNS utility tokens to.
     #[arg(long)]

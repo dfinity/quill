@@ -1,7 +1,7 @@
 use crate::{
     commands::{get_account, send::submit_unsigned_ingress, SendingOpts},
     lib::{AuthInfo, ParsedAccount, ParsedSubaccount, ROLE_ICRC1_LEDGER},
-    AnyhowResult,
+    AnyhowResult, AUTH_FLAGS,
 };
 use candid::Encode;
 use clap::Parser;
@@ -14,7 +14,7 @@ use super::SnsCanisterIds;
 #[derive(Parser)]
 pub struct BalanceOpts {
     /// The account to query. Optional if a key is used.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to query.

@@ -4,6 +4,7 @@ use clap::Parser;
 use crate::{
     commands::get_principal,
     lib::{AnyhowResult, AuthInfo, ParsedAccount},
+    AUTH_FLAGS,
 };
 
 use super::ckbtc_withdrawal_address;
@@ -17,7 +18,7 @@ use super::ckbtc_withdrawal_address;
 #[derive(Parser)]
 pub struct GetWithdrawalAddressOpts {
     /// The principal to get the withdrawal address for. Optional if a key is used.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     of: Option<Principal>,
 
     /// Uses ckTESTBTC instead of ckBTC.

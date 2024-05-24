@@ -7,6 +7,7 @@ use crate::{
         ckbtc_canister_id, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
         ROLE_ICRC1_LEDGER,
     },
+    AUTH_FLAGS,
 };
 
 /// Sends a message to check the provided user's ckBTC balance.
@@ -15,7 +16,7 @@ use crate::{
 #[derive(Parser)]
 pub struct BalanceOpts {
     /// The account to check. Optional if a key is used.
-    #[arg(long, required_unless_present = "auth")]
+    #[arg(long, required_unless_present_any = AUTH_FLAGS)]
     of: Option<ParsedAccount>,
 
     /// The subaccount of the account to check.

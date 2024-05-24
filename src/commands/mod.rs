@@ -9,6 +9,7 @@ use std::io::{self, Write};
 mod account_balance;
 mod ckbtc;
 mod claim_neurons;
+mod decrypt_pem;
 mod generate;
 mod get_neuron_info;
 mod get_proposal_info;
@@ -44,6 +45,7 @@ pub enum Command {
     Ckbtc(ckbtc::CkbtcCommand),
     Sns(sns::SnsOpts),
     Generate(generate::GenerateOpts),
+    DecryptPem(decrypt_pem::DecryptPemOpts),
     /// Print QR Scanner dapp QR code: scan to start dapp to submit QR results.
     ScannerQRCode,
     QRCode(qrcode::QRCodeOpts),
@@ -95,6 +97,7 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
             send::exec(opts, fetch_root_key)?;
         }
         Command::Generate(opts) => generate::exec(opts)?,
+        Command::DecryptPem(opts) => decrypt_pem::exec(auth, opts)?,
         Command::Ckbtc(subcmd) => ckbtc::dispatch(auth, subcmd, qr, fetch_root_key)?,
         Command::Sns(opts) => sns::dispatch(auth, opts, qr, fetch_root_key)?,
         // QR code for URL: https://p5deo-6aaaa-aaaab-aaaxq-cai.raw.ic0.app/

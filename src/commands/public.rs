@@ -3,7 +3,7 @@ use crate::lib::ledger::LedgerIdentity;
 use crate::lib::{
     get_account_id, get_principal, AnyhowResult, AuthInfo, ParsedAccount, ParsedSubaccount,
 };
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail};
 use candid::Principal;
 use clap::Parser;
 use icp_ledger::AccountIdentifier;
@@ -22,7 +22,7 @@ pub struct PublicOpts {
     genesis_dfn: bool,
     /// If authenticating with a Ledger device, display the public IDs on the device.
     #[cfg_attr(not(feature = "ledger"), arg(hide = true))]
-    #[arg(long, requires = "ledgerhq")]
+    #[arg(long, requires = "ledger")]
     display_on_ledger: bool,
     /// Print IDs for the provided subaccount.
     #[arg(long)]
@@ -44,10 +44,10 @@ pub fn exec(auth: &AuthInfo, opts: PublicOpts) -> AnyhowResult {
         );
     }
     if opts.genesis_dfn {
-        let AuthInfo::PemFile(pem) = auth else {
-            bail!("Must supply a pem or seed file for the DFN address");
+        let AuthInfo::K256Key(pk) = auth else {
+            bail!("Must supply a pem file for the DFN address");
         };
-        println!("DFN address: {}", get_dfn(pem)?);
+        println!("DFN address: {}", get_dfn(pk.clone())?);
     }
     if opts.display_on_ledger {
         #[cfg(feature = "ledger")]
@@ -91,8 +91,7 @@ fn get_public_ids(
     }
 }
 
-fn get_dfn(pem: &str) -> AnyhowResult<String> {
-    let pk = SecretKey::from_sec1_pem(pem).context("DFN addresses need a secp256k1 key")?;
+fn get_dfn(pk: SecretKey) -> AnyhowResult<String> {
     let pubk = pk.public_key();
     let uncompressed = pubk.to_encoded_point(false);
     let hash = Keccak256::digest(&uncompressed.as_bytes()[1..]);

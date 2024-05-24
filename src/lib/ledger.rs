@@ -11,12 +11,11 @@ use candid::Principal;
 use hidapi::HidApi;
 use ic_agent::{agent::EnvelopeContent, Identity, Signature};
 use indicatif::ProgressBar;
-use k256::{
-    elliptic_curve::sec1::FromEncodedPoint, pkcs8::EncodePublicKey, EncodedPoint, PublicKey,
-};
+use k256::{elliptic_curve::sec1::FromEncodedPoint, EncodedPoint, PublicKey};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
 use ledger_transport_hid::TransportNativeHID;
 use once_cell::sync::Lazy;
+use pkcs8::EncodePublicKey;
 use serde::Serialize;
 use serde_cbor::Serializer;
 

@@ -4,6 +4,7 @@ use crate::{
         get_account_id, ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount,
         ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
     },
+    AUTH_FLAGS,
 };
 use candid::{CandidType, Encode};
 use clap::Parser;
@@ -19,7 +20,7 @@ pub struct AccountBalanceArgs {
 #[derive(Parser)]
 pub struct AccountBalanceOpts {
     /// The id of the account to query. Optional if a key is used.
-    #[arg(required_unless_present = "auth")]
+    #[arg(required_unless_present_any = AUTH_FLAGS)]
     account_id: Option<ParsedNnsAccount>,
 
     #[command(flatten)]

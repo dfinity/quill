@@ -21,13 +21,10 @@ use ic_nns_constants::{
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
-use k256::{elliptic_curve::sec1::ToEncodedPoint, SecretKey};
-use pem::{encode, Pem};
+use k256::SecretKey;
+use ring::signature::Ed25519KeyPair;
 use serde_cbor::Value;
-use simple_asn1::ASN1Block::{
-    BitString, Explicit, Integer, ObjectIdentifier, OctetString, Sequence,
-};
-use simple_asn1::{oid, to_der, ASN1Class, BigInt, BigUint};
+
 #[cfg(feature = "hsm")]
 use std::{cell::RefCell, path::PathBuf};
 use std::{
@@ -97,11 +94,17 @@ impl HSMInfo {
 
 #[derive(Debug)]
 pub enum AuthInfo {
-    NoAuth, // No authentication details were provided;
-    // only unsigned queries are allowed.
-    PemFile(String), // --private-pem file specified
+    /// No authentication details were provided;
+    /// only unsigned queries are allowed.
+    NoAuth,
+    /// Secp256k1 key provided via --pem-file.
+    K256Key(SecretKey),
+    /// Ed25519 key provided via --pem-file. Stored in PKCS#8 because Ed25519KeyPair cannot be cloned or unpacked.
+    Ed25519Key(Vec<u8>),
+    /// PKCS#11 security module, usually Nitrokey
     #[cfg(feature = "hsm")]
     Pkcs11Hsm(HSMInfo),
+    /// Ledger Nano with the Internet Computer app installed
     #[cfg(feature = "ledger")]
     Ledger,
 }
@@ -354,13 +357,10 @@ fn read_pkcs11_pin_env_var() -> Result<Option<String>, String> {
 pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
     match auth {
         AuthInfo::NoAuth => Ok(Box::new(AnonymousIdentity) as _),
-        AuthInfo::PemFile(pem) => match Secp256k1Identity::from_pem(pem.as_bytes()) {
-            Ok(id) => Ok(Box::new(id) as _),
-            Err(_) => match BasicIdentity::from_pem(pem.as_bytes()) {
-                Ok(id) => Ok(Box::new(id) as _),
-                Err(e) => Err(e).context("couldn't load identity from PEM file"),
-            },
-        },
+        AuthInfo::K256Key(pk) => Ok(Box::new(Secp256k1Identity::from_private_key(pk.clone()))),
+        AuthInfo::Ed25519Key(kp) => Ok(Box::new(BasicIdentity::from_key_pair(
+            Ed25519KeyPair::from_pkcs8(kp).expect("Ed25519 key previously validated"),
+        ))),
         #[cfg(feature = "hsm")]
         AuthInfo::Pkcs11Hsm(info) => {
             let pin_fn = || {
@@ -434,48 +434,14 @@ pub fn get_account_id(
 }
 
 /// Converts menmonic to PEM format
-pub fn mnemonic_to_pem(mnemonic: &Mnemonic) -> AnyhowResult<String> {
-    fn der_encode_secret_key(public_key: Vec<u8>, secret: Vec<u8>) -> AnyhowResult<Vec<u8>> {
-        let secp256k1_id = ObjectIdentifier(0, oid!(1, 3, 132, 0, 10));
-        let data = Sequence(
-            0,
-            vec![
-                Integer(0, BigInt::from(1)),
-                OctetString(32, secret),
-                Explicit(
-                    ASN1Class::ContextSpecific,
-                    0,
-                    BigUint::from(0u32),
-                    Box::new(secp256k1_id),
-                ),
-                Explicit(
-                    ASN1Class::ContextSpecific,
-                    0,
-                    BigUint::from(1u32),
-                    Box::new(BitString(0, public_key.len() * 8, public_key)),
-                ),
-            ],
-        );
-        to_der(&data).context("Failed to encode secp256k1 secret key to DER")
-    }
-
+pub fn mnemonic_to_key(mnemonic: &Mnemonic) -> AnyhowResult<SecretKey> {
     let seed = Seed::new(mnemonic, "");
     let ext = bip32::XPrv::derive_from_path(seed, &derivation_path())
         .map_err(|err| anyhow!("{:?}", err))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();
     let secret_key = SecretKey::from(secret);
-    let public_key = secret_key.public_key();
-    let der = der_encode_secret_key(
-        public_key.to_encoded_point(false).to_bytes().into(),
-        secret_key.to_be_bytes().to_vec(),
-    )?;
-    let pem = Pem {
-        tag: String::from("EC PRIVATE KEY"),
-        contents: der,
-    };
-    let key_pem = encode(&pem);
-    Ok(key_pem.replace('\r', "").replace("\n\n", "\n"))
+    Ok(secret_key)
 }
 
 const DERIVATION_PATH: &str = "m/44'/223'/0'/0/0";
