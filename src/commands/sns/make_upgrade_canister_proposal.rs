@@ -12,6 +12,7 @@ use candid::Principal;
 use candid::{Encode, IDLArgs};
 use candid_parser::parse_idl_args;
 use clap::Parser;
+use ic_management_canister_types::CanisterInstallMode;
 use ic_sns_governance::pb::v1::{
     manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister,
 };
@@ -27,8 +28,8 @@ pub struct MakeUpgradeCanisterProposalOpts {
     proposer_neuron_id: ParsedSnsNeuron,
 
     /// Title of the proposal.
-    #[arg(long, default_value_t = String::from("Upgrade Canister"))]
-    title: String,
+    #[arg(long)]
+    title: Option<String>,
 
     /// URL of the proposal.
     #[arg(long, default_value_t = String::new())]
@@ -62,6 +63,10 @@ pub struct MakeUpgradeCanisterProposalOpts {
     /// Path to the binary file containing argument to post-upgrade method of the new canister WASM.
     #[arg(long, conflicts_with = "canister_upgrade_arg")]
     canister_upgrade_arg_path: Option<String>,
+
+    /// The install mode.
+    #[arg(long, value_parser = ["install", "reinstall", "upgrade"])]
+    mode: String,
 }
 
 pub fn exec(
@@ -79,7 +84,23 @@ pub fn exec(
         wasm_path,
         canister_upgrade_arg,
         canister_upgrade_arg_path,
+        mode,
     } = opts;
+    let mode = match mode.as_str() {
+        "install" => CanisterInstallMode::Install,
+        "reinstall" => CanisterInstallMode::Reinstall,
+        "upgrade" => CanisterInstallMode::Upgrade,
+        _ => return Err(Error::msg("Invalid mode.")),
+    };
+
+    let title = title.unwrap_or_else(|| {
+        match mode {
+            CanisterInstallMode::Install => "Install Canister",
+            CanisterInstallMode::Reinstall => "Reinstall Canister",
+            CanisterInstallMode::Upgrade => "Upgrade Canister",
+        }
+        .to_string()
+    });
 
     let wasm = std::fs::read(wasm_path).context("Unable to read --wasm-path.")?;
     let canister_upgrade_arg = match (canister_upgrade_arg, canister_upgrade_arg_path) {
@@ -100,7 +121,7 @@ pub fn exec(
             String::from_utf8(std::fs::read(path).context("Unable to read --summary-path.")?)
                 .context("Summary must be valid UTF-8.")?
         }
-        (None, None) => summarize(target_canister_id, &wasm),
+        (None, None) => summarize(target_canister_id, &wasm, mode),
     };
 
     let proposal = Proposal {
@@ -112,7 +133,7 @@ pub fn exec(
                 canister_id: Some(target_canister_id.into()),
                 new_canister_wasm: wasm,
                 canister_upgrade_arg,
-                mode: None,
+                mode: Some(mode as i32),
             },
         )),
     };
@@ -137,14 +158,20 @@ pub fn exec(
     Ok(vec![msg])
 }
 
-fn summarize(target_canister_id: Principal, wasm: &Vec<u8>) -> String {
+fn summarize(target_canister_id: Principal, wasm: &Vec<u8>, mode: CanisterInstallMode) -> String {
     // Fingerprint wasm.
     let mut hasher = Sha256::new();
     hasher.update(wasm);
     let wasm_fingerprint = hex::encode(hasher.finalize());
 
+    let action = match mode {
+        CanisterInstallMode::Install => "Install",
+        CanisterInstallMode::Reinstall => "Reinstall",
+        CanisterInstallMode::Upgrade => "Upgrade",
+    };
+
     format!(
-        "Upgrade canister:
+        "{action} canister:
 
   ID: {}
 

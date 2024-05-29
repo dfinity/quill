@@ -11,6 +11,7 @@ license = "Apache-2.0"
 [dependencies]
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
 ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
+ic-management-canister-types = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
 ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
 ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }
 ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "479fc39a7ee082a62ec070efeed224784a83eb1b" }

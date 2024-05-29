@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Overhauled PEM auth. PEM files are now password-protected by default, and must be used instead of seed files. Passwords can be provided interactively or with `--password-file`. Keys can be generated unencrypted with `quill generate --storage-mode plaintext`, and encrypted keys can be converted to plaintext with `quill decrypt-pem`.
 - Overhauled output format. All commands besides `quill sns` should have human-readable output instead of candid IDL. Candid IDL format can be forced with `--raw`.
 
+- Added support for setting the install mode for UpgradeSnsControlledCanister proposals.
+
 ## [0.4.4] - 2024-03-21
 
 - Fixed `quill sns make-proposal` setting some fields to null.

@@ -4899,6 +4899,7 @@ dependencies = [
  "ic-base-types",
  "ic-ckbtc-minter",
  "ic-identity-hsm",
+ "ic-management-canister-types",
  "ic-nervous-system-common",
  "ic-nns-common",
  "ic-nns-constants",
