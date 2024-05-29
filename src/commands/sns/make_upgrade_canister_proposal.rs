@@ -28,7 +28,7 @@ pub struct MakeUpgradeCanisterProposalOpts {
     proposer_neuron_id: ParsedSnsNeuron,
 
     /// Title of the proposal.
-    #[clap(long)]
+    #[arg(long)]
     title: Option<String>,
 
     /// URL of the proposal.
@@ -65,7 +65,7 @@ pub struct MakeUpgradeCanisterProposalOpts {
     canister_upgrade_arg_path: Option<String>,
 
     /// The install mode.
-    #[arg(long, short, value_parser = ["install", "reinstall", "upgrade"])]
+    #[arg(long, value_parser = ["install", "reinstall", "upgrade"])]
     mode: String,
 }
 
