@@ -1,5 +1,5 @@
 use crate::{
-    lib::{get_account_id, mnemonic_to_key, AnyhowResult},
+    lib::{get_account_id, key_encryption_params, mnemonic_to_key, AnyhowResult},
     read_file,
 };
 use anyhow::{anyhow, bail, Context};
@@ -7,9 +7,9 @@ use bip39::{Language, Mnemonic};
 use clap::{Parser, ValueEnum};
 use dialoguer::Password;
 use ic_agent::{identity::Secp256k1Identity, Identity};
-use pkcs8::EncodePrivateKey;
+use pkcs8::{EncodePrivateKey, EncryptedPrivateKeyInfo, PrivateKeyInfo};
 use rand::{rngs::OsRng, thread_rng, RngCore};
-use sec1::LineEnding;
+use sec1::{pem::PemLabel, LineEnding};
 use std::{
     io::{stdin, IsTerminal},
     path::PathBuf,
@@ -122,7 +122,15 @@ Copy this onto a piece of paper or external media and store it in a safe place."
                     .with_confirmation("Re-enter password", "Passwords did not match")
                     .interact()?
             };
-            key.to_pkcs8_encrypted_pem(thread_rng(), password, LineEnding::default())?
+            let key_der = key.to_pkcs8_der()?;
+            let pki = PrivateKeyInfo::try_from(key_der.as_bytes())?;
+            let mut rng = thread_rng();
+            let mut salt = [0u8; 16];
+            rng.fill_bytes(&mut salt);
+            let mut iv = [0u8; 16];
+            rng.fill_bytes(&mut iv);
+            let doc = pki.encrypt_with_params(key_encryption_params(&salt, &iv), password)?;
+            doc.to_pem(EncryptedPrivateKeyInfo::PEM_LABEL, LineEnding::default())?
         }
     };
     std::fs::write(&opts.pem_file, &pem)?;

@@ -69,6 +69,6 @@ Most `quill` commands take a `--pem-file` parameter, for the key used to sign th
 
 If a password-protected key needs to be exported for use with another tool such as DFX, use [`quill decrypt-pem`].
 
-Technical notes: Passwords are run through `scrypt(r=8,p=1,n=131072,len=32)`, and then the file is encrypted with AES-256-CBC.
+Technical notes: Passwords are run through `scrypt(r=8,p=1,n=2^17,len=32)`, and then the file is encrypted with AES-256-CBC.
 
 [`quill decrypt-pem`]: quill-decrypt-pem.mdx
