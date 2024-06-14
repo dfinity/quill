@@ -22,6 +22,7 @@ use ic_nns_constants::{
 use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
 use k256::SecretKey;
+use pkcs8::pkcs5::{pbes2::Parameters, scrypt::Params};
 use ring::signature::Ed25519KeyPair;
 use serde_cbor::Value;
 
@@ -608,6 +609,12 @@ pub fn now_nanos() -> u64 {
 
 pub fn e8s_to_tokens(e8s: Nat) -> BigDecimal {
     BigDecimal::new(e8s.0.into(), 8)
+}
+
+pub fn key_encryption_params<'a>(salt: &'a [u8; 16], iv: &'a [u8; 16]) -> Parameters<'a> {
+    let scrypt_params = Params::new(17, 8, 1, 32).expect("valid scrypt Params consts");
+    Parameters::scrypt_aes256cbc(scrypt_params, salt, iv)
+        .expect("valid PKCS5 encryption parameters")
 }
 
 #[cfg(test)]
