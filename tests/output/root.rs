@@ -80,19 +80,29 @@ fn generate() {
 Principal id: beckf-r6bg7-t6ju6-s7k45-b5jtj-mcm57-zjaie-svgrr-7ekzs-55v75-sae
 Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1866",
     );
-    let mut password = NamedTempFile::new().unwrap();
-    password.write_all(b"pass").unwrap();
     quill(&format!(
         "generate --pem-file {pem} --overwrite-pem-file",
         pem = escape_p(&pem)
     ))
     .diff_err("generate/no_password.txt");
+    let mut good_password = NamedTempFile::new().unwrap();
+    good_password
+        .write_all(b"correct horse battery staple")
+        .unwrap();
+    let mut bad_password = NamedTempFile::new().unwrap();
+    bad_password.write_all(b"hunter2").unwrap();
     quill(&format!(
-        "generate --pem-file {pem} --overwrite-pem-file --password-file {password}",
+        "generate --pem-file {pem} --overwrite-pem-file --password-file {good_password}",
         pem = escape_p(&pem),
-        password = escape_p(&password)
+        good_password = escape_p(&good_password)
     ))
     .assert_success();
+    quill(&format!(
+        "generate --pem-file {pem} --overwrite-pem-file --password-file {bad_password}",
+        pem = escape_p(&pem),
+        bad_password = escape_p(&bad_password)
+    ))
+    .diff_err("base_command/bad_password.txt");
     quill(&format!(
         "public-ids --pem-file {pem}",
         pem = escape_p(&pem)
@@ -106,7 +116,7 @@ Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1
     quill(&format!(
         "public-ids --pem-file {pem} --password-file {pass}",
         pem = escape_p(&pem),
-        pass = escape_p(&password)
+        pass = escape_p(&good_password)
     ))
     .assert_success();
 }
