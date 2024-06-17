@@ -2,10 +2,10 @@ use crate::{
     lib::{get_account_id, key_encryption_params, mnemonic_to_key, AnyhowResult},
     read_file,
 };
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use bip39::{Language, Mnemonic};
 use clap::{Parser, ValueEnum};
-use dialoguer::Password;
+use dialoguer::{Password, PasswordValidator};
 use ic_agent::{identity::Secp256k1Identity, Identity};
 use pkcs8::{EncodePrivateKey, EncryptedPrivateKeyInfo, PrivateKeyInfo};
 use rand::{rngs::OsRng, thread_rng, RngCore};
@@ -115,11 +115,14 @@ Copy this onto a piece of paper or external media and store it in a safe place."
         StorageMode::Plaintext => key.to_sec1_pem(LineEnding::default())?,
         StorageMode::PasswordProtected => {
             let password = if let Some(password_file) = opts.password_file {
-                read_file(password_file, "password")?
+                let content = read_file(password_file, "password")?;
+                QuillPasswordPolicy.validate(&content)?;
+                content
             } else {
                 Password::new()
                     .with_prompt("PEM encryption password")
                     .with_confirmation("Re-enter password", "Passwords did not match")
+                    .validate_with(QuillPasswordPolicy)
                     .interact()?
             };
             let key_der = key.to_pkcs8_der()?;
@@ -143,4 +146,17 @@ Copy this onto a piece of paper or external media and store it in a safe place."
     println!("Principal id: {principal_id}");
     println!("Legacy account id: {account_id}");
     Ok(())
+}
+
+struct QuillPasswordPolicy;
+
+impl PasswordValidator for QuillPasswordPolicy {
+    type Err = anyhow::Error;
+    fn validate(&self, input: &String) -> Result<(), Self::Err> {
+        ensure!(
+            input.chars().count() >= 8,
+            "Password must be at least 8 characters"
+        );
+        Ok(())
+    }
 }
