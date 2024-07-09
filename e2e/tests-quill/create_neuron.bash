@@ -19,7 +19,7 @@ teardown() {
     SEND_OUTPUT="$(quill send stake.call --yes --insecure-local-dev-mode)"
     assert_command echo "$SEND_OUTPUT" # replay the output so string matches work
     echo "$SEND_OUTPUT"
-    assert_string_match "Method name: claim_or_refresh_neuron_from_account"
+    assert_string_match "Method name: manage_neuron"
     NEURON_ID="$(echo "$SEND_OUTPUT" | grep -E ' neuron ' | sed 's/[^0-9]//g')"
     echo "NEURON: $NEURON_ID"
     assert_string_match "
