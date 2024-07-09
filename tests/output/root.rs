@@ -10,7 +10,7 @@ use crate::{
 // Uncomment tests on next ledger app update
 ledger_compatible![
     account_balance,
-    claim_neurons,
+    // claim_neurons,
     list_neurons,
     // neuron_stake,
     public_ids,
