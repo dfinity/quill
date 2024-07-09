@@ -224,9 +224,9 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
         }
         Command::ClaimOrRefresh(c) => {
             if let Some(id) = c.refreshed_neuron_id {
-                format!("Successfully updated the stake of neuron {}", id.id)
+                format!("Successfully staked ICP in neuron {}", id.id)
             } else {
-                "Successfully updated the stake of unknown neuron".to_string()
+                "Successfully staked ICP in unknown neuron".to_string()
             }
         }
         Command::Merge(c) => {
