@@ -109,6 +109,7 @@ impl LedgerIdentity {
         Ok(())
     }
     /// Gets the public key from the ledger that [`sender`](Self::sender) will return a principal derived from.
+    #[allow(unused)]
     pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
         get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
             .map_err(anyhow::Error::msg)
