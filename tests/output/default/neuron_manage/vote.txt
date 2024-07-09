@@ -6,14 +6,16 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    id = null;
     command = opt variant {
       RegisterVote = record {
         vote = 1 : int32;
         proposal = opt record { id = 123 : nat64 };
       }
     };
-    neuron_id_or_subaccount = null;
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
   },
 )
 Sending message with
@@ -24,13 +26,15 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    id = null;
     command = opt variant {
       RegisterVote = record {
         vote = 1 : int32;
         proposal = opt record { id = 456 : nat64 };
       }
     };
-    neuron_id_or_subaccount = null;
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
   },
 )

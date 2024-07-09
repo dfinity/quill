@@ -1,26 +1,24 @@
 use crate::{
-    commands::{
-        send::Memo,
-        transfer::{self, parse_tokens},
-    },
+    commands::transfer::{self, parse_tokens},
     lib::{
-        governance_canister_id,
+        get_principal, governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AnyhowResult, AuthInfo, ParsedNnsAccount, ParsedSubaccount, ROLE_NNS_GOVERNANCE,
     },
 };
 use anyhow::{anyhow, ensure};
-use candid::{CandidType, Encode, Principal};
+use candid::{Encode, Principal};
 use clap::Parser;
 use ic_nns_constants::GOVERNANCE_CANISTER_ID;
+use ic_nns_governance::pb::v1::{
+    manage_neuron::{
+        claim_or_refresh::{By, MemoAndController},
+        ClaimOrRefresh, Command,
+    },
+    ManageNeuron,
+};
 use icp_ledger::{AccountIdentifier, Subaccount, Tokens};
 use sha2::{Digest, Sha256};
-
-#[derive(CandidType)]
-pub struct ClaimOrRefreshNeuronFromAccount {
-    pub memo: Memo,
-    pub controller: Option<Principal>,
-}
 
 /// Signs topping up of a neuron (new or existing).
 #[derive(Parser)]
@@ -85,17 +83,22 @@ pub fn exec(auth: &AuthInfo, opts: StakeOpts) -> AnyhowResult<Vec<IngressWithReq
     } else {
         Vec::new()
     };
-    let args = Encode!(&ClaimOrRefreshNeuronFromAccount {
-        memo: Memo(nonce),
-        controller: Some(controller),
-    })?;
-
+    let args = ManageNeuron {
+        neuron_id_or_subaccount: None,
+        id: None,
+        command: Some(Command::ClaimOrRefresh(ClaimOrRefresh {
+            by: Some(By::MemoAndController(MemoAndController {
+                controller: Some(get_principal(auth)?.into()),
+                memo: nonce,
+            })),
+        })),
+    };
     messages.push(sign_ingress_with_request_status_query(
-        auth,
+        &AuthInfo::NoAuth,
         governance_canister_id(),
         ROLE_NNS_GOVERNANCE,
-        "claim_or_refresh_neuron_from_account",
-        args,
+        "manage_neuron",
+        Encode!(&args)?,
     )?);
 
     Ok(messages)

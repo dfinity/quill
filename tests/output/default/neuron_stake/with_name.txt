@@ -3,10 +3,10 @@ Sending message with
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
-  Method name: send_dfx
+  Method name: transfer
   Arguments:   (
   record {
-    to = "9bc4e24ff90c6898938d5fb339e779cea4edad4de592e591b22429289851b563";
+    to = blob "\9b\c4\e2\4f\f9\0c\68\98\93\8d\5f\b3\39\e7\79\ce\a4\ed\ad\4d\e5\92\e5\91\b2\24\29\28\98\51\b5\63";
     fee = record { e8s = 10_000 : nat64 };
     memo = 7_888_422_419_985_231_726 : nat64;
     from_subaccount = null;
@@ -19,12 +19,22 @@ Sending message with
 Sending message with
 
   Call type:   update
-  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Sender:      2vxsx-fae
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
-  Method name: claim_or_refresh_neuron_from_account
+  Method name: manage_neuron
   Arguments:   (
   record {
-    controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
-    memo = 7_888_422_419_985_231_726 : nat64;
+    id = null;
+    command = opt variant {
+      ClaimOrRefresh = record {
+        by = opt variant {
+          MemoAndController = record {
+            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+            memo = 7_888_422_419_985_231_726 : nat64;
+          }
+        };
+      }
+    };
+    neuron_id_or_subaccount = null;
   },
 )

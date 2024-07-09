@@ -1,20 +1,17 @@
 use crate::{
     commands::{send::submit_unsigned_ingress, SendingOpts},
     lib::{
-        get_account_id, ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount,
-        ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER,
+        ledger_canister_id, AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_ICRC1_LEDGER,
+        ROLE_NNS_LEDGER,
     },
     AUTH_FLAGS,
 };
-use candid::{CandidType, Encode};
+use candid::Encode;
 use clap::Parser;
+use icp_ledger::BinaryAccountBalanceArgs;
+use icrc_ledger_types::icrc1::account::Account;
 
 use super::get_principal;
-
-#[derive(CandidType)]
-pub struct AccountBalanceArgs {
-    pub account: String,
-}
 
 /// Queries a ledger account balance.
 #[derive(Parser)]
@@ -33,18 +30,21 @@ pub async fn exec(auth: &AuthInfo, opts: AccountBalanceOpts, fetch_root_key: boo
     let account_id = if let Some(id) = opts.account_id {
         id
     } else {
-        let id = get_account_id(get_principal(auth)?, None)?;
-        ParsedNnsAccount::Original(id)
+        let account = Account {
+            owner: get_principal(auth)?,
+            subaccount: None,
+        };
+        ParsedNnsAccount::Icrc1(account)
     };
     match account_id {
         ParsedNnsAccount::Original(id) => {
-            let args = Encode!(&AccountBalanceArgs {
-                account: id.to_hex()
+            let args = Encode!(&BinaryAccountBalanceArgs {
+                account: id.to_address()
             })?;
             submit_unsigned_ingress(
                 ledger_canister_id(),
                 ROLE_NNS_LEDGER,
-                "account_balance_dfx",
+                "account_balance",
                 args,
                 opts.sending_opts,
                 fetch_root_key,
