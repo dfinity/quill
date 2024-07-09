@@ -263,6 +263,10 @@ pub fn display_response(
             }
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
+        ROLE_SNS_GOVERNANCE => match method_name {
+            "manage_neuron" => format::sns_governance::display_manage_neuron(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
         ROLE_NNS_LEDGER => match method_name {
             "transfer" => format::icp_ledger::display_transfer(blob),
             "send_dfx" => format::icp_ledger::display_send_dfx(blob),
@@ -276,6 +280,13 @@ pub fn display_response(
             "icrc1_balance_of" => format::icrc1::display_balance(blob),
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
+        ROLE_SNS_SWAP => match method_name {
+            "get_buyer_state" => format::sns_swap::display_get_buyer_state(blob),
+            "error_refund_icp" => format::sns_swap::display_refund(blob),
+            "new_sale_ticket" => format::sns_swap::display_new_sale_ticket(blob),
+            "refresh_buyer_tokens" => format::sns_swap::display_refresh_buyer_tokens(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
         ROLE_CKBTC_MINTER => match method_name {
             "update_balance" => format::ckbtc::display_update_balance(blob),
             "retrieve_btc" => format::ckbtc::display_retrieve_btc(blob),
@@ -287,10 +298,18 @@ pub fn display_response(
             "claim_neurons" => format::gtc::format_claim_neurons(blob),
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
+        ROLE_SNS_ROOT => match method_name {
+            "get_sns_canisters_summary" => format::sns_root::display_canisters_summary(blob),
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
         ROLE_NNS_REGISTRY => match method_name {
             "update_node_operator_config_directly" => {
                 format::registry::display_update_node_operator_config_directly(blob)
             }
+            _ => get_idl_string(blob, canister_id, role, method_name, part),
+        },
+        ROLE_SNS_WASM => match method_name {
+            "list_deployed_snses" => format::sns_wasm::display_list_snses(blob),
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         _ => get_idl_string(blob, canister_id, role, method_name, part),
