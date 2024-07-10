@@ -6,13 +6,15 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    id = null;
     command = opt variant {
       Configure = record {
         operation = opt variant { StopDissolving = record {} };
       }
     };
-    neuron_id_or_subaccount = null;
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
   },
 )
 Sending message with
@@ -23,10 +25,12 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    id = null;
     command = opt variant {
       Disburse = record { to_account = null; amount = null }
     };
-    neuron_id_or_subaccount = null;
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
   },
 )

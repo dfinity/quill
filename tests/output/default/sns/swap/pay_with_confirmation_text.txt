@@ -3,10 +3,10 @@ Sending message with
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
-  Method name: send_dfx
+  Method name: transfer
   Arguments:   (
   record {
-    to = "bff3218e708b09187a586a1f397edf081964e560a5a0f6435fac044c7f4a25e9";
+    to = blob "\bf\f3\21\8e\70\8b\09\18\7a\58\6a\1f\39\7e\df\08\19\64\e5\60\a5\a0\f6\43\5f\ac\04\4c\7f\4a\25\e9";
     fee = record { e8s = 10_000 : nat64 };
     memo = 100 : nat64;
     from_subaccount = null;

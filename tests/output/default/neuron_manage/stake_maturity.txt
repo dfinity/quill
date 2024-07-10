@@ -6,10 +6,12 @@ Sending message with
   Method name: manage_neuron
   Arguments:   (
   record {
-    id = opt record { id = 2_313_380_519_530_470_538 : nat64 };
+    id = null;
     command = opt variant {
       StakeMaturity = record { percentage_to_stake = opt (100 : nat32) }
     };
-    neuron_id_or_subaccount = null;
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
   },
 )

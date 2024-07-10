@@ -3,9 +3,9 @@ Sending message with
   Call type:   update
   Sender:      2vxsx-fae
   Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
-  Method name: account_balance_dfx
+  Method name: account_balance
   Arguments:   (
   record {
-    account = "ec0e2456fb9ff6c80f1d475b301d9b2ab873612f96e7fd74e7c0c0b2d58e6693";
+    account = blob "\ec\0e\24\56\fb\9f\f6\c8\0f\1d\47\5b\30\1d\9b\2a\b8\73\61\2f\96\e7\fd\74\e7\c0\c0\b2\d5\8e\66\93";
   },
 )

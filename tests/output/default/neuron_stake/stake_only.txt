@@ -1,12 +1,22 @@
 Sending message with
 
   Call type:   update
-  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Sender:      2vxsx-fae
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
-  Method name: claim_or_refresh_neuron_from_account
+  Method name: manage_neuron
   Arguments:   (
   record {
-    controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
-    memo = 7_888_422_419_985_231_726 : nat64;
+    id = null;
+    command = opt variant {
+      ClaimOrRefresh = record {
+        by = opt variant {
+          MemoAndController = record {
+            controller = opt principal "fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae";
+            memo = 7_888_422_419_985_231_726 : nat64;
+          }
+        };
+      }
+    };
+    neuron_id_or_subaccount = null;
   },
 )

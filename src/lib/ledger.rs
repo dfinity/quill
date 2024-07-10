@@ -223,7 +223,7 @@ fn interpret_response<'a>(
     if let Ok(errcode) = response.error_code() {
         match errcode {
             APDUErrorCode::NoError => Ok(response.apdu_data()),
-            APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "send_dfx") => {
+            APDUErrorCode::DataInvalid if matches!(content, Some(EnvelopeContent::Call { method_name, .. }) if method_name == "send_dfx" || method_name == "transfer") => {
                 Err(format!("Error {action}: Must use a principal or ICRC-1 account ID, not a legacy account ID"))
             }
             APDUErrorCode::DataInvalid if matches!(content,

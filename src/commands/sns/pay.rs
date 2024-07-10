@@ -2,7 +2,7 @@ use candid::Encode;
 use clap::Parser;
 use ic_base_types::PrincipalId;
 use ic_sns_swap::pb::v1::RefreshBuyerTokensRequest;
-use icp_ledger::{AccountIdentifier, Memo, SendArgs, Subaccount, TimeStamp, Tokens};
+use icp_ledger::{AccountIdentifier, Memo, Subaccount, TimeStamp, Tokens, TransferArgs};
 
 use crate::lib::ParsedSubaccount;
 use crate::lib::{
@@ -57,7 +57,7 @@ pub fn exec(
         let subaccount = Subaccount::from(&PrincipalId(controller));
         let account_id =
             AccountIdentifier::new(sns_canister_ids.swap_canister_id.into(), Some(subaccount));
-        let request = SendArgs {
+        let request = TransferArgs {
             amount: Tokens::from_e8s(opts.amount_icp_e8s.unwrap()),
             created_at_time: Some(TimeStamp::from_nanos_since_unix_epoch(
                 opts.ticket_creation_time.unwrap(),
@@ -65,13 +65,13 @@ pub fn exec(
             from_subaccount: opts.subaccount.map(|x| x.0),
             fee: Tokens::from_e8s(10_000),
             memo: Memo(opts.ticket_id.unwrap()),
-            to: account_id,
+            to: account_id.to_address(),
         };
         messages.push(sign_ingress_with_request_status_query(
             auth,
             ledger_canister_id(),
             ROLE_NNS_LEDGER,
-            "send_dfx",
+            "transfer",
             Encode!(&request)?,
         )?);
     }

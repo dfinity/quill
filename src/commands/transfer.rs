@@ -1,4 +1,3 @@
-use crate::commands::send::{Memo, SendArgs, TimeStamp};
 use crate::lib::{
     ledger_canister_id,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
@@ -10,7 +9,7 @@ use crate::lib::{
 use anyhow::{anyhow, bail, Context};
 use candid::Encode;
 use clap::Parser;
-use icp_ledger::{Tokens, DEFAULT_TRANSFER_FEE};
+use icp_ledger::{Memo, TimeStamp, Tokens, TransferArgs, DEFAULT_TRANSFER_FEE};
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 
 /// Signs an ICP transfer transaction.
@@ -43,22 +42,20 @@ pub fn exec(auth: &AuthInfo, opts: TransferOpts) -> AnyhowResult<Vec<IngressWith
     let to = opts.to;
     match to {
         ParsedNnsAccount::Original(to) => {
-            let args = Encode!(&SendArgs {
+            let args = Encode!(&TransferArgs {
                 memo,
                 amount,
                 fee,
                 from_subaccount: opts.from_subaccount.map(|x| x.0),
-                to: to.to_hex(),
-                created_at_time: Some(TimeStamp {
-                    timestamp_nanos: now_nanos()
-                }),
+                to: to.to_address(),
+                created_at_time: Some(TimeStamp::from_nanos_since_unix_epoch(now_nanos()))
             })?;
 
             let msg = sign_ingress_with_request_status_query(
                 auth,
                 ledger_canister_id(),
                 ROLE_NNS_LEDGER,
-                "send_dfx",
+                "transfer",
                 args,
             )?;
             Ok(vec![msg])

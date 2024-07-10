@@ -5,48 +5,15 @@ use crate::lib::{
     AnyhowResult, AuthInfo,
 };
 use anyhow::{anyhow, bail, Context};
-use candid::{CandidType, Principal};
+use candid::Principal;
 use clap::Parser;
 use ic_agent::agent::Transport;
 use ic_agent::{agent::http_transport::ReqwestTransport, RequestId};
-use icp_ledger::{Subaccount, Tokens};
-use serde::{Deserialize, Serialize};
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use super::SendingOpts;
-
-#[derive(
-    Serialize,
-    Deserialize,
-    CandidType,
-    Clone,
-    Copy,
-    Hash,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-)]
-pub struct Memo(pub u64);
-
-#[derive(CandidType)]
-pub struct TimeStamp {
-    pub timestamp_nanos: u64,
-}
-
-#[derive(CandidType)]
-pub struct SendArgs {
-    pub memo: Memo,
-    pub amount: Tokens,
-    pub fee: Tokens,
-    pub from_subaccount: Option<Subaccount>,
-    pub to: String,
-    pub created_at_time: Option<TimeStamp>,
-}
 
 /// Sends a signed message or a set of messages.
 #[derive(Parser)]
