@@ -20,7 +20,6 @@ jobs:
           - os: ubuntu-20.04
             name: linux-musl
             target: x86_64-unknown-linux-musl
-            cross: true
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64-musl
             features: []
@@ -42,7 +41,6 @@ jobs:
           - os: ubuntu-20.04
             name: linux-arm32
             target: arm-unknown-linux-gnueabihf
-            cross: true
             target_file: target/arm-unknown-linux-gnueabihf/release/quill
             asset_name: quill-linux-arm32
             features: [hsm]
@@ -54,9 +52,9 @@ jobs:
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/git
@@ -72,13 +70,14 @@ jobs:
         if: ${{ matrix.target }}
         run: rustup target add ${{ matrix.target }}
 
-      - name: Build
-        uses: actions-rs/cargo@v1
+      - uses: taiki-e/install-action@v2
         with:
-          use-cross: ${{ matrix.cross }}
-          command: build
-          args: |
-            ${{ matrix.target && format('--target {0}', matrix.target) }} 
+          tool: cross@0.2.5
+
+      - name: Build
+        run: >
+          cross build
+            ${{ matrix.target && format('--target {0}', matrix.target) }}
             ${{ matrix.features && format('--no-default-features --features "{0}"', join(matrix.features)) }}
             --release --locked
 
