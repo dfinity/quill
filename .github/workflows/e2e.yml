@@ -22,9 +22,9 @@ jobs:
             binary_path: target/release
             build_deps: scripts/workflows/provision-darwin-build.sh
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/git
@@ -39,7 +39,7 @@ jobs:
         run: cargo build --release --locked
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: quill-${{ matrix.os }}-rs
           path: ${{ matrix.binary_path }}/quill
@@ -49,7 +49,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - id: set-matrix
         run: |
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
@@ -66,9 +66,9 @@ jobs:
     env:
       E2E_TEST: tests-${{ matrix.test }}.bash
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Download quill binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: quill-${{ matrix.os }}-rs
           path: /usr/local/bin

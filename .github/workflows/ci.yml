@@ -54,9 +54,9 @@ jobs:
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
