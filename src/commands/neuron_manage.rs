@@ -9,12 +9,12 @@ use candid::{CandidType, Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
-use ic_nns_governance::pb::v1::manage_neuron::NeuronIdOrSubaccount;
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
         configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Command,
         Configure, Disburse, Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund,
-        Merge, RegisterVote, RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
+        Merge, NeuronIdOrSubaccount, RegisterVote, RemoveHotKey, Split, StakeMaturity,
+        StartDissolving, StopDissolving,
     },
     ManageNeuron,
 };

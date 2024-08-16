@@ -4,24 +4,40 @@ use anyhow::{anyhow, bail, Context};
 use bigdecimal::BigDecimal;
 use candid::Decode;
 use chrono::Utc;
+use ic_base_types::CanisterId;
+use ic_nns_constants::canister_id_to_nns_canister_name;
 use ic_nns_governance::pb::v1::{
     add_or_remove_node_provider::Change,
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
-    manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
+    install_code::CanisterInstallMode,
+    manage_neuron::{
+        configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount, SetVisibility,
+    },
     manage_neuron_response::Command,
     neuron::DissolveState,
     proposal::Action,
     reward_node_provider::{RewardMode, RewardToAccount},
-    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
-    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, Topic,
+    stop_or_start_canister,
+    update_canister_settings::CanisterSettings,
+    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, InstallCode, ListNeuronsResponse,
+    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, StopOrStartCanister,
+    Topic, UpdateCanisterSettings, Visibility,
 };
 use itertools::Itertools;
+use sha2::{Digest, Sha256};
+use std::fmt::Display;
 
 use crate::lib::{
     e8s_to_tokens,
     format::{format_duration_seconds, format_timestamp_seconds},
     get_default_role, get_idl_string, AnyhowResult,
 };
+
+fn hash_sha256(blob: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(blob);
+    <[u8; 32]>::from(hasher.finalize())
+}
 
 pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
     let info = Decode!(blob, Result<NeuronInfo, GovernanceError>)?;
@@ -573,6 +589,93 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         }
                     }
                 }
+                Action::InstallCode(install_code) => {
+                    let InstallCode {
+                        canister_id,
+                        install_mode,
+                        wasm_module,
+                        arg,
+                        skip_stopping_before_installing,
+                    } = install_code;
+
+                    let canister_id = canister_id
+                        .map(CanisterId::unchecked_from_principal)
+                        .map(canister_id_to_nns_canister_name);
+
+                    let install_mode = match install_mode {
+                        None => None,
+                        Some(ok) => Some(
+                            CanisterInstallMode::try_from(ok)
+                                .context("converting from i32 to CanisterInstallMode"),
+                        ),
+                    };
+
+                    let wasm_module =
+                        wasm_module.map(|wasm_module| hex::encode(hash_sha256(&wasm_module)));
+
+                    let skip_stopping_before_installing =
+                        if skip_stopping_before_installing.unwrap_or_default() {
+                            " (Warning: canister will not be stopped before installing new WASM)"
+                        } else {
+                            ""
+                        };
+
+                    let arg = match arg {
+                        None => "None".to_string(),
+                        Some(ok) => hex::encode(ok),
+                    };
+                    // TODO Do something like didc decode --defs $DEFS[canister_id] $arg
+
+                    writeln!(
+                        fmt,
+                        "{:?} {:?} to WASM with SHA256 = {:?}{}. arg: {}",
+                        install_mode,
+                        canister_id,
+                        wasm_module,
+                        skip_stopping_before_installing,
+                        arg,
+                    )?;
+                }
+                Action::StopOrStartCanister(stop_or_start_canister) => {
+                    let StopOrStartCanister {
+                        canister_id,
+                        action,
+                    } = stop_or_start_canister;
+
+                    let canister_id = canister_id
+                        .map(CanisterId::unchecked_from_principal)
+                        .map(canister_id_to_nns_canister_name);
+
+                    let action = match action {
+                        None => None,
+                        Some(ok) => Some(
+                            stop_or_start_canister::CanisterAction::try_from(ok)
+                                .context("converting from i32 to CanisterAction")?,
+                        ),
+                    };
+
+                    writeln!(fmt, "{:?} {:?}", action, canister_id,)?;
+                }
+                Action::UpdateCanisterSettings(update_canister_settings) => {
+                    let UpdateCanisterSettings {
+                        canister_id,
+                        settings,
+                    } = update_canister_settings;
+
+                    let canister_id = canister_id.map(|canister_id| {
+                        canister_id_to_nns_canister_name(CanisterId::unchecked_from_principal(
+                            canister_id,
+                        ))
+                    });
+
+                    let settings = settings.map(display_canister_settings);
+
+                    writeln!(
+                        fmt,
+                        "Update settings of {:?} to {:?}",
+                        canister_id, settings,
+                    )?;
+                }
                 Action::ManageNeuron(a) => {
                     let neuron = a
                         .get_neuron_id_or_subaccount()
@@ -714,6 +817,20 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                                 Operation::StopDissolving(_) => {
                                     writeln!(fmt, "Stop dissolving neuron {neuron}")?
                                 }
+                                Operation::SetVisibility(set_visibility) => {
+                                    let SetVisibility { visibility } = set_visibility;
+
+                                    let visibility = visibility.map(|visibility| {
+                                        match Visibility::try_from(visibility) {
+                                            Ok(ok) => format!("{:?}", ok),
+                                            Err(err) => format!(
+                                                "unknown visibility {visibility} ({err})???"
+                                            ),
+                                        }
+                                    });
+
+                                    writeln!(fmt, "Set visibility of {neuron} to {visibility:?}")?
+                                }
                             }
                         }
                     }
@@ -837,4 +954,43 @@ fn display_neuron_id(id: NeuronIdOrSubaccount) -> String {
 
 pub fn display_governance_error(err: GovernanceError) -> String {
     format!("NNS error: {}", err.error_message)
+}
+
+fn display_canister_settings(settings: CanisterSettings) -> String {
+    let CanisterSettings {
+        controllers,
+        compute_allocation,
+        memory_allocation,
+        freezing_threshold,
+        log_visibility,
+        wasm_memory_limit,
+    } = settings;
+
+    let mut chunks = vec![];
+
+    if let Some(controllers) = controllers {
+        let controllers = controllers
+            .controllers
+            .into_iter()
+            .map(CanisterId::unchecked_from_principal)
+            .map(canister_id_to_nns_canister_name)
+            .join(", ");
+        chunks.push(format!("controllers = {}", controllers,));
+    }
+
+    fn display_set_field<T: Display>(name: &str, value: Option<T>, chunks: &mut Vec<String>) {
+        let Some(value) = value else {
+            return;
+        };
+
+        chunks.push(format!("{} = {}", name, value));
+    }
+
+    display_set_field("compute_allocation", compute_allocation, &mut chunks);
+    display_set_field("memory_allocation", memory_allocation, &mut chunks);
+    display_set_field("freezing_threshold", freezing_threshold, &mut chunks);
+    display_set_field("log_visibility", log_visibility, &mut chunks);
+    display_set_field("wasm_memory_limit", wasm_memory_limit, &mut chunks);
+
+    chunks.join("; ")
 }
