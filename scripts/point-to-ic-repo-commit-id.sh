@@ -87,13 +87,25 @@ download_from_ic_repo rs/nns/sns-wasm/canister/sns-wasm.did      candid/snsw.did
 echo "Done updating candid files." >&2
 echo >&2
 
-# Phase 1.3: Update Cargo.lock and verify everything still builds, and all tests
-# still pass.
+# Phase 1.3: Update end to end test(s).
+sed -i '' \
+    "s/IC_COMMIT=.*/IC_COMMIT=\"${NEW_COMMIT_ID}\"/" \
+    e2e/utils/setup_nns.bash
+echo "Done updating end to end tests." >&2
+echo >&2
+
+# Phase 1.4: Update Cargo.lock.
+echo "Updating Cargo.lock..."
+cargo build --quiet
+echo "Done." >&2
+echo >&2
+
+# Phase 2: Verify tests still pass.
 cargo test
 
 # Finally, report results.
 echo >&2
-git diff --stat Cargo.toml candid >&2
+git diff --stat Cargo.toml candid e2e >&2
 echo >&2
 echo "🎉 Success!" >&2
 echo "I have changed Cargo.toml for you." >&2
