@@ -606,7 +606,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         None => None,
                         Some(ok) => Some(
                             CanisterInstallMode::try_from(ok)
-                                .context("converting from i32 to CanisterInstallMode"),
+                                .context("converting from i32 to CanisterInstallMode")?,
                         ),
                     };
 
