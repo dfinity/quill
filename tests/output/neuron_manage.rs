@@ -112,3 +112,11 @@ fn vote() {
     ))
     .diff("neuron_manage/vote.txt")
 }
+
+#[test]
+fn set_visibility() {
+    quill_send(&format!(
+        "neuron-manage {NEURON_ID} --set-visibility=public"
+    ))
+    .diff("neuron_manage/set_visibility.txt")
+}
