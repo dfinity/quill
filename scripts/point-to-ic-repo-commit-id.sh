@@ -108,6 +108,6 @@ echo >&2
 git diff --stat Cargo.toml candid e2e >&2
 echo >&2
 echo "🎉 Success!" >&2
-echo "I have changed Cargo.toml for you." >&2
-echo "See those changes (plus anything was not already staged) above ☝️" >&2
+echo "I have changed Cargo.toml, updated files in the candid dir," >&2
+echo "and updated end to end tests." >&2
 echo "These changes have NOT been staged." >&2
