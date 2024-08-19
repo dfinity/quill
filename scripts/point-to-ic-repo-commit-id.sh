@@ -15,7 +15,7 @@ NEW_COMMIT_ID="$1"
 
 # Do not allow unstaged changes. Otherwise, it is harder for the user to see the
 # changes they've made vs. the changes made by this script. Ideally, we'd
-# support --allow-unstaged-changes flag, but I'm too lazy for that.
+# support --allow-unstaged-changes flag, but this has not been implemented (yet).
 if ! git diff --quiet; then
     echo "🙅 There are unstaged changes." >&2
     echo "Therefore, no files have been modified. Please, stage all changes" >&2
@@ -24,10 +24,7 @@ if ! git diff --quiet; then
 fi
 
 # cd to the root of the repo
-# ChatGPT helped me with this.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "${REPO_ROOT}"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # Infer the current ic repo commit ID.
 ORIGINAL_COMMIT_ID=$(
@@ -100,14 +97,28 @@ cargo build --quiet
 echo "Done." >&2
 echo >&2
 
-# Phase 2: Verify tests still pass.
-cargo test
+# Phase 2: Verify tests still pass. Often, this will surface all (or at least
+# most of) the Rust code that needs to be updated as a result of pulling in a
+# more recent ic commit.
+if ! cargo test; then
+    # Report partial success. We made updates, but now manual changes are needed.
+    echo >&2
+    echo "⚠️ Warning: test(s) no longer pass after pointing to ic repo commit" >&2
+    echo "${NEW_COMMIT_ID}. Most likely, this is due to updated canister interfaces" >&2
+    echo "(in particular new fields in Candid records and variants)." >&2
+    echo "You will have to make manual (Rust) code changes in order to get things" >&2
+    echo "working again. Alternatively, you can run `git restore .` at the root" >&2
+    echo "of this repo to undo the changes made here." >&2
+    exit 1
+fi
 
 # Finally, report results.
 echo >&2
 git diff --stat Cargo.toml candid e2e >&2
 echo >&2
 echo "🎉 Success!" >&2
-echo "I have changed Cargo.toml, updated files in the candid dir," >&2
-echo "and updated end to end tests." >&2
-echo "These changes have NOT been staged." >&2
+echo "I have changed Cargo.toml, updated files in the candid dir and updated end to" >&2
+echo "end tests. We are now referring to ic repo commit ${NEW_COMMIT_ID}." >&2
+echo "These changes have NOT been staged. Therefore, you can inspect them by" >&2
+echo "running `git diff`. Once you are satisfied, proceed with the rest of your" >&2
+echo "usual git workflow." >&2
