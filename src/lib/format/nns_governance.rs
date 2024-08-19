@@ -598,20 +598,27 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         skip_stopping_before_installing,
                     } = install_code;
 
+                    // Unwrap required fields.
                     let canister_id = canister_id
-                        .map(CanisterId::unchecked_from_principal)
-                        .map(canister_id_to_nns_canister_name);
+                        .context("canister ID was not specified within an InstallCode proposal")?;
+                    let install_mode = install_mode
+                        .context("install mode was not specified within an InstallCode proposal")?;
+                    let wasm_module = wasm_module
+                        .context("WASM was not specified within an InstallCode proposal")?;
 
-                    let install_mode = match install_mode {
-                        None => None,
-                        Some(ok) => Some(
-                            CanisterInstallMode::try_from(ok)
-                                .context("converting from i32 to CanisterInstallMode")?,
-                        ),
-                    };
+                    // Humanify fields (aka interpret them).
 
-                    let wasm_module =
-                        wasm_module.map(|wasm_module| hex::encode(hash_sha256(&wasm_module)));
+                    let canister_id = canister_id_to_nns_canister_name(
+                        CanisterId::unchecked_from_principal(canister_id),
+                    );
+
+                    let install_mode = CanisterInstallMode::try_from(install_mode)
+                        .map_err(|err| anyhow::Error::msg(format!("{}", err)))
+                        .context(
+                            "interpretting the install_mode field in an InstallCode proposal",
+                        )?;
+
+                    let wasm_module = hex::encode(hash_sha256(&wasm_module));
 
                     let skip_stopping_before_installing =
                         if skip_stopping_before_installing.unwrap_or_default() {
@@ -621,19 +628,19 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         };
 
                     let arg = match arg {
-                        None => "None".to_string(),
-                        Some(ok) => hex::encode(ok),
+                        None => "no arg".to_string(),
+                        Some(ok) => format!("arg = {}", hex::encode(ok)),
                     };
                     // TODO Do something like didc decode --defs $DEFS[canister_id] $arg
 
                     writeln!(
                         fmt,
-                        "{:?} {:?} to WASM with SHA256 = {:?}{}. arg: {}",
+                        "{:?} {} to WASM with SHA256 = {} with {}{}.",
                         install_mode,
                         canister_id,
                         wasm_module,
-                        skip_stopping_before_installing,
                         arg,
+                        skip_stopping_before_installing,
                     )?;
                 }
                 Action::StopOrStartCanister(stop_or_start_canister) => {
@@ -642,19 +649,28 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         action,
                     } = stop_or_start_canister;
 
-                    let canister_id = canister_id
-                        .map(CanisterId::unchecked_from_principal)
-                        .map(canister_id_to_nns_canister_name);
+                    // Unwrap required fields.
+                    let canister_id = canister_id.context(
+                        "canister ID was not specified within a StopOrStartCanister proposal",
+                    )?;
+                    let action = action
+                        .context("no action (e.g. Upgrade) was specified within a StopOrStartCanister proposal")?;
 
-                    let action = match action {
-                        None => None,
-                        Some(ok) => Some(
-                            stop_or_start_canister::CanisterAction::try_from(ok)
-                                .context("converting from i32 to CanisterAction")?,
-                        ),
-                    };
+                    // Humanify fields (aka interpret them).
 
-                    writeln!(fmt, "{:?} {:?}", action, canister_id,)?;
+                    let canister_id = canister_id_to_nns_canister_name(
+                        CanisterId::unchecked_from_principal(canister_id),
+                    );
+
+                    let action = stop_or_start_canister::CanisterAction::try_from(action)
+                        .with_context(|| {
+                            format!(
+                                "interpretting {} as an action within a StopOrStartCanister proposal.",
+                                action,
+                            )
+                        })?;
+
+                    writeln!(fmt, "{:?} {}", action, canister_id)?;
                 }
                 Action::UpdateCanisterSettings(update_canister_settings) => {
                     let UpdateCanisterSettings {
@@ -662,17 +678,25 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         settings,
                     } = update_canister_settings;
 
-                    let canister_id = canister_id.map(|canister_id| {
-                        canister_id_to_nns_canister_name(CanisterId::unchecked_from_principal(
-                            canister_id,
-                        ))
-                    });
+                    // Unwrap required fields.
+                    let canister_id = canister_id.context(
+                        "canister ID was not specified within an UpdateCanisterSettings proposal",
+                    )?;
+                    let settings = settings.context(
+                        "settings not specified within an UpdateCanisterSettings proposal",
+                    )?;
 
-                    let settings = settings.map(display_canister_settings);
+                    // Humanify fields (aka interpret them).
+
+                    let canister_id = canister_id_to_nns_canister_name(
+                        CanisterId::unchecked_from_principal(canister_id),
+                    );
+
+                    let settings = display_canister_settings(settings);
 
                     writeln!(
                         fmt,
-                        "Update settings of {:?} to {:?}",
+                        "Make the following changes to {}: {}.",
                         canister_id, settings,
                     )?;
                 }
@@ -820,14 +844,14 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                                 Operation::SetVisibility(set_visibility) => {
                                     let SetVisibility { visibility } = set_visibility;
 
-                                    let visibility = visibility.map(|visibility| {
-                                        match Visibility::try_from(visibility) {
-                                            Ok(ok) => format!("{:?}", ok),
-                                            Err(err) => format!(
-                                                "unknown visibility {visibility} ({err})???"
-                                            ),
-                                        }
-                                    });
+                                    let visibility = visibility
+                                        .context("visibility not specified within a SetVisibility (ManageNeuron) proposal")?;
+
+                                    let visibility = Visibility::try_from(visibility)
+                                        .map_err(|err| anyhow!(
+                                            "unable to interpret the visibility field within a SetVisibility (ManageNeuron) proposal: {}",
+                                            err,
+                                        ))?;
 
                                     writeln!(fmt, "Set visibility of {neuron} to {visibility:?}")?
                                 }
@@ -975,7 +999,7 @@ fn display_canister_settings(settings: CanisterSettings) -> String {
             .map(CanisterId::unchecked_from_principal)
             .map(canister_id_to_nns_canister_name)
             .join(", ");
-        chunks.push(format!("controllers = {}", controllers,));
+        chunks.push(format!("set controllers to [{}]", controllers));
     }
 
     fn display_set_field<T: Display>(name: &str, value: Option<T>, chunks: &mut Vec<String>) {
@@ -983,14 +1007,19 @@ fn display_canister_settings(settings: CanisterSettings) -> String {
             return;
         };
 
-        chunks.push(format!("{} = {}", name, value));
+        // TODO: Units and SI prefixes (e.g. GiB).
+        chunks.push(format!("set {} to {}", name, value));
     }
 
-    display_set_field("compute_allocation", compute_allocation, &mut chunks);
-    display_set_field("memory_allocation", memory_allocation, &mut chunks);
-    display_set_field("freezing_threshold", freezing_threshold, &mut chunks);
-    display_set_field("log_visibility", log_visibility, &mut chunks);
-    display_set_field("wasm_memory_limit", wasm_memory_limit, &mut chunks);
+    display_set_field("compute allocation", compute_allocation, &mut chunks);
+    display_set_field("memory allocation", memory_allocation, &mut chunks);
+    display_set_field("freezing threshold", freezing_threshold, &mut chunks);
+    display_set_field("log visibility", log_visibility, &mut chunks);
+    display_set_field("WASM memory limit", wasm_memory_limit, &mut chunks);
+
+    if chunks.is_empty() {
+        return "no changes".to_string();
+    }
 
     chunks.join("; ")
 }
