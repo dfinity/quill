@@ -16,9 +16,8 @@ use ic_base_types::{CanisterId, PrincipalId};
 #[cfg(feature = "hsm")]
 use ic_identity_hsm::HardwareIdentity;
 use ic_nns_constants::{
-    GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID, LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID,
-    SNS_WASM_CANISTER_ID,
-    canister_id_to_nns_canister_name,
+    canister_id_to_nns_canister_name, GENESIS_TOKEN_CANISTER_ID, GOVERNANCE_CANISTER_ID,
+    LEDGER_CANISTER_ID, REGISTRY_CANISTER_ID, SNS_WASM_CANISTER_ID,
 };
 use icp_ledger::{AccountIdentifier, Subaccount};
 use icrc_ledger_types::icrc1::account::Account;
@@ -260,49 +259,43 @@ pub fn get_idl_string(
 ///    - registry
 ///    - sns-wasm
 fn display_init_args(init_args: &[u8], canister_id: PrincipalId) -> String {
-    let canister_name = canister_id_to_nns_canister_name(
-        CanisterId::unchecked_from_principal(canister_id)
-    );
+    let canister_name =
+        canister_id_to_nns_canister_name(CanisterId::unchecked_from_principal(canister_id));
 
     let main = || {
-        let canister_role = get_default_role(canister_id.0)
-            .with_context(|| {
-                format!(
-                    "unable to humanize install args, because the role of {} is unknown.",
-                    canister_id,
-                )
-            })?;
+        let canister_role = get_default_role(canister_id.0).with_context(|| {
+            format!(
+                "unable to humanize install args, because the role of {} is unknown.",
+                canister_id,
+            )
+        })?;
 
         // Glean supporting information about how to (decode and) interpret args
         // from (embedded) .did file.
-        let interface = get_local_candid(canister_id.0, canister_role)
-            .with_context(|| {
-                format!(
-                    "unable to display install args, because we do not have \
+        let interface = get_local_candid(canister_id.0, canister_role).with_context(|| {
+            format!(
+                "unable to humanize install args, because we do not have \
                      the interface definition of the {} canister",
-                    canister_name,
-                )
-            })?;
+                canister_name,
+            )
+        })?;
 
-        let (name_to_type, service) = CandidSource::Text(interface)
-            .load()
-            .with_context(|| {
-                format!(
-                    "unable to display install args, because we could not \
+        let (name_to_type, service) = CandidSource::Text(interface).load().with_context(|| {
+            format!(
+                "unable to humanize install args, because we could not \
                      parse the interface definition of the {} canister.",
-                    canister_name,
-                )
-            })?;
+                canister_name,
+            )
+        })?;
 
         let service = service.with_context(|| {
             format!(
-                "unable to display install args, because there seems to \
+                "unable to humanize install args, because there seems to \
                  be no service in the interface definition of the {} canister.",
                 canister_name,
             )
         })?;
-        let service = unwrap_type(service)
-            .context("unable to display install args")?;
+        let service = unwrap_type(service).context("unable to humanize install args")?;
 
         let init_args_type = match service {
             candid::types::TypeInner::Class(init_args_type, _methods) => init_args_type,
@@ -312,32 +305,34 @@ fn display_init_args(init_args: &[u8], canister_id: PrincipalId) -> String {
         let init_args_type = init_args_type
             .into_iter()
             .map(|arg_type| {
-                let arg_type = unwrap_type(arg_type)
-                    .context("unable to display install args")?;
+                let arg_type = unwrap_type(arg_type).context("unable to humanize install args")?;
                 match arg_type {
-                    candid::types::TypeInner::Var(name) => {
-                        name_to_type.find_type(&name)
-                            .context("DO NOT MERGE")
-                            .cloned()
-                    }
+                    candid::types::TypeInner::Var(name) => name_to_type
+                        .find_type(&name)
+                        .with_context(|| format!("unable find the type definition of {}", name,))
+                        .cloned(),
                     arg_type => Ok(candid::types::Type::from(arg_type)),
                 }
             })
             .collect::<Result<Vec<_>, _>>()
-            .context("DO NOT MERGE")?;
+            .with_context(|| {
+                format!(
+                    "unable to humanize install args, because init args \
+                     type could not be determined from the {} interface \
+                     definition (i.e. .did file).",
+                    canister_name,
+                )
+            })?;
 
         // Finally, decode and interpret init args.
-        candid::IDLArgs::from_bytes_with_types(
-            init_args,
-            &name_to_type,
-            &init_args_type,
-        )
-        .context("DO NOT MERGE")
+        candid::IDLArgs::from_bytes_with_types(init_args, &name_to_type, &init_args_type)
+            .with_context(|| format!("unable to decode install args of {}", canister_name,))
     };
 
     match main() {
         Ok(ok) => format!("{}", ok),
-        Err(err) => { // DO NOT MERGE: Log err
+        Err(err) => {
+            eprintln!("Warning: Unable to humanify init args. Reason: {:#?}", err);
             hex::encode(init_args)
         }
     }
@@ -348,8 +343,7 @@ fn unwrap_type(type_: candid::types::Type) -> anyhow::Result<candid::types::Type
         candid::types::Type(ok) => ok,
     };
 
-    Rc::into_inner(type_)
-        .context("unable to unwrap type")
+    Rc::into_inner(type_).context("unable to unwrap type")
 }
 
 /// Returns pretty-printed encoding of a candid value.
@@ -750,11 +744,11 @@ pub fn key_encryption_params<'a>(salt: &'a [u8; 16], iv: &'a [u8; 16]) -> Parame
 
 #[cfg(test)]
 mod tests {
-    use super::{ParsedAccount, ParsedSubaccount, display_init_args};
+    use super::{display_init_args, ParsedAccount, ParsedSubaccount};
     use candid::{Encode, Principal};
     use ic_base_types::PrincipalId;
-    use ic_nns_governance::pb::v1::Governance as GovernanceProto;
     use ic_nns_constants::GOVERNANCE_CANISTER_ID;
+    use ic_nns_governance::pb::v1::Governance as GovernanceProto;
     use pretty_assertions::assert_eq;
     use std::str::FromStr;
 
