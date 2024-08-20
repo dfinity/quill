@@ -339,9 +339,7 @@ fn display_init_args(init_args: &[u8], canister_id: PrincipalId) -> String {
 }
 
 fn unwrap_type(type_: candid::types::Type) -> anyhow::Result<candid::types::TypeInner> {
-    let type_: Rc<_> = match type_ {
-        candid::types::Type(ok) => ok,
-    };
+    let candid::types::Type(type_) = type_;
 
     Rc::into_inner(type_).context("unable to unwrap type")
 }
