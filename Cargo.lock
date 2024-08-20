@@ -5090,6 +5090,7 @@ dependencies = [
  "once_cell",
  "pem 2.0.1",
  "pkcs8",
+ "pretty_assertions",
  "qrcodegen",
  "rand",
  "ring",

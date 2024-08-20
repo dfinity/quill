@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 
 use anyhow::{anyhow, bail, Context};
 use bigdecimal::BigDecimal;
@@ -25,10 +25,9 @@ use ic_nns_governance::pb::v1::{
 };
 use itertools::Itertools;
 use sha2::{Digest, Sha256};
-use std::fmt::Display;
 
 use crate::lib::{
-    e8s_to_tokens,
+    display_init_args, e8s_to_tokens,
     format::{format_duration_seconds, format_timestamp_seconds},
     get_default_role, get_idl_string, AnyhowResult,
 };
@@ -608,6 +607,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
 
                     // Humanify fields (aka interpret them).
 
+                    let canister_principal_id = canister_id;
                     let canister_id = canister_id_to_nns_canister_name(
                         CanisterId::unchecked_from_principal(canister_id),
                     );
@@ -622,16 +622,18 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
 
                     let skip_stopping_before_installing =
                         if skip_stopping_before_installing.unwrap_or_default() {
-                            " (Warning: canister will not be stopped before installing new WASM)"
+                            " (Warning: canister will NOT be stopped before installing new WASM!)"
                         } else {
                             ""
                         };
 
                     let arg = match arg {
                         None => "no arg".to_string(),
-                        Some(ok) => format!("arg = {}", hex::encode(ok)),
+                        Some(arg) => {
+                            let args = display_init_args(&arg, canister_principal_id);
+                            format!("init args = {}", args)
+                        }
                     };
-                    // TODO Do something like didc decode --defs $DEFS[canister_id] $arg
 
                     writeln!(
                         fmt,

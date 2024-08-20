@@ -70,6 +70,7 @@ tiny-bip39 = "1.0.0"
 tokio = { version = "1.18.5", features = ["full"] }
 
 [dev-dependencies]
+pretty_assertions = "1"
 tempfile = "3.3.0"
 shellwords = "1"
 serial_test = "2.0.0"
