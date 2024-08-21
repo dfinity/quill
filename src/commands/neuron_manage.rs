@@ -9,16 +9,20 @@ use candid::{CandidType, Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
-use ic_nns_governance::pb::v1::manage_neuron::NeuronIdOrSubaccount;
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
         configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Command,
         Configure, Disburse, Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund,
-        Merge, RegisterVote, RemoveHotKey, Split, StakeMaturity, StartDissolving, StopDissolving,
+        Merge, NeuronIdOrSubaccount, RegisterVote, RemoveHotKey, SetVisibility, Split,
+        StakeMaturity, StartDissolving, StopDissolving,
     },
     ManageNeuron,
 };
 use icp_ledger::Tokens;
+
+mod pb {
+    pub use ic_nns_governance::pb::v1::Visibility;
+}
 
 // These constants are copied from src/governance.rs
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
@@ -128,6 +132,18 @@ pub struct ManageOpts {
 
     #[arg(from_global)]
     ledger: bool,
+
+    /// Set whether the neuron is public or private. This controls whether an
+    /// arbitrary principal can view all fields of the neuron (Public), or just
+    /// a limited subset (Private).
+    #[arg(long)]
+    set_visibility: Option<NativeVisibility>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum NativeVisibility {
+    Public = pb::Visibility::Public as isize,
+    Private = pb::Visibility::Private as isize,
 }
 
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
@@ -135,7 +151,8 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         ensure!(
             opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
             && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
-            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject,
+            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject
+            && opts.set_visibility.is_none(),
             "\
 Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
 --additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
@@ -381,6 +398,21 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
             })),
             neuron_id_or_subaccount: id.clone(),
         })?;
+        msgs.push(args);
+    }
+
+    if let Some(native_visibility) = opts.set_visibility {
+        let visibility = Some(native_visibility as i32);
+        let set_visibility = SetVisibility { visibility };
+        let operation = Some(Operation::from(set_visibility));
+        let command = Some(Command::from(Configure { operation }));
+
+        let args = Encode!(&ManageNeuron {
+            command,
+            neuron_id_or_subaccount: id.clone(),
+            id: None,
+        })?;
+
         msgs.push(args);
     }
 
