@@ -151,7 +151,8 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
         ensure!(
             opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
             && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
-            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject,
+            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject
+            && opts.set_visibility.is_none(),
             "\
 Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
 --additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
