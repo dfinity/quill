@@ -1,17 +1,17 @@
 use crate::commands::request_status;
+use crate::lib::get_idl_string;
 use crate::lib::{
-    get_ic_url, parse_query_response, read_from_file,
+    get_ic_url, read_from_file,
     signing::{Ingress, IngressWithRequestId},
     AnyhowResult, AuthInfo,
 };
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail};
 use candid::Principal;
 use clap::Parser;
-use ic_agent::agent::Transport;
-use ic_agent::{agent::http_transport::ReqwestTransport, RequestId};
+use ic_agent::agent::CallResponse;
+use ic_agent::{Agent, AgentError};
 use std::io::IsTerminal;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use super::SendingOpts;
 
@@ -131,29 +131,33 @@ async fn send(message: &Ingress, opts: &SendOpts) -> AnyhowResult {
         }
     }
 
-    let transport = ReqwestTransport::create(get_ic_url())?;
+    let agent = Agent::builder().with_url(get_ic_url()).build().unwrap();
+
     let content = hex::decode(&message.content)?;
 
     match message.call_type.as_str() {
         "query" => {
-            let response = parse_query_response(
-                ic_agent::agent::Transport::query(&transport, canister_id, content).await?,
-                canister_id,
-                &role,
-                &method_name,
-            )?;
+            let result = agent.query_signed(canister_id, content).await;
+            let response = match result {
+                Ok(bytes) => get_idl_string(&bytes, canister_id, &role, &method_name, "rets")?,
+                Err(AgentError::UncertifiedReject(resp)) => format!(
+                    "Rejected (code {:?}): {}",
+                    resp.reject_code, resp.reject_message,
+                ),
+                Err(e) => bail!(e),
+            };
             println!("Response: {response}");
         }
         "update" => {
-            let request_id = RequestId::from_str(
-                &message
-                    .clone()
-                    .request_id
-                    .context("Cannot get request_id from the update message")?,
-            )?;
-            transport.call(canister_id, content, request_id).await?;
-            let request_id = format!("0x{}", String::from(request_id));
-            println!("Request ID: {request_id}");
+            let result = agent.update_signed(canister_id, content).await;
+            let request_id = match result {
+                Ok(CallResponse::Poll(id)) => id,
+                Ok(CallResponse::Response(_)) => {
+                    bail!("This version of quill does not support synchronous calls")
+                }
+                Err(e) => bail!(e),
+            };
+            println!("Request ID: 0x{}", String::from(request_id));
         }
         _ => unreachable!(),
     }
