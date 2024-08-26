@@ -24,7 +24,6 @@ use icrc_ledger_types::icrc1::account::Account;
 use k256::SecretKey;
 use pkcs8::pkcs5::{pbes2::Parameters, scrypt::Params};
 use ring::signature::Ed25519KeyPair;
-use serde_cbor::Value;
 
 use std::{
     env,
@@ -509,37 +508,6 @@ pub fn get_identity(auth: &AuthInfo) -> AnyhowResult<Box<dyn Identity>> {
         #[cfg(feature = "ledger")]
         AuthInfo::Ledger => Ok(Box::new(LedgerIdentity::new()?)),
     }
-}
-
-pub fn parse_query_response(
-    response: Vec<u8>,
-    canister_id: Principal,
-    role: &str,
-    method_name: &str,
-) -> AnyhowResult<String> {
-    let cbor: Value = serde_cbor::from_slice(&response)
-        .context("Invalid cbor data in the content of the message.")?;
-    if let Value::Map(m) = cbor {
-        // Try to decode a rejected response.
-        if let (_, Some(Value::Integer(reject_code)), Some(Value::Text(reject_message))) = (
-            m.get(&Value::Text("status".to_string())),
-            m.get(&Value::Text("reject_code".to_string())),
-            m.get(&Value::Text("reject_message".to_string())),
-        ) {
-            return Ok(format!("Rejected (code {reject_code}): {reject_message}",));
-        }
-
-        // Try to decode a successful response.
-        if let (_, Some(Value::Map(m))) = (
-            m.get(&Value::Text("status".to_string())),
-            m.get(&Value::Text("reply".to_string())),
-        ) {
-            if let Some(Value::Bytes(reply)) = m.get(&Value::Text("arg".to_string())) {
-                return get_idl_string(reply, canister_id, role, method_name, "rets");
-            }
-        }
-    }
-    Err(anyhow!("Invalid cbor content"))
 }
 
 /// Returns the account id and the principal id if the private key was provided.
