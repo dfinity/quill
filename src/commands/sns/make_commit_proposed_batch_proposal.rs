@@ -33,8 +33,7 @@ pub struct MakeCommitProposedBatchProposalOpts {
     url: String,
 
     /// Summary of the proposal.
-    /// If neither summary nor summary-path is provided, a somewhat generic summary will be
-    /// constructed dynamically.
+    /// Either summary or summary-path need to be provided.
     #[arg(long)]
     summary: Option<String>,
 
