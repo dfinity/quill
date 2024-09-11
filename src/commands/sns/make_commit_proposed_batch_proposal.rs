@@ -85,7 +85,6 @@ pub fn exec(
     };
     let payload: Vec<u8> = candid::Encode!(&commit_proposed_batch_arguments)?;
 
-    // (Dynamically) come up with a summary if one wasn't provided.
     let summary = match (summary, summary_path) {
         (Some(arg), _) => arg,
         (_, Some(path)) => {
