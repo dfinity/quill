@@ -81,7 +81,7 @@ pub fn exec(
 
     let commit_proposed_batch_arguments = CommitProposedBatchArguments {
         batch_id,
-        evidence: hex::decode(evidence)?.into(),
+        evidence: hex::decode(evidence)?,
     };
     let payload: Vec<u8> = candid::Encode!(&commit_proposed_batch_arguments)?;
 
