@@ -6,6 +6,7 @@ use std::{
     fs,
     path::Path,
     process::{Command, Output, Stdio},
+    sync::Mutex,
 };
 
 mod ckbtc;
@@ -22,8 +23,13 @@ fn quill_path() -> &'static str {
     env!("CARGO_BIN_EXE_quill")
 }
 
+static ZEMU_PORT: Mutex<Option<u16>> = Mutex::new(None);
+
 fn quill_command() -> Command {
     let mut cmd = Command::new(quill_path());
+    if let Some(port) = &*ZEMU_PORT.lock().unwrap() {
+        cmd.env("QUILL_TEST_LEDGER_ZEMU_PORT", format!("{port}"));
+    }
     cmd.env("QUILL_TEST_FIXED_TIMESTAMP", "1")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -179,6 +185,48 @@ thread_local! { static AUTH_SETTINGS: RefCell<AuthSettings> = RefCell::default()
 
 #[cfg(feature = "ledger")]
 fn with_ledger(f: impl FnOnce()) {
+    use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+    use std::{
+        sync::{mpsc, Once},
+        time::Duration,
+    };
+    use tempfile::NamedTempFile;
+    static LEDGER_INIT: Once = Once::new();
+    LEDGER_INIT.call_once(|| {
+        if std::env::var_os("QUILL_TEST_LEDGER_ZEMU").is_some() {
+            // let mut node = Command::new("npm")
+            //     .args(["run", "cargo-test", "-s"])
+            let ready_file = NamedTempFile::new().unwrap();
+            let ready_file = ready_file.into_temp_path();
+            let path = ready_file.to_path_buf();
+            let _node = Command::new("node")
+                .args(["index.js".as_ref(), path.as_os_str()])
+                .current_dir("zemu")
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .spawn()
+                .unwrap();
+            let (tx, rx) = mpsc::channel();
+            let mut watcher = RecommendedWatcher::new(
+                move |res: Result<Event, notify::Error>| {
+                    if matches!(res.unwrap().kind, EventKind::Modify(_)) {
+                        let port = std::fs::read_to_string(&path).unwrap();
+                        if port.ends_with('\n') {
+                            *ZEMU_PORT.lock().unwrap() = Some(port.trim().parse().unwrap());
+                            tx.send(()).unwrap();
+                        }
+                    }
+                },
+                Config::default(),
+            )
+            .unwrap();
+            watcher
+                .watch(&ready_file, RecursiveMode::NonRecursive)
+                .unwrap();
+            rx.recv_timeout(Duration::from_secs(20))
+                .expect("timeout waiting for grpc port");
+        }
+    });
     let _guard = scopeguard::guard((), |_| {
         AUTH_SETTINGS.with(|auth| *auth.borrow_mut() = AuthSettings::default())
     });

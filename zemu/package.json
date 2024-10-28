@@ -1,0 +1,12 @@
+{
+  "name": "quill-zemu-driver",
+  "version": "0.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@zondax/zemu": "0.51.0"
+  },
+  "type": "module",
+  "scripts": {
+    "cargo-test": "npm ci && node index.js"
+  }
+}

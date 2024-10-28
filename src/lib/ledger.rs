@@ -1,11 +1,14 @@
 use std::{
     cell::Cell,
     fmt,
-    sync::{Arc, Mutex, Weak},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex, Once, Weak,
+    },
     time::Duration,
 };
 
-use anyhow::{ensure, Context};
+use anyhow::{anyhow, ensure, Context};
 use bip32::DerivationPath;
 use candid::Principal;
 use hidapi::HidApi;
@@ -13,11 +16,14 @@ use ic_agent::{agent::EnvelopeContent, Identity, Signature};
 use indicatif::ProgressBar;
 use k256::{elliptic_curve::sec1::FromEncodedPoint, EncodedPoint, PublicKey};
 use ledger_apdu::{APDUAnswer, APDUCommand, APDUErrorCode};
+use ledger_transport::Exchange;
 use ledger_transport_hid::TransportNativeHID;
+use ledger_transport_zemu::TransportZemuGrpc;
 use once_cell::sync::Lazy;
 use pkcs8::EncodePublicKey;
 use serde::Serialize;
 use serde_cbor::Serializer;
+use tokio::runtime::Builder;
 
 use super::{
     derivation_path, genesis_token_canister_id, governance_canister_id, ledger_canister_id,
@@ -49,21 +55,22 @@ const CHUNK_SIZE: usize = 250;
 
 // necessary due to HidApi being a singleton
 static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
-    Lazy::new(|| Mutex::new(Weak::new()));
+    Lazy::new(|| Mutex::new(Weak::<Mutex<TransportNativeHID>>::new()));
 
 // necessary due to Identity::sign not providing other ways to figure this out
 thread_local! {
     static NEXT_STAKE: Cell<bool> = Cell::new(false);
 }
 
-struct LedgerIdentityInner {
-    transport: Mutex<TransportNativeHID>,
-}
+// This could be a Lazy but this makes the conditional initialization clearer.
+static ZEMU_THREAD: Once = Once::new();
 
 /// An [`Identity`] backed by a Ledger device.
 pub struct LedgerIdentity {
     inner: Arc<LedgerIdentityInner>,
 }
+
+type LedgerIdentityInner = Mutex<dyn SyncExchange>;
 
 impl LedgerIdentity {
     /// Creates a new ledger-device-backed identity.
@@ -72,9 +79,39 @@ impl LedgerIdentity {
         if let Some(existing) = global.upgrade() {
             Ok(Self { inner: existing })
         } else {
-            let inner = Arc::new(LedgerIdentityInner {
-                transport: Mutex::new(TransportNativeHID::new(&HidApi::new().unwrap())?),
-            });
+            let inner = if let Ok(port) = std::env::var("QUILL_TEST_LEDGER_ZEMU_PORT") {
+                let port = port.parse::<u16>()?;
+                // The HTTP mock is async; this function is sync. So it must be blocked on.
+                // This function is run in an async context. So it cannot block on an async function.
+                // Spawning a task and blocking on communicating with it through channels would work.
+                // Except that blocking an async thread waiting for a task to complete deadlocks if there is only one thread.
+                // This is test code, and tests only get one thread for their Tokio runtimes.
+                // This necessitates the ugly hack of spawning a thread, initing a tokio runtime for that thread,
+                // and then communicating with it with blocking channels. Good thing it's only test code.
+                let (local_tx, actor_rx) = mpsc::channel();
+                let (actor_tx, local_rx) = mpsc::channel();
+                ZEMU_THREAD.call_once(|| {
+                    std::thread::spawn(move || {
+                        let zemu_client = TransportZemuGrpc::new("127.0.0.1", port).unwrap();
+                        let runtime = Builder::new_current_thread().enable_all().build().unwrap();
+                        loop {
+                            let message = actor_rx.recv().unwrap();
+                            let res =
+                                runtime.block_on(async { zemu_client.exchange(&message).await });
+                            let res = res.map_err(|e| anyhow!(e));
+                            actor_tx.send(res).unwrap();
+                        }
+                    });
+                });
+                Arc::new(Mutex::new(ChannelExchange {
+                    tx: local_tx,
+                    rx: local_rx,
+                })) as Arc<LedgerIdentityInner>
+            } else {
+                Arc::new(Mutex::new(TransportNativeHID::new(
+                    &HidApi::new().unwrap(),
+                )?))
+            };
             *global = Arc::downgrade(&inner);
             Ok(Self { inner })
         }
@@ -97,29 +134,27 @@ impl LedgerIdentity {
     /// Gets the version of the IC app.
     #[allow(unused)]
     pub fn version(&self) -> AnyhowResult<LedgerVersion> {
-        get_version(&self.inner.transport.lock().unwrap())
+        get_version(&*self.inner.lock().unwrap())
     }
     /// Displays the principal and legacy account ID on the Ledger, and asks the user to confirm it.
     pub fn display_pk(&self) -> AnyhowResult<()> {
         let spinner = ProgressBar::new_spinner();
         spinner.set_message("Confirm principal on Ledger device...");
         spinner.enable_steady_tick(Duration::from_millis(100));
-        display_pk(&self.inner.transport.lock().unwrap(), &derivation_path())?;
+        display_pk(&*self.inner.lock().unwrap(), &derivation_path())?;
         spinner.finish_and_clear();
         Ok(())
     }
     /// Gets the public key from the ledger that [`sender`](Self::sender) will return a principal derived from.
     #[allow(unused)]
     pub fn public_key(&self) -> AnyhowResult<(Principal, Vec<u8>)> {
-        get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
-            .map_err(anyhow::Error::msg)
+        get_identity(&*self.inner.lock().unwrap(), &derivation_path()).map_err(anyhow::Error::msg)
     }
 }
 
 impl Identity for LedgerIdentity {
     fn sender(&self) -> Result<Principal, String> {
-        let (principal, _) =
-            get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())?;
+        let (principal, _) = get_identity(&*self.inner.lock().unwrap(), &derivation_path())?;
         Ok(principal)
     }
     /// Sign a request ID from a content map.
@@ -129,8 +164,8 @@ impl Identity for LedgerIdentity {
     fn sign(&self, content: &EnvelopeContent) -> Result<Signature, String> {
         let path = derivation_path();
         let next_stake = NEXT_STAKE.with(|next_stake| next_stake.replace(false));
-        let transport = self.inner.transport.lock().unwrap();
-        let (_, pk) = get_identity(&transport, &path)?;
+        let transport = self.inner.lock().unwrap();
+        let (_, pk) = get_identity(&*transport, &path)?;
         // The IC ledger app expects to receive the entire envelope, sans signature.
         #[derive(Serialize)]
         struct Envelope<'a> {
@@ -151,7 +186,7 @@ impl Identity for LedgerIdentity {
         spinner.set_message(format!("Confirm {message} on Ledger device..."));
         spinner.enable_steady_tick(Duration::from_millis(100));
         let sig = sign_blob(
-            &transport,
+            &*transport,
             &blob,
             // See with_staking
             if next_stake { TX_STAKING } else { TX_NORMAL },
@@ -167,7 +202,7 @@ impl Identity for LedgerIdentity {
     }
 
     fn public_key(&self) -> Option<Vec<u8>> {
-        let (_, pk) = get_identity(&self.inner.transport.lock().unwrap(), &derivation_path())
+        let (_, pk) = get_identity(&*self.inner.lock().unwrap(), &derivation_path())
             .map_err(|e| e.to_string())
             .ok()?;
         Some(pk)
@@ -182,7 +217,7 @@ fn serialize_path(path: &DerivationPath) -> Vec<u8> {
 }
 
 fn get_identity(
-    transport: &TransportNativeHID,
+    transport: &dyn SyncExchange,
     path: &DerivationPath,
 ) -> Result<(Principal, Vec<u8>), String> {
     let command = APDUCommand {
@@ -193,7 +228,7 @@ fn get_identity(
         data: serialize_path(path),
     };
     let response = transport
-        .exchange(&command)
+        .exchange(command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "fetching principal from Ledger", None)?;
     let pk = PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
@@ -275,7 +310,7 @@ pub fn supported_transaction(canister_id: &Principal, method_name: &str) -> bool
 }
 
 fn sign_blob(
-    transport: &TransportNativeHID,
+    transport: &dyn SyncExchange,
     blob: &[u8],
     txtype: u8,
     path: &DerivationPath,
@@ -306,7 +341,7 @@ fn sign_blob(
 }
 
 fn sign_chunk(
-    transport: &TransportNativeHID,
+    transport: &dyn SyncExchange,
     kind: u8,
     chunk: &[u8],
     txtype: u8,
@@ -317,10 +352,10 @@ fn sign_chunk(
         ins: SIGN_SECP256K1,
         p1: kind,
         p2: txtype,
-        data: chunk,
+        data: chunk.to_owned(),
     };
     let response = transport
-        .exchange(&command)
+        .exchange(command)
         .map_err(|e| format!("Error communicating with Ledger: {e}"))?;
     let response = interpret_response(&response, "signing message with Ledger", Some(content))?;
     if response.is_empty() {
@@ -335,16 +370,16 @@ fn sign_chunk(
     }
 }
 
-fn get_version(transport: &TransportNativeHID) -> AnyhowResult<LedgerVersion> {
+fn get_version(transport: &dyn SyncExchange) -> AnyhowResult<LedgerVersion> {
     let command = APDUCommand {
         cla: CLA,
         ins: GET_VERSION,
         p1: 0,
         p2: 0,
-        data: &[][..],
+        data: Vec::new(),
     };
     let response = transport
-        .exchange(&command)
+        .exchange(command)
         .context("Error communicating with ledger")?;
     let response = interpret_response(&response, "fetching version from Ledger", None)
         .map_err(anyhow::Error::msg)?;
@@ -356,7 +391,7 @@ fn get_version(transport: &TransportNativeHID) -> AnyhowResult<LedgerVersion> {
     })
 }
 
-fn display_pk(transport: &TransportNativeHID, path: &DerivationPath) -> AnyhowResult<()> {
+fn display_pk(transport: &dyn SyncExchange, path: &DerivationPath) -> AnyhowResult<()> {
     let command = APDUCommand {
         cla: CLA,
         ins: GET_ADDR_SECP256K1,
@@ -365,7 +400,7 @@ fn display_pk(transport: &TransportNativeHID, path: &DerivationPath) -> AnyhowRe
         data: serialize_path(path),
     };
     let response = transport
-        .exchange(&command)
+        .exchange(command)
         .context("Error communicating with ledger")?;
     interpret_response(&response, "displaying public key on Ledger", None)
         .map_err(anyhow::Error::msg)?;
@@ -382,5 +417,27 @@ pub struct LedgerVersion {
 impl fmt::Display for LedgerVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+trait SyncExchange: Send {
+    fn exchange(&self, command: APDUCommand<Vec<u8>>) -> AnyhowResult<APDUAnswer<Vec<u8>>>;
+}
+
+impl SyncExchange for TransportNativeHID {
+    fn exchange(&self, command: APDUCommand<Vec<u8>>) -> AnyhowResult<APDUAnswer<Vec<u8>>> {
+        <Self>::exchange(self, &command).map_err(|e| anyhow!(e))
+    }
+}
+
+struct ChannelExchange {
+    tx: Sender<APDUCommand<Vec<u8>>>,
+    rx: Receiver<AnyhowResult<APDUAnswer<Vec<u8>>>>,
+}
+
+impl SyncExchange for ChannelExchange {
+    fn exchange(&self, command: APDUCommand<Vec<u8>>) -> AnyhowResult<APDUAnswer<Vec<u8>>> {
+        self.tx.send(command).unwrap();
+        self.rx.recv().unwrap()
     }
 }

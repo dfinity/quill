@@ -1,4 +1,6 @@
 result*
+zemu/snapshots
+zemu/snapshots-tmp
 
 # Building
 build/
