@@ -70,13 +70,14 @@ jobs:
         if: ${{ matrix.target }}
         run: rustup target add ${{ matrix.target }}
 
-      - uses: taiki-e/install-action@v2
+      - if: ${{ matrix.target }}
+        uses: taiki-e/install-action@v2
         with:
           tool: cross@0.2.5
 
       - name: Build
         run: >
-          cross build
+          ${{ matrix.target && 'cross' || 'cargo' }} build
           ${{ matrix.target && format('--target {0}', matrix.target) }}
           ${{ matrix.features && format('--no-default-features --features "{0}"', join(matrix.features)) }}
           --release --locked

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.1] - 2024-10-31
+
+- Added `quill neuron-manage --set-visibility`.
+
 ## [0.5.0] - 2024-07-10
 
 - Overhauled PEM auth. PEM files are now password-protected by default, and must be used instead of seed files. Passwords can be provided interactively or with `--password-file`. Keys can be generated unencrypted with `quill generate --storage-mode plaintext`, and encrypted keys can be converted to plaintext with `quill decrypt-pem`.
