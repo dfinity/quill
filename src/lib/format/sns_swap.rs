@@ -10,7 +10,7 @@ use std::fmt::Write;
 
 use crate::lib::{e8s_to_tokens, AnyhowResult};
 
-use super::{format_timestamp_seconds, icrc1_account};
+use super::{format_timestamp_nanoseconds, icrc1_account};
 
 pub fn display_get_buyer_state(blob: &[u8]) -> AnyhowResult<String> {
     let response = Decode!(blob, GetBuyerStateResponse)?;
@@ -50,7 +50,7 @@ Successfully created ticket with ID {id}
 Creation time: {time}
 Ticket amount: {amount} ICP",
                     id = ticket.ticket_id,
-                    time = format_timestamp_seconds(ticket.creation_time),
+                    time = format_timestamp_nanoseconds(ticket.creation_time),
                     amount = e8s_to_tokens(ticket.amount_icp_e8s.into()),
                 );
                 if let Some(account) = ticket.account {
@@ -105,7 +105,7 @@ Ticket ID: {id}
 Creation time: {time}
 Ticket amount: {amount} ICP",
                         id = ticket.ticket_id,
-                        time = format_timestamp_seconds(ticket.creation_time),
+                        time = format_timestamp_nanoseconds(ticket.creation_time),
                         amount = e8s_to_tokens(ticket.amount_icp_e8s.into())
                     );
                     if let Some(account) = ticket.account {
