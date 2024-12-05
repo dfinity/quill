@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.2] - 2024-12-05
+
+- Fixed the display format of SNS sale tickets.
+
 ## [0.5.1] - 2024-10-31
 
 - Added `quill neuron-manage --set-visibility`.
