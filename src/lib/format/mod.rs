@@ -26,6 +26,10 @@ pub fn format_timestamp_seconds(seconds: u64) -> String {
     format_datetime(Utc.timestamp_opt(seconds.try_into().unwrap(), 0).unwrap())
 }
 
+pub fn format_timestamp_nanoseconds(nanoseconds: u64) -> String {
+    format_datetime(Utc.timestamp_nanos(nanoseconds.try_into().unwrap()))
+}
+
 pub fn format_duration_seconds(mut seconds: u64) -> String {
     // Required for magic numbers like '8 years' to show up as such instead of '8 years 2 days'.
     const SECONDS_PER_YEAR: u64 = 31557600; // 365.25 * 24 * 60 * 60
