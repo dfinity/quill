@@ -42,6 +42,7 @@ type AddNodePayload = record {
   transport_tls_cert : blob;
   ni_dkg_dealing_encryption_pk : blob;
   p2p_flow_endpoints : vec text;
+  node_reward_type : opt text;
 };
 
 type AddNodesToSubnetPayload = record {
@@ -52,18 +53,6 @@ type AddNodesToSubnetPayload = record {
 type AddOrRemoveDataCentersProposalPayload = record {
   data_centers_to_add : vec DataCenterRecord;
   data_centers_to_remove : vec text;
-};
-
-type BlessReplicaVersionPayload = record {
-  release_package_urls : opt vec text;
-  node_manager_sha256_hex : text;
-  release_package_url : text;
-  sha256_hex : text;
-  guest_launch_measurement_sha256_hex : opt text;
-  replica_version_id : text;
-  release_package_sha256_hex : text;
-  node_manager_binary_url : text;
-  binary_url : text;
 };
 
 type CanisterIdRange = record { end : principal; start : principal };
@@ -143,11 +132,15 @@ type KeyConfig = record {
   max_queue_size : opt nat32;
 };
 
-type MasterPublicKeyId = variant { Schnorr : SchnorrKeyId; Ecdsa : EcdsaKeyId };
+type MasterPublicKeyId = variant { Schnorr : SchnorrKeyId; Ecdsa : EcdsaKeyId; VetKd : VetKdKeyId };
 
 type SchnorrKeyId = record { algorithm : SchnorrAlgorithm; name : text };
 
 type SchnorrAlgorithm = variant { ed25519; bip340secp256k1 };
+
+type VetKdKeyId = record { curve: VetKdCurve; name: text };
+
+type VetKdCurve = variant { bls12_381_g2 };
 
 type EcdsaConfig = record {
   quadruples_to_create_in_advance : nat32;
@@ -190,6 +183,19 @@ type FirewallRulesScope = variant {
   ApiBoundaryNodes;
   Subnet : principal;
   Global;
+};
+
+type GetApiBoundaryNodeIdsRequest = record {
+
+};
+
+type GetApiBoundaryNodeIdsResponse = variant {
+    Ok : vec ApiBoundaryNodeIdRecord;
+    Err : text;
+};
+
+type ApiBoundaryNodeIdRecord = record {
+  id : opt principal;
 };
 
 type GetNodeOperatorsAndDcsOfNodeProviderResponse = variant {
@@ -279,8 +285,6 @@ type RerouteCanisterRangesPayload = record {
   destination_subnet : principal;
 };
 
-type RetireReplicaVersionPayload = record { replica_version_ids : vec text };
-
 type ReviseElectedGuestosVersionsPayload = record {
   release_package_urls : vec text;
   replica_versions_to_unelect : vec text;
@@ -308,7 +312,19 @@ type UpdateApiBoundaryNodesVersionPayload = record {
   node_ids : vec principal;
 };
 
+type DeployGuestosToSomeApiBoundaryNodes = record {
+  version : text;
+  node_ids : vec principal;
+};
+
 type UpdateElectedHostosVersionsPayload = record {
+  release_package_urls : vec text;
+  hostos_version_to_elect : opt text;
+  hostos_versions_to_unelect : vec text;
+  release_package_sha256_hex : opt text;
+};
+
+type ReviseElectedHostosVersionsPayload = record {
   release_package_urls : vec text;
   hostos_version_to_elect : opt text;
   hostos_versions_to_unelect : vec text;
@@ -360,6 +376,11 @@ type UpdateNodeRewardsTableProposalPayload = record {
 };
 
 type UpdateNodesHostosVersionPayload = record {
+  hostos_version_id : opt text;
+  node_ids : vec principal;
+};
+
+type DeployHostosToSomeNodes = record {
   hostos_version_id : opt text;
   node_ids : vec principal;
 };
@@ -420,7 +441,6 @@ service : {
   add_node_operator : (AddNodeOperatorPayload) -> ();
   add_nodes_to_subnet : (AddNodesToSubnetPayload) -> ();
   add_or_remove_data_centers : (AddOrRemoveDataCentersProposalPayload) -> ();
-  bless_replica_version : (BlessReplicaVersionPayload) -> ();
   change_subnet_membership : (ChangeSubnetMembershipPayload) -> ();
   clear_provisional_whitelist : () -> ();
   complete_canister_migration : (CompleteCanisterMigrationPayload) -> ();
@@ -431,6 +451,9 @@ service : {
   deploy_guestos_to_all_unassigned_nodes : (
     DeployGuestosToAllUnassignedNodesPayload
   ) -> ();
+  deploy_guestos_to_some_api_boundary_nodes : (DeployGuestosToSomeApiBoundaryNodes) -> ();
+  deploy_hostos_to_some_nodes : (DeployHostosToSomeNodes) -> ();
+  get_api_boundary_node_ids : (GetApiBoundaryNodeIdsRequest) -> (GetApiBoundaryNodeIdsResponse) query;
   get_build_metadata : () -> (text) query;
   get_node_operators_and_dcs_of_node_provider : (principal) -> (GetNodeOperatorsAndDcsOfNodeProviderResponse) query;
   get_node_providers_monthly_xdr_rewards : () -> (GetNodeProvidersMonthlyXdrRewardsResponse) query;
@@ -444,12 +467,12 @@ service : {
   remove_nodes : (RemoveNodesPayload) -> ();
   remove_nodes_from_subnet : (RemoveNodesPayload) -> ();
   reroute_canister_ranges : (RerouteCanisterRangesPayload) -> ();
-  retire_replica_version : (RetireReplicaVersionPayload) -> ();
+  revise_elected_guestos_versions : (ReviseElectedGuestosVersionsPayload) -> ();
   revise_elected_replica_versions : (ReviseElectedGuestosVersionsPayload) -> ();
   set_firewall_config : (SetFirewallConfigPayload) -> ();
   update_api_boundary_nodes_version : (UpdateApiBoundaryNodesVersionPayload) -> ();
   update_elected_hostos_versions : (UpdateElectedHostosVersionsPayload) -> ();
-  update_elected_replica_versions : (ReviseElectedGuestosVersionsPayload) -> ();
+  revise_elected_hostos_versions : (ReviseElectedHostosVersionsPayload) -> ();
   update_firewall_rules : (UpdateFirewallRulesPayload) -> ();
   update_node_directly : (UpdateNodeDirectlyPayload) -> ();
   update_node_domain_directly : (UpdateNodeDomainDirectlyPayload) -> (UpdateNodeDomainDirectlyResponse);
@@ -466,6 +489,5 @@ service : {
     UpdateSshReadOnlyAccessForAllUnassignedNodesPayload
   ) -> ();
   update_subnet : (UpdateSubnetPayload) -> ();
-  update_subnet_replica_version : (DeployGuestosToAllSubnetNodesPayload) -> ();
   update_unassigned_nodes_config : (UpdateUnassignedNodesConfigPayload) -> ();
 };
