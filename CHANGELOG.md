@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Added `quill neuron-manage --refresh-followers`.
+
 ## [0.5.2] - 2024-12-05
 
 - Fixed the display format of SNS sale tickets.

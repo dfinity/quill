@@ -120,3 +120,9 @@ fn set_visibility() {
     ))
     .diff("neuron_manage/set_visibility.txt")
 }
+
+#[test]
+fn refresh_followers() {
+    quill_send(&format!("neuron-manage {NEURON_ID} --refresh-followers"))
+        .diff("neuron_manage/refresh_followers.txt")
+}
