@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-brew install protobuf
+brew install protobuf lmdb

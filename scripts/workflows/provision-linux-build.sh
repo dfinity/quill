@@ -12,4 +12,4 @@ if [[ $# = 1 ]]; then # docker
 fi
 
 sudo apt-get update -y
-sudo apt-get install "libudev-dev${arch-}" protobuf-compiler -y
+sudo apt-get install "libudev-dev${arch-}" protobuf-compiler liblmdb-dev -y
