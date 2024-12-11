@@ -295,6 +295,7 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
             "Successfully disbursed ICP at block index {}",
             c.transfer_block_height
         ),
+        Command::RefreshVotingPower(_) => "Successfully refreshed neuron's voting power".into(),
     };
     Ok(fmt)
 }
@@ -794,6 +795,9 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                             "Stake {percentage}% of the maturity of neuron {neuron}",
                             percentage = c.percentage_to_stake()
                         )?,
+                        ProposalCommand::RefreshVotingPower(_) => {
+                            writeln!(fmt, "Refresh the voting power of neuron {neuron}")?
+                        }
                         ProposalCommand::Configure(c) => {
                             match c.operation.context("operation was null")? {
                                 Operation::AddHotKey(o) => {

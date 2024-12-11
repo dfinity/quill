@@ -1,0 +1,15 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = null;
+    command = opt variant { RefreshVotingPower = record {} };
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
+  },
+)

@@ -126,7 +126,7 @@ fn convert_name_to_nonce(name: &str) -> u64 {
 }
 
 fn neuron_name_parser(name: &str) -> Result<u64, String> {
-    if name.len() > 8 || name.chars().any(|c| !c.is_ascii()) {
+    if name.len() > 8 || !name.is_ascii() {
         return Err("The neuron name must be 8 character or less".to_string());
     }
     Ok(convert_name_to_nonce(name))
