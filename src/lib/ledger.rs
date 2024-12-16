@@ -53,7 +53,7 @@ static GLOBAL_HANDLE: Lazy<Mutex<Weak<LedgerIdentityInner>>> =
 
 // necessary due to Identity::sign not providing other ways to figure this out
 thread_local! {
-    static NEXT_STAKE: Cell<bool> = Cell::new(false);
+    static NEXT_STAKE: Cell<bool> = const { Cell::new(false) };
 }
 
 struct LedgerIdentityInner {
