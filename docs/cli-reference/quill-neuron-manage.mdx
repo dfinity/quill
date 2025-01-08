@@ -37,6 +37,7 @@ quill neuron-manage [option] <neuron id>
 | `--join-community-fund`                               | Join the Internet Computer's community fund with this neuron's entire stake.     |
 | `--leave-community-fund`                              | Leave the Internet Computer's community fund.                                    |
 | `--merge-from-neuron <MERGE_FROM_NEURON>`             | Merge stake, maturity and age from the specified neuron into the managed neuron. |
+| `--refresh-followers`                                 | Refresh the neuron's voting power by reaffirming the current list of followers.  |
 | `--register-vote <PROPOSAL_ID>... [--reject]`         | Vote to approve (default) or reject proposal(s).                                 |
 | `--reject`                                            | Reject the proposal(s) specified with `--register-vote`.                         |
 | `--remove-hot-key <REMOVE_HOT_KEY>`                   | Principal hot key to be removed.                                                 |
@@ -90,6 +91,24 @@ This will produce a response like:
     record {
         command = opt variant {
             Follow = record {}
+        };
+    }
+)
+```
+
+The voting power of following relationships decays over time, requiring periodic confirmation of the followers list. To restore the voting power:
+
+```sh
+quill neuron-manage 2313380519530470538 --refresh-followers
+```
+
+This will produce a response like:
+
+```candid
+(
+    record {
+        command = opt variant {
+            RefreshVotingPower = record {}
         };
     }
 )
