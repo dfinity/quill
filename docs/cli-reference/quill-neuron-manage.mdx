@@ -96,7 +96,7 @@ This will produce a response like:
 )
 ```
 
-The voting power of following relationships decays over time, requiring periodic confirmation of the followers list. To restore the voting power:
+If a neuron does not take any action for more than 6 months, it will start losing voting power and thus voting rewards. To avoid that, neurons can vote directly or set which neurons they follow. To confirm the current following setting and refresh voting power without making any changes:
 
 ```sh
 quill neuron-manage 2313380519530470538 --refresh-followers
