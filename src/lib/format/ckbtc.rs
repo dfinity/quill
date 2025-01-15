@@ -37,16 +37,17 @@ pub fn display_update_balance(blob: &[u8]) -> AnyhowResult<String> {
                 current_confirmations,
                 required_confirmations,
                 pending_utxos,
-                ..
+                suspended_utxos,
             } => {
                 let mut fmt = "ckBTC error: no new confirmed UTXOs to process".to_string();
                 if let Some(pending_utxos) = pending_utxos {
                     write!(
                         fmt,
-                        " ({} unconfirmed, needing {} confirmations but having {})",
+                        " ({} unconfirmed, needing {} confirmations but having {}, {} ignored)",
                         pending_utxos.len(),
                         required_confirmations,
-                        current_confirmations.unwrap_or_default()
+                        current_confirmations.unwrap_or_default(),
+                        suspended_utxos.unwrap_or_default().len(),
                     )?;
                 }
                 fmt
