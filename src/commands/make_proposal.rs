@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use crate::{
     lib::{
-        get_local_candid, governance_canister_id,
+        governance_canister_id,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AuthInfo, ROLE_NNS_GOVERNANCE,
     },
@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::Error;
 use candid::{CandidType, Decode, Encode, TypeEnv};
-use candid_parser::{check_prog, parse_idl_args};
+use candid_parser::parse_idl_args;
 use clap::Parser;
 use ic_nns_common::pb::v1::NeuronId;
 use ic_nns_governance::pb::v1::{
@@ -83,11 +83,6 @@ pub fn exec(auth: &AuthInfo, opts: MakeProposalOpts) -> AnyhowResult<Vec<Ingress
 
 fn parse_nns_proposal_from_candid_string(proposal_candid: String) -> AnyhowResult<Proposal> {
     let args = parse_idl_args(&proposal_candid)?;
-    let mut env = TypeEnv::default();
-    check_prog(
-        &mut env,
-        &get_local_candid(governance_canister_id(), ROLE_NNS_GOVERNANCE)?.parse()?,
-    )?;
-    let args: Vec<u8> = args.to_bytes_with_types(&env, &[Proposal::ty()])?;
+    let args: Vec<u8> = args.to_bytes_with_types(&TypeEnv::default(), &[Proposal::ty()])?;
     Decode!(args.as_slice(), Proposal).map_err(Error::msg)
 }
