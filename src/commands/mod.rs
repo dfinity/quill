@@ -15,6 +15,7 @@ mod get_neuron_info;
 mod get_proposal_info;
 mod list_neurons;
 mod list_proposals;
+mod make_proposal;
 mod neuron_manage;
 mod neuron_stake;
 mod public;
@@ -37,6 +38,7 @@ pub enum Command {
     ListNeurons(list_neurons::ListNeuronsOpts),
     ListProposals(list_proposals::ListProposalsOpts),
     GetProposalInfo(get_proposal_info::GetProposalInfoOpts),
+    MakeProposal(make_proposal::MakeProposalOpts),
     GetNeuronInfo(get_neuron_info::GetNeuronInfoOpts),
     AccountBalance(account_balance::AccountBalanceOpts),
     UpdateNodeProvider(update_node_provider::UpdateNodeProviderOpts),
@@ -78,6 +80,10 @@ pub fn dispatch(auth: &AuthInfo, cmd: Command, fetch_root_key: bool, qr: bool) -
         }
         Command::GetProposalInfo(opts) => {
             get_proposal_info::exec(opts, fetch_root_key)?;
+        }
+        Command::MakeProposal(opts) => {
+            let out = make_proposal::exec(auth, opts)?;
+            print_vec(qr, &out)?;
         }
         Command::GetNeuronInfo(opts) => {
             get_neuron_info::exec(opts, fetch_root_key)?;
