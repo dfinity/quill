@@ -140,7 +140,7 @@ pub struct ManageOpts {
     #[arg(long)]
     set_visibility: Option<NativeVisibility>,
 
-    /// Refresh the neuron's voting power by reaffirming the current list of followers.
+    /// Refresh the neuron's voting power by reaffirming the current list of followed neurons.
     /// This must be done every so often to avoid neurons diminishing in voting power.
     #[arg(long, alias = "refresh-followers")]
     refresh_following: bool,
