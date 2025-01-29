@@ -140,10 +140,10 @@ pub struct ManageOpts {
     #[arg(long)]
     set_visibility: Option<NativeVisibility>,
 
-    /// Refresh the neuron's voting power by reaffirming the current list of followers.
+    /// Refresh the neuron's voting power by reaffirming the current list of followed neurons.
     /// This must be done every so often to avoid neurons diminishing in voting power.
-    #[arg(long)]
-    refresh_followers: bool,
+    #[arg(long, alias = "refresh-followers")]
+    refresh_following: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -158,7 +158,7 @@ pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRe
             opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
             && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
             && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject
-            && opts.set_visibility.is_none() && !opts.refresh_followers,
+            && opts.set_visibility.is_none() && !opts.refresh_following,
             "\
 Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
 --additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
@@ -422,7 +422,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
         msgs.push(args);
     }
 
-    if opts.refresh_followers {
+    if opts.refresh_following {
         let args = Encode!(&ManageNeuron {
             command: Some(Command::RefreshVotingPower(RefreshVotingPower {})),
             neuron_id_or_subaccount: id.clone(),

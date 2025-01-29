@@ -122,7 +122,7 @@ fn set_visibility() {
 }
 
 #[test]
-fn refresh_followers() {
-    quill_send(&format!("neuron-manage {NEURON_ID} --refresh-followers"))
-        .diff("neuron_manage/refresh_followers.txt")
+fn refresh_following() {
+    quill_send(&format!("neuron-manage {NEURON_ID} --refresh-following"))
+        .diff("neuron_manage/refresh_following.txt")
 }

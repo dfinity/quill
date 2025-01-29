@@ -22,31 +22,31 @@ quill neuron-manage [option] <neuron id>
 
 ## Flags
 
-| Flag                                                  | Description                                                                      |
-|-------------------------------------------------------|----------------------------------------------------------------------------------|
-| `--add-hot-key <ADD_HOT_KEY>`                         | Principal to be used as a hot key.                                               |
-| `-a`, `--additional-dissolve-delay-seconds <SECONDS>` | Number of dissolve seconds to add.                                               |
-| `--auto-stake-maturity enabled|disabled`              | Set whether new maturity should be automatically staked.                         |
-| `--clear-manage-neuron-followees`                     | Remove all followees for the NeuronManagement topic.                             |
-| `--disburse-amount`                                   | Disburse only the selected amount.                                               |
-| `--disburse-to`                                       | Disburse to the selected NNS account instead of the controller.                  |
-| `--disburse`                                          | Disburse the entire staked amount to the controller's account.                   |
-| `--follow-neurons <FOLLOW_NEURONS>...`                | Defines the neuron ids of a follow rule.                                         |
-| `--follow-topic <FOLLOW_TOPIC>`                       | Defines the topic of a follow rule as defined [here][follow-rules].              |
-| `-h`, `--help`                                        | Displays usage information.                                                      |
-| `--join-community-fund`                               | Join the Internet Computer's community fund with this neuron's entire stake.     |
-| `--leave-community-fund`                              | Leave the Internet Computer's community fund.                                    |
-| `--merge-from-neuron <MERGE_FROM_NEURON>`             | Merge stake, maturity and age from the specified neuron into the managed neuron. |
-| `--refresh-followers`                                 | Refresh the neuron's voting power by reaffirming the current list of followers.  |
-| `--register-vote <PROPOSAL_ID>... [--reject]`         | Vote to approve (default) or reject proposal(s).                                 |
-| `--reject`                                            | Reject the proposal(s) specified with `--register-vote`.                         |
-| `--remove-hot-key <REMOVE_HOT_KEY>`                   | Principal hot key to be removed.                                                 |
-| `--set-visibility [public|private]`                   | Set visibility. This controls what fields are readable to arbitrary principals.  |
-| `--spawn`                                             | Spawn rewards to a new neuron under the controller's account.                    |
-| `--split <SPLIT>`                                     | Split off the given number of ICP from a neuron.                                 |
-| `--stake-maturity <STAKE_MATURITY>`                   | Stake the percentage (between 1 and 100) of the maturity of a neuron.            |
-| `--start-dissolving`                                  | Start dissolving.                                                                |
-| `--stop-dissolving`                                   | Stop dissolving.                                                                 |
+| Flag                                                  | Description                                                                            |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `--add-hot-key <ADD_HOT_KEY>`                         | Principal to be used as a hot key.                                                     |
+| `-a`, `--additional-dissolve-delay-seconds <SECONDS>` | Number of dissolve seconds to add.                                                     |
+| `--auto-stake-maturity enabled|disabled`              | Set whether new maturity should be automatically staked.                               |
+| `--clear-manage-neuron-followees`                     | Remove all followees for the NeuronManagement topic.                                   |
+| `--disburse-amount`                                   | Disburse only the selected amount.                                                     |
+| `--disburse-to`                                       | Disburse to the selected NNS account instead of the controller.                        |
+| `--disburse`                                          | Disburse the entire staked amount to the controller's account.                         |
+| `--follow-neurons <FOLLOW_NEURONS>...`                | Defines the neuron ids of a follow rule.                                               |
+| `--follow-topic <FOLLOW_TOPIC>`                       | Defines the topic of a follow rule as defined [here][follow-rules].                    |
+| `-h`, `--help`                                        | Displays usage information.                                                            |
+| `--join-community-fund`                               | Join the Internet Computer's community fund with this neuron's entire stake.           |
+| `--leave-community-fund`                              | Leave the Internet Computer's community fund.                                          |
+| `--merge-from-neuron <MERGE_FROM_NEURON>`             | Merge stake, maturity and age from the specified neuron into the managed neuron.       |
+| `--refresh-following`                                 | Refresh the neuron's voting power by reaffirming the current list of followed neurons. |
+| `--register-vote <PROPOSAL_ID>... [--reject]`         | Vote to approve (default) or reject proposal(s).                                       |
+| `--reject`                                            | Reject the proposal(s) specified with `--register-vote`.                               |
+| `--remove-hot-key <REMOVE_HOT_KEY>`                   | Principal hot key to be removed.                                                       |
+| `--set-visibility [public|private]`                   | Set visibility. This controls what fields are readable to arbitrary principals.        |
+| `--spawn`                                             | Spawn rewards to a new neuron under the controller's account.                          |
+| `--split <SPLIT>`                                     | Split off the given number of ICP from a neuron.                                       |
+| `--stake-maturity <STAKE_MATURITY>`                   | Stake the percentage (between 1 and 100) of the maturity of a neuron.                  |
+| `--start-dissolving`                                  | Start dissolving.                                                                      |
+| `--stop-dissolving`                                   | Stop dissolving.                                                                       |
 
 [follow-rules]: https://github.com/dfinity/ic/blob/4c9e71499d90d00da986dbe7b985d861fd031c4e/rs/nns/governance/gen/ic_nns_governance.pb.v1.rs#L1571-L1632
 
@@ -99,7 +99,7 @@ This will produce a response like:
 If a neuron does not take any action for more than 6 months, it will start losing voting power and thus voting rewards. To avoid that, neurons can vote directly or set which neurons they follow. To confirm the current following setting and refresh voting power without making any changes:
 
 ```sh
-quill neuron-manage 2313380519530470538 --refresh-followers
+quill neuron-manage 2313380519530470538 --refresh-following
 ```
 
 This will produce a response like:
