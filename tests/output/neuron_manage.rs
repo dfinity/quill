@@ -1,6 +1,6 @@
 use crate::{ledger_compatible, quill_send, OutputExt, ALICE, PRINCIPAL};
 
-const NEURON_ID: &str = "2313380519530470538";
+pub const NEURON_ID: &str = "2313380519530470538";
 
 // uncomment tests on next ledger app update
 ledger_compatible![

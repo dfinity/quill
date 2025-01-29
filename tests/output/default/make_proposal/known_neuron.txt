@@ -1,0 +1,32 @@
+Sending message with
+
+  Call type:   update
+  Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
+  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Method name: manage_neuron
+  Arguments:   (
+  record {
+    id = null;
+    command = opt variant {
+      MakeProposal = record {
+        title = opt "Known Neuron Proposal";
+        url = "http://example.com";
+        summary = "A proposal to become a named neuron";
+        action = opt variant {
+          RegisterKnownNeuron = record {
+            id = opt record {
+              id = 773 : nat64;
+            };
+            known_neuron_data = opt record {
+              name = "Me!";
+            };
+          }
+        };
+      }
+    };
+    neuron_id_or_subaccount = opt variant {
+      NeuronId = record { id = 2_313_380_519_530_470_538 : nat64 }
+    };
+  },
+)
+

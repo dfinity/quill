@@ -3,8 +3,8 @@ use std::io::Write;
 use tempfile::NamedTempFile;
 
 use crate::{
-    escape_p, ledger_compatible, quill, quill_authed, quill_query, quill_query_authed, quill_send,
-    OutputExt,
+    escape_p, ledger_compatible, neuron_manage::NEURON_ID, quill, quill_authed, quill_query,
+    quill_query_authed, quill_send, OutputExt,
 };
 
 // Uncomment tests on next ledger app update
@@ -194,4 +194,25 @@ fn ledger_fail_early() {
         .diff_err("ledger_incompatible/by_command.txt");
     quill("neuron-manage 1 --ledger --join-community-fund")
         .diff_err("ledger_incompatible/by_flag.txt");
+}
+
+#[test]
+fn make_proposal() {
+    let proposal = r#"(record{
+        title=opt "Known Neuron Proposal";
+        url="http://example.com";
+        summary="A proposal to become a named neuron";
+        action=opt variant {
+            RegisterKnownNeuron = record {
+                id=opt record { id=773; };
+                known_neuron_data=opt record {
+                    name="Me!";
+                };
+            }
+        };
+    })"#;
+    quill_send(&format!(
+        "make-proposal {NEURON_ID} --proposal '{proposal}'"
+    ))
+    .diff("make_proposal/known_neuron.txt");
 }

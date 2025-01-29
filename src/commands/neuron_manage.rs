@@ -167,7 +167,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     let mut msgs = Vec::new();
 
     let id = NeuronId {
-        id: parse_neuron_id(opts.neuron_id)?,
+        id: parse_neuron_id(&opts.neuron_id)?,
     };
     let id = Some(NeuronIdOrSubaccount::NeuronId(id));
     if opts.add_hot_key.is_some() {
@@ -316,7 +316,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
             id: None,
             command: Some(Command::Merge(Merge {
                 source_neuron_id: Some(NeuronId {
-                    id: parse_neuron_id(neuron_id)?
+                    id: parse_neuron_id(&neuron_id)?
                 }),
             })),
             neuron_id_or_subaccount: id.clone(),
@@ -448,7 +448,7 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
     Ok(generated)
 }
 
-fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
+pub fn parse_neuron_id(id: &str) -> AnyhowResult<u64> {
     id.replace('_', "")
         .parse()
         .context("Failed to parse the neuron id")

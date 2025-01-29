@@ -62,7 +62,7 @@ pub fn exec(
     let governance_canister_id = sns_canister_ids.governance_canister_id;
 
     let proposal = if let Some(proposal) = opts.proposal {
-        parse_proposal_from_candid_string(proposal)?
+        parse_sns_proposal_from_candid_string(proposal)?
     } else {
         Decode!(&fs::read(opts.proposal_path.unwrap())?, Proposal)?
     };
@@ -83,7 +83,7 @@ pub fn exec(
     Ok(vec![msg])
 }
 
-fn parse_proposal_from_candid_string(proposal_candid: String) -> AnyhowResult<Proposal> {
+fn parse_sns_proposal_from_candid_string(proposal_candid: String) -> AnyhowResult<Proposal> {
     let args = parse_idl_args(&proposal_candid)?;
     let args: Vec<u8> = args.to_bytes_with_types(&TypeEnv::default(), &[Proposal::ty()])?;
     Decode!(args.as_slice(), Proposal).map_err(Error::msg)

@@ -29,7 +29,7 @@ use sha2::{Digest, Sha256};
 
 use crate::lib::{
     e8s_to_tokens,
-    format::{format_duration_seconds, format_t_cycles, format_timestamp_seconds},
+    format::{format_duration_seconds, format_timestamp_seconds},
     get_default_role, get_idl_string, AnyhowResult,
 };
 
@@ -971,8 +971,8 @@ fn display_canister_settings(settings: CanisterSettings) -> AnyhowResult<String>
     if let Some(freezing) = settings.freezing_threshold {
         writeln!(
             fmt,
-            "Freezing threshold: {} cycles",
-            format_t_cycles(freezing.into())
+            "Freezing threshold: {}",
+            format_duration_seconds(freezing),
         )?;
     }
     if let Some(memory) = settings.memory_allocation {
