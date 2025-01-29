@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- `--refresh-followers` has been renamed to the more accurate `--refresh-following`.
+
 ## [0.5.3] - 2025-01-06
 
 - Added `quill neuron-manage --refresh-followers`.

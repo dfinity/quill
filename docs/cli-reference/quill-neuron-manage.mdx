@@ -37,7 +37,7 @@ quill neuron-manage [option] <neuron id>
 | `--join-community-fund`                               | Join the Internet Computer's community fund with this neuron's entire stake.     |
 | `--leave-community-fund`                              | Leave the Internet Computer's community fund.                                    |
 | `--merge-from-neuron <MERGE_FROM_NEURON>`             | Merge stake, maturity and age from the specified neuron into the managed neuron. |
-| `--refresh-followers`                                 | Refresh the neuron's voting power by reaffirming the current list of followers.  |
+| `--refresh-following`                                 | Refresh the neuron's voting power by reaffirming the current list of followers.  |
 | `--register-vote <PROPOSAL_ID>... [--reject]`         | Vote to approve (default) or reject proposal(s).                                 |
 | `--reject`                                            | Reject the proposal(s) specified with `--register-vote`.                         |
 | `--remove-hot-key <REMOVE_HOT_KEY>`                   | Principal hot key to be removed.                                                 |
@@ -99,7 +99,7 @@ This will produce a response like:
 If a neuron does not take any action for more than 6 months, it will start losing voting power and thus voting rewards. To avoid that, neurons can vote directly or set which neurons they follow. To confirm the current following setting and refresh voting power without making any changes:
 
 ```sh
-quill neuron-manage 2313380519530470538 --refresh-followers
+quill neuron-manage 2313380519530470538 --refresh-following
 ```
 
 This will produce a response like:
