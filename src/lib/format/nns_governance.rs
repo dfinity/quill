@@ -109,7 +109,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
             writeln!(
                 fmt,
                 "Aging since: {}",
-                format_duration_seconds(neuron.aging_since_timestamp_seconds)
+                format_timestamp_seconds(neuron.aging_since_timestamp_seconds)
             )?;
         }
 
