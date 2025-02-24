@@ -9,8 +9,7 @@ use super::ParsedAccount;
 
 pub mod ckbtc;
 pub mod gtc;
-pub mod icp_ledger;
-pub mod icrc1;
+pub mod ledger;
 pub mod nns_governance;
 pub mod registry;
 pub mod sns_governance;
@@ -93,6 +92,106 @@ pub fn format_n_cycles(cycles: Nat) -> String {
         format!("{printable:.1}{letter}")
     } else {
         format!("{printable:.0}{letter}")
+    }
+}
+
+pub mod filters {
+    use bigdecimal::BigDecimal;
+    use candid::{Nat, Principal};
+
+    use crate::lib::{ckbtc_canister_id, e8s_to_tokens, ledger_canister_id};
+
+    use super::{
+        format_duration_seconds, format_n_cycles, format_t_cycles, format_timestamp_nanoseconds,
+        format_timestamp_seconds,
+    };
+
+    pub fn tokens_e8s(e8s: impl IntoNat, units: &str) -> askama::Result<String> {
+        if units == "." {
+            Ok(format!("{}", e8s_to_tokens(e8s.into_nat())))
+        } else {
+            Ok(format!("{} {units}", e8s_to_tokens(e8s.into_nat())))
+        }
+    }
+
+    pub fn tokens_e8s_guess(e8s: impl IntoNat, canister: &Principal) -> askama::Result<String> {
+        if *canister == ledger_canister_id() {
+            tokens_e8s(e8s, "ICP")
+        } else if *canister == ckbtc_canister_id(false) {
+            tokens_e8s(e8s, "ckBTC")
+        } else if *canister == ckbtc_canister_id(true) {
+            tokens_e8s(e8s, "ckTESTBTC")
+        } else {
+            tokens_e8s(e8s, "tokens")
+        }
+    }
+
+    pub fn dur_seconds(seconds: impl ToU64) -> askama::Result<String> {
+        Ok(format_duration_seconds(seconds.to_u64()))
+    }
+
+    pub fn ts_seconds(seconds: impl ToU64) -> askama::Result<String> {
+        Ok(format_timestamp_seconds(seconds.to_u64()))
+    }
+
+    pub fn ts_nanos(seconds: impl ToU64) -> askama::Result<String> {
+        Ok(format_timestamp_nanoseconds(seconds.to_u64()))
+    }
+
+    pub fn cycles_t(cycles: impl IntoNat) -> askama::Result<String> {
+        Ok(format_t_cycles(cycles.into_nat()))
+    }
+
+    pub fn cycles_precise(cycles: impl IntoNat) -> askama::Result<String> {
+        Ok(format_n_cycles(cycles.into_nat()))
+    }
+
+    pub fn hex(bytes: impl AsRef<[u8]>) -> askama::Result<String> {
+        Ok(hex::encode(bytes))
+    }
+
+    pub trait IntoNat {
+        fn into_nat(self) -> Nat;
+    }
+
+    impl IntoNat for u64 {
+        fn into_nat(self) -> Nat {
+            Nat::from(self)
+        }
+    }
+
+    impl IntoNat for Nat {
+        fn into_nat(self) -> Nat {
+            self
+        }
+    }
+
+    impl<T> IntoNat for &T
+    where
+        T: IntoNat + Clone,
+    {
+        fn into_nat(self) -> Nat {
+            T::into_nat(self.clone())
+        }
+    }
+
+    pub trait ToU64 {
+        fn to_u64(&self) -> u64;
+    }
+
+    impl ToU64 for u64 {
+        fn to_u64(&self) -> u64 {
+            *self
+        }
+    }
+
+    impl<T> ToU64 for &T
+    where
+        T: ToU64,
+    {
+        fn to_u64(&self) -> u64 {
+            T::to_u64(self)
+        }
     }
 }
 

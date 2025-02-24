@@ -5239,6 +5239,7 @@ name = "quill"
 version = "0.5.3"
 dependencies = [
  "anyhow",
+ "askama",
  "base64 0.13.1",
  "bigdecimal",
  "bip32",

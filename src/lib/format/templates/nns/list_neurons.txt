@@ -1,0 +1,3 @@
+{% for neuron in neurons -%}
+{{ neuron }}
+{% endfor -%}

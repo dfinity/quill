@@ -1,0 +1,20 @@
+Age: {{age_seconds|dur_seconds}}
+Total stake: {{stake|tokens_e8s(".")}}
+Voting power: {{deciding|tokens_e8s(".")}} {% if deciding != potential %}(decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
+Voting power last refreshed: {{last_refreshed_seconds|ts_seconds}}
+State: {{state|fmt("{:?}")}}
+Dissolve delay: {{dissolve_delay_seconds|dur_seconds}}
+Created {{created_seconds|ts_seconds}}
+{% if let Some(cf) = community_fund_seconds -%}
+Member of the community fund since {{cf|ts_seconds}}
+{% endif -%}
+{% if let Some(known) = known_neuron_data -%}
+Known neuron: "{{known.name}}"
+{% if let Some(desc) = known.description -%}
+Description: "{{desc}}"
+{% endif -%}
+{% endif -%}
+{% if let Some(vis) = visibility -%}
+Neuron visibility: {{vis|fmt("{:?}")}}
+{% endif -%}
+Accurate as of {{retrieved_seconds|ts_seconds}}

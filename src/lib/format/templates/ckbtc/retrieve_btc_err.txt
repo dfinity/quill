@@ -1,0 +1,14 @@
+{% match error %}
+{% when GenericError with {error_message, error_code} -%}
+ckBTC error: {{error_message}}
+{% when AmountTooLow with (min) -%}
+ckBTC error: amount too low to withdraw (min: {{min|tokens_e8s("ckBTC")}})
+{% when InsufficientFunds with {balance} -%}
+ckBTC error: the withdrawal account does not have enough ckBTC (balance: {{balance|tokens_e8s("ckBTC")}})
+{% when MalformedAddress with (msg) -%}
+ckBTC error: malformed address: {{msg}}
+{% when AlreadyProcessing -%}
+ckBTC error: already processing another retrieve_btc call for the same account
+{% when TemporarilyUnavailable with (msg) -%}
+ckBTC error: temporarily unavailable: {{msg}}
+{% endmatch -%}

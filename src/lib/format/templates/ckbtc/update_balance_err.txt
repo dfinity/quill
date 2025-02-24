@@ -1,0 +1,13 @@
+{% match error %}
+{% when GenericError with {error_message} -%}
+ckBTC error: {{error_message}}
+{% when AlreadyProcessing -%}
+ckBTC error: already processing another update_balance call for the same account
+{% when NoNewUtxos with {current, required, pending, suspended} -%}
+ckBTC error: no new confirmed UTXOs to process
+  {%- if let Some(pending) = pending -%}
+  {#- +#} ({{pending}} unconfirmed, needing {{required}} but having {{current}}, {{suspended}} ignored)
+  {%- endif -%}
+{% when TemporarilyUnavailable with (msg) -%}
+ckBTC error: temporarily unavailable: {{msg}}. Try again later.
+{% endmatch -%}

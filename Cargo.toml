@@ -3,7 +3,7 @@ name = "quill"
 version = "0.5.3"
 authors = ["DFINITY Team"]
 edition = "2021"
-rust-version = "1.75.0"
+rust-version = "1.82.0"
 description = "Minimalistic ledger and governance toolkit for cold wallets."
 repository = "https://github.com/dfinity/quill"
 license = "Apache-2.0"
@@ -68,6 +68,7 @@ sha2 = "0.10.8"
 sha3 = "0.10.6"
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.18.5", features = ["full"] }
+askama = "0.12.1"
 
 [dev-dependencies]
 pretty_assertions = "1"

@@ -1,0 +1,36 @@
+{% match cmd %}
+{% when Configure with (_) -%}
+Neuron successfully configured
+{% when RegisterVote with (_) -%}
+Successfully voted
+{% when Follow with (_) -%}
+Successfully set following relationship
+{% when Spawn with (c) -%}
+Maturity successfully spawned to {% if let Some(id) = c.created_neuron_id %}new neuron {{id.id}}{% else %}unknown new neuron{% endif %}
+{% when Split with (c) -%}
+Neuron successfully split off to {% if let Some(id) = c.created_neuron_id %}new neuron {{id.id}}{% else %}unknown new neuron{% endif %}
+{% when ClaimOrRefresh with (c) -%}
+Successfully staked ICP in {% if let Some(id) = c.refreshed_neuron_id %}neuron {{id.id}}{% else %}unknown neuron{% endif %}
+{% when Merge with (c) -%}
+Successfully merged {% if let Some(source) = c.source_neuron %}
+  {%- if let Some(id) = source.id %}neuron {{id.id}} {% else %}neuron with account {{source.account|hex}} {% endif %}
+  {%- else %}unknown neuron {% endif -%}
+into {% if let Some(target) = c.target_neuron %}
+  {%- if let Some(id) = target.id %}neuron {{id.id}}{% else %}neuron with account {{target.account|hex}}{% endif %}
+  {%- else %}unknown neuron{% endif %}
+{% when DisburseToNeuron with (c) -%}
+Successfully disbursed into new neuron {% if let Some(id) = c.created_neuron_id %}new neuron {{id.id}}{% else %}unknown new neuron{% endif %}
+{% when MakeProposal with (c) -%}
+Successfully created new proposal {% if let Some(id) = c.proposal_id %}with ID {{id.id}}
+https://dashboard.internetcomputer.org/proposal/{{id.id}} {%- else %}(unknown ID){% endif %}
+{% when StakeMaturity with (c) -%}
+Successfully staked maturity ({{c.staked_maturity_e8s|tokens_e8s(".")}} staked maturity total, {{c.maturity_e8s|tokens_e8s(".")}} unstaked)
+{% when MergeMaturity with (c) -%}
+Successfully merged {{c.merged_maturity_e8s|tokens_e8s(".")}} maturity (total stake now {{c.new_stake_e8s|tokens_e8s(".")}})
+{% when Disburse with (c) -%}
+Successfully disbursed ICP at block index {{c.transfer_block_height}}
+{% when RefreshVotingPower with (_) -%}
+Successfully refreshed neuron's voting power
+{% when Error with (e) -%}
+NNS error: {{e.error_message}}
+{% endmatch -%}

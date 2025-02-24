@@ -1,0 +1,12 @@
+{% match error %}
+{% when BadFee with {expected_fee} -%}
+Transfer error: wrong transfer fee specified, should be {{expected_fee.get_e8s()|tokens_e8s("ICP")}}
+{% when InsufficientFunds with {balance} -%}
+Transfer error: the transferred-from account has an insufficient balance ({{balance.get_e8s()|tokens_e8s("ICP")}})
+{% when TxTooOld with {allowed_window_nanos} -%}
+Transfer error: the transaction is too old (expired at {{allowed_window_nanos|ts_nanos}})
+{% when TxCreatedInFuture -%}
+Transfer error: the transaction is timestamped as being created in the future
+{% when TxDuplicate with {duplicate_of} -%}
+Transfer error: the transaction is a duplicate of transaction #{{duplicate_of}}
+{% endmatch -%}

@@ -1,0 +1,62 @@
+Neuron {{id}}
+Aging since: {{aging_seconds|ts_seconds}}
+Staked ICP: {{staked_icp_e8s|tokens_e8s("ICP")}}
+{% if let Some(staked_maturity) = staked_maturity -%}
+Staked maturity: {{staked_maturity|tokens_e8s(".")}}
+{% endif -%}
+{% if auto_stake_maturity -%}
+Auto stake maturity: Yes
+{% endif -%}
+Voting power: {{deciding|tokens_e8s(".")}} {% if deciding != potential %}(decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
+Voting power last refreshed: {{last_refreshed_seconds|ts_seconds}}
+{% if let Some(spawn_at_seconds) = spawn_at_seconds -%}
+Spawning maturity as ICP at: {{spawn_at_seconds|ts_seconds}}
+{% endif -%}
+{% if let Some(dissolve_delay) = dissolve_delay -%}
+{% match dissolve_delay %}
+{% when DissolveDelaySeconds with (seconds) -%}
+Dissolve delay: {{seconds|dur_seconds}}
+{% when WhenDissolvedTimestampSeconds with (seconds) -%}
+Dissolving until: {{seconds|ts_seconds}}
+{% endmatch -%}
+{% endif -%}
+Created {{created_seconds|ts_seconds}}
+{% if let Some(cf) = community_fund_seconds -%}
+Member of the community fund since {{cf|ts_seconds}}
+{% endif -%}
+{% if let Some(known) = known_neuron_data -%}
+Known neuron: "{{known.name}}"
+{% if let Some(desc) = known.description -%}
+Description: "{{desc}}"
+{% endif -%}
+{% endif -%}
+{% if let Some(controller) = controller -%}
+Controller: {{controller}}
+{% endif -%}
+{% if !hotkeys.is_empty() -%}
+Hot keys: {{hotkeys|join(", ")}}
+{% endif -%}
+{% if let Some(neuron_type) = neuron_type -%}
+Neuron type: {{neuron_type|fmt("{:?}")}}
+{% endif -%}
+{% if kyc_verified -%}
+KYC verified: Yes
+{% endif -%}
+{% if not_for_profit -%}
+Not-for-profit: Yes
+{% endif -%}
+{% if let Some(recent_votes) = recent_votes -%}
+Recent votes: {{recent_votes}}
+{% endif -%}
+{% if !followees.is_empty() -%}
+  {% if followees.len() < 4 -%}
+  Followees: {% for (topic, neurons) in followees -%}
+    {%- if neurons.len() < 4 %}neurons {{neurons|join(", ")}}{% else %}{{neurons.len()}}{% endif %} followees (topic {{topic|fmt("{:?}")}})
+    {%- if !loop.last %}, {% endif %}{% endfor %}
+  {% else -%}
+  Followees: {{total_followees}}
+  {% endif -%}
+{% endif -%}
+{% if let Some(vis) = visibility -%}
+Neuron visibility: {{vis|fmt("{:?}")}}
+{% endif -%}

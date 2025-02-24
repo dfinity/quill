@@ -1,0 +1,16 @@
+{% macro heading(utxo) -%}
+{{utxo.outpoint.txid}}({{utxo.value|tokens_e8s("BTC")}})
+{%- endmacro -%}
+
+{% for status in statuses -%}
+{% match status %}
+  {% when Minted with {block_index, minted_amount, utxo} -%}
+  {% call heading(utxo) %} Minted {{minted_amount|tokens_e8s("ckBTC")}} at block index {{block_index}}
+  {% when ValueTooSmall with (utxo) -%}
+  {% call heading(utxo) %} UTXO rejected: too small to cover KYT cost
+  {% when Tainted with (utxo) -%}
+  {% call heading(utxo) %} UTXO rejected: the KYT process determined the BTC is tainted
+  {% when Checked with (utxo) -%}
+  {% call heading(utxo) %} The deposted BTC cleared the KYT check, but minting ckBTC failed. Retry this command.
+{% endmatch -%}
+{% endfor -%}

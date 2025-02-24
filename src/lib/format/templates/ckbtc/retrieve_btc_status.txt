@@ -1,0 +1,32 @@
+{% match status %}
+{% when AmountTooLow -%}
+ckBTC error: amount too low to withdraw
+{% when Unknown -%}
+ckBTC error: request ID invalid or too old
+{% when Pending -%}
+The BTC transaction is pending in the queue
+{% when Signing -%}
+The BTC transaction is being signed
+{% when Sending with {txid} -%}
+The BTC transaction is being sent (id {{txid}})
+{% when Submitted with {txid} -%}
+The BTC transaction has been sent, awaiting confirmations (id {{txid}})
+{% when Confirmed with {txid} -%}
+The BTC transaction has been completed (id {{txid}})
+{% when WillReimburse with (task) -%}
+  {% match task.reason %}
+  {% when CallFailed -%}
+The BTC transaction failed. {{task.amount|tokens_e8s("ckBTC")}} is being reimbursed to {{task.account}}
+  {% when TaintedDestination with {kyt_provider, kyt_fee} -%}
+The KYT process determined that the BTC destination is tainted. {{task.amount|tokens_e8s("ckBTC")}} is being reimbursed to {{task.account}}.
+KYT fee: {{kyt_fee|tokens_e8s("ckBTC")}}, provider: {{kyt_provider}}
+  {% endmatch -%}
+{% when Reimbursed with (task) -%}
+  {% match task.reason %}
+  {% when CallFailed -%}
+The BTC transaction failed. {{task.amount|tokens_e8s("ckBTC")}} has been reimbursed to {{task.account}} at block index {{task.mint_block_index}}.
+  {% when TaintedDestination with {kyt_provider, kyt_fee} -%}
+The KYT process determined that the BTC destination is tainted. {{task.amount|tokens_e8s("ckBTC")}} has been reimbursed to {{task.account}} at block index {{task.mint_block_index}}
+KYT fee: {{kyt_fee|tokens_e8s("ckBTC")}}, provider: {{kyt_provider}}
+  {% endmatch -%}
+{% endmatch -%}
