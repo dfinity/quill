@@ -99,7 +99,9 @@ pub mod filters {
     use bigdecimal::BigDecimal;
     use candid::{Nat, Principal};
 
-    use crate::lib::{ckbtc_canister_id, e8s_to_tokens, ledger_canister_id};
+    use crate::lib::{
+        ckbtc_canister_id, e8s_to_tokens, get_default_role, get_idl_string, ledger_canister_id,
+    };
 
     use super::{
         format_duration_seconds, format_n_cycles, format_t_cycles, format_timestamp_nanoseconds,
@@ -148,6 +150,36 @@ pub mod filters {
 
     pub fn hex(bytes: impl AsRef<[u8]>) -> askama::Result<String> {
         Ok(hex::encode(bytes))
+    }
+
+    pub fn candid_payload(
+        bytes: impl AsRef<[u8]>,
+        canister: &Principal,
+        function: &str,
+    ) -> askama::Result<String> {
+        let bytes = bytes.as_ref();
+        let msg = if bytes.starts_with(b"DIDL") {
+            if let Ok(idl) = get_idl_string(
+                bytes,
+                *canister,
+                get_default_role(*canister).unwrap_or_default(),
+                function,
+                "args",
+            ) {
+                idl
+            } else {
+                hex::encode(bytes)
+            }
+        } else {
+            hex::encode(bytes)
+        };
+        Ok(msg)
+    }
+
+    pub fn num_ufixed(n: impl IntoNat, digits: i64) -> BigDecimal {
+        let nat = n.into_nat();
+        let bigint = nat.0;
+        BigDecimal::new(bigint.into(), digits)
     }
 
     pub trait IntoNat {
