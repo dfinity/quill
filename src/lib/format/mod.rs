@@ -98,6 +98,10 @@ pub fn format_n_cycles(cycles: Nat) -> String {
 pub mod filters {
     use bigdecimal::BigDecimal;
     use candid::{Nat, Principal};
+    use ic_base_types::CanisterId;
+    use ic_nns_constants::canister_id_to_nns_canister_name;
+    use ic_nns_governance::pb::v1::manage_neuron::NeuronIdOrSubaccount;
+    use indicatif::HumanBytes;
 
     use crate::lib::{
         ckbtc_canister_id, e8s_to_tokens, get_default_role, get_idl_string, ledger_canister_id,
@@ -176,10 +180,29 @@ pub mod filters {
         Ok(msg)
     }
 
-    pub fn num_ufixed(n: impl IntoNat, digits: i64) -> BigDecimal {
+    pub fn num_ufixed(n: impl IntoNat, digits: i64) -> askama::Result<BigDecimal> {
         let nat = n.into_nat();
         let bigint = nat.0;
-        BigDecimal::new(bigint.into(), digits)
+        Ok(BigDecimal::new(bigint.into(), digits))
+    }
+
+    pub fn nns_canister_name(canister: &(impl Into<CanisterId> + Copy)) -> askama::Result<String> {
+        Ok(canister_id_to_nns_canister_name((*canister).into()))
+    }
+
+    pub fn bytes(n: impl ToU64) -> askama::Result<String> {
+        let n = n.to_u64();
+        Ok(HumanBytes(n).to_string())
+    }
+
+    pub fn neuron_or_sub(neuron: &NeuronIdOrSubaccount) -> askama::Result<String> {
+        let fmt = match neuron {
+            NeuronIdOrSubaccount::NeuronId(i) => format!("{}", i.id),
+            NeuronIdOrSubaccount::Subaccount(s) => {
+                format!("with subaccount {}", hex::encode(s))
+            }
+        };
+        Ok(fmt)
     }
 
     pub trait IntoNat {

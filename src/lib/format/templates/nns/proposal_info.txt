@@ -106,7 +106,7 @@ Set default followees
 {% for (topic, followees) in a.followees -%}
 For {{self::Topic::try_from(topic).unwrap_or_default()|fmt("{:?}")}}: {{followees.followees|join(", ")}}
 {% endfor -%}
-{% when InstallCode with (a) -%}{% let canister_id = a.canister_and_function().map_err(|e| anyhow!(e))?.0 %}{% match a.install_mode() -%}
+{% when InstallCode with (a) -%}{% let canister_id = a.canister_and_function().map_err(|e| anyhow!(e))?.0 -%}{% match a.install_mode() -%}
   {% when Unspecified %}Install (unspecified mode) {% when Install %}Install {% when Reinstall %}Reinstall {% when Upgrade %}Upgrade {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
 WASM blob hash: {{Sha256::digest(a.wasm_module())|hex}}
@@ -116,5 +116,59 @@ Canister will NOT be stopped before installing new WASM
 {% if let Some(arg) = a.arg -%}
 Init args: {{arg|candid_payload(canister_id, ".")}}
 {% endif -%}
+{% when StopOrStartCanister with (a) -%}{% let canister_id = a.canister_and_function().map(|e| anyhow!(e))?.0 -%}{% match a.action() -%}
+  {% when Start %}Start {% when Stop %}Stop {% when Unspecified %}Start/stop (unspecified) {% endmatch -%}
+canister {{canister_id|nns_canister_name}}
+{% when UpdateCanisterSettings with (a) -%}{% let canister_id = a.canister_and_function().map(|e| anyhow!(e))?.0 -%}{% let settings = a.settings.unwrap() -%}
+Update settings of canister {{canister_id|nns_canister_name}}
+{% if let Some(controllers) = settings.controllers -%}
+Controllers: {% for controller in controllers %}{{controller|nns_canister_name}}{% if !loop.last %}, {% endif %}{% endfor -%}
+{% endif -%}
+{% if let Some(freezing) = settings.freezing_threshold -%}
+Freezing threshold: {{freezing|dur_seconds}}
+{% endif -%}
+{% if let Some(memory) = settings.memory_allocation -%}
+Memory allocation: {{memory}}%
+{% endif -%}
+{% if let Some(compute) = settings.compute_allocation -%}
+Compute allocation: {{compute}}%
+{% endif -%}
+{% if settings.log_visibility.is_some() -%}
+Log visibility: {{settings.log_visibility()|fmt("{:?}")}}
+{% endif -%}
+{% if let Some(limit) = settings.wasm_memory_limit -%}
+WASM memory limit: {{limit|bytes}}
+{% endif -%}
+{% when ManageNeuron with (a) -%}
+  {% macro neuron %}{% let neuron = a.get_neuron_id_or_subaccount().map_err(|e| anyhow!(e.error_message))?.context("neuron ID was null")? -%}
+    {% match neuron %}{% when NeuronId with (i) %}{{i.id}}{% when Subaccount with (s) %}with subaccount {{s|hex}}{% endmatch -%}
+  {% endmacro -%}
+  {% match a.command.context("command was null")? -%}
+  {% when ClaimOrRefresh with (_) -%}
+Refresh the stake of neuron {% call neuron %}
+  {% when Disburse with (c) -%}
+    {% if let Some(amount) = c.amount -%}
+Disburse {{amount.e8s|tokens_e8s("ICP")}} from neuron {% call neuron %}
+    {%- else -%}
+Disburse neuron {% call neuron %}
+    {%- endif -%}
+    {% if let Some(to) = c.to_account %} to account {{to.hash|hex}}{% endif %}
+  {% when DisburseToNeuron with (c) -%}
+Disburse {{c.amount_e8s|tokens_e8s("ICP")}} from neuron {% call neuron %} to a new{% if c.kyc_verified %} (KYC verified){% endif %} neuron
+    {%- if let Some(controller) = c.new_controller %} owned by {{controller}}{% endif -%}
+    with dissolve delay {{c.dissolve_delay_seconds|dur_seconds}}
+  {% when Follow with (c) -%}
+Configure neuron {% call neuron %} to follow {% for followee in followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
+{#- +#} for proposals of type {{c.topic()|fmt("{:?}")}}
+  {% when MakeProposal (c) -%} {{bail!("nested proposals not supported")}}
+  {% when Merge with (c) -%}
+    {% if let Some(source) = c.source_neuron_id -%}
+Merge neuron {{source.id}} into neuron {% call neuron %}
+    {% else -%}
+Merge into neuron {% call neuron %}
+    {% endif -%}
+  {% when MergeMaturity with (c) -%}
+Merge {{c.percentage_to_merge}}% of maturity into the stake of neuron {% call neuron %}
+  {% endmatch %}
 {% endmatch -%}
 {% endif -%}
