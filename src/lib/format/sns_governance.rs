@@ -55,6 +55,7 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
             staked = e8s_to_tokens(c.staked_maturity_e8s.into()),
             remaining = e8s_to_tokens(c.maturity_e8s.into())
         ),
+        Command::SetFollowing(_) => "Successfully adjusted neuron following".to_string(),
     };
     Ok(fmt)
 }

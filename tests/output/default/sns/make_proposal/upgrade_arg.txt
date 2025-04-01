@@ -16,6 +16,7 @@ Sending message with
             new_canister_wasm = blob "\00\61\73\6d\01\00\00\00";
             mode = opt (2 : int32);
             canister_id = opt principal "pycv5-3jbbb-ccccc-ddddd-cai";
+            chunked_canister_wasm = null;
             canister_upgrade_arg = opt blob "\44\49\44\4c\01\6c\02\b9\fa\ee\18\79\b5\f6\a1\43\79\01\00\02\00\00\00\03\00\00\00";
           }
         };

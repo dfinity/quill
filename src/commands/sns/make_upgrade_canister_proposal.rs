@@ -12,7 +12,7 @@ use candid::Principal;
 use candid::{Encode, IDLArgs};
 use candid_parser::parse_idl_args;
 use clap::Parser;
-use ic_management_canister_types::CanisterInstallMode;
+use ic_nns_governance::pb::v1::install_code::CanisterInstallMode;
 use ic_sns_governance::pb::v1::{
     manage_neuron, proposal, ManageNeuron, Proposal, UpgradeSnsControlledCanister,
 };
@@ -98,6 +98,7 @@ pub fn exec(
             CanisterInstallMode::Install => "Install Canister",
             CanisterInstallMode::Reinstall => "Reinstall Canister",
             CanisterInstallMode::Upgrade => "Upgrade Canister",
+            CanisterInstallMode::Unspecified => unreachable!(),
         }
         .to_string()
     });
@@ -132,6 +133,7 @@ pub fn exec(
             UpgradeSnsControlledCanister {
                 canister_id: Some(target_canister_id.into()),
                 new_canister_wasm: wasm,
+                chunked_canister_wasm: None,
                 canister_upgrade_arg,
                 mode: Some(mode as i32),
             },
@@ -168,6 +170,7 @@ fn summarize(target_canister_id: Principal, wasm: &Vec<u8>, mode: CanisterInstal
         CanisterInstallMode::Install => "Install",
         CanisterInstallMode::Reinstall => "Reinstall",
         CanisterInstallMode::Upgrade => "Upgrade",
+        CanisterInstallMode::Unspecified => "Install (unspecified mode)",
     };
 
     format!(

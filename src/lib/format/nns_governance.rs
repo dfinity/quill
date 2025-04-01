@@ -8,28 +8,31 @@ use ic_base_types::CanisterId;
 use ic_nns_constants::canister_id_to_nns_canister_name;
 use ic_nns_governance::{
     pb::v1::{
-        add_or_remove_node_provider::Change,
-        claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
-        install_code::CanisterInstallMode,
-        manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
-        manage_neuron_response::Command,
-        neuron::DissolveState,
-        proposal::Action,
-        reward_node_provider::{RewardMode, RewardToAccount},
-        stop_or_start_canister::CanisterAction,
-        update_canister_settings::CanisterSettings,
-        ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
-        ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, Topic,
+        install_code::CanisterInstallMode, InstallCode, NnsFunction, ProposalStatus,
+        StopOrStartCanister, UpdateCanisterSettings,
     },
     proposals::call_canister::CallCanister,
 };
+use ic_nns_governance_api::pb::v1::{
+    add_or_remove_node_provider::Change,
+    claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
+    manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
+    manage_neuron_response::Command,
+    neuron::DissolveState,
+    proposal::Action,
+    reward_node_provider::{RewardMode, RewardToAccount},
+    stop_or_start_canister::CanisterAction,
+    update_canister_settings::CanisterSettings,
+    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
+    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, ProposalRewardStatus,
+    Topic,
+};
 use indicatif::HumanBytes;
 use itertools::Itertools;
-use sha2::{Digest, Sha256};
 
 use crate::lib::{
     e8s_to_tokens,
-    format::{format_duration_seconds, format_t_cycles, format_timestamp_seconds},
+    format::{format_duration_seconds, format_t_cycles, format_timestamp_seconds, icrc1_account},
     get_default_role, get_idl_string, AnyhowResult,
 };
 
@@ -308,6 +311,12 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
                 "Successfully disbursed into unknown new neuron".to_string()
             }
         }
+        Command::DisburseMaturity(c) => {
+            format!(
+                "Successfully disbursed {} maturity",
+                e8s_to_tokens(c.amount_disbursed_e8s().into())
+            )
+        }
         Command::MakeProposal(c) => {
             if let Some(id) = c.proposal_id {
                 format!("Successfully created new proposal with ID {id}\nhttps://dashboard.internetcomputer.org/proposal/{id}", id = id.id)
@@ -363,9 +372,14 @@ pub fn display_get_proposal(blob: &[u8]) -> AnyhowResult<String> {
 
 fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
     let mut fmt = String::new();
-    let topic = proposal_info.topic();
-    let status = proposal_info.status();
-    let reward_status = proposal_info.reward_status();
+    let topic = proposal_info.topic;
+    let topic = Topic::try_from(topic).with_context(|| format!("unknown topic {topic}"))?;
+    let status = proposal_info.status;
+    let status = ProposalStatus::try_from(status)
+        .with_context(|| format!("unknown proposal status {status}"))?;
+    let reward_status = proposal_info.reward_status;
+    let reward_status = ProposalRewardStatus::try_from(reward_status)
+        .with_context(|| format!("unknown reward status {reward_status}"))?;
     if let Some(proposal) = proposal_info.proposal {
         if let Some(title) = proposal.title {
             writeln!(fmt, "\"{}\" ({:?})", title, topic)?;
@@ -420,7 +434,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     bail!("SNS proposals currently unsupported") //todo
                 }
                 Action::ExecuteNnsFunction(a) => {
-                    let function = a.nns_function();
+                    let function = NnsFunction::from(a.nns_function());
                     writeln!(fmt, "Execute NNS function {:?}", function)?;
                     if a.payload.starts_with(b"DIDL") {
                         let (canister_id, method) = function
@@ -624,6 +638,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     }
                 }
                 Action::InstallCode(a) => {
+                    let a = InstallCode::from(a);
                     let install_mode = match a.install_mode() {
                         CanisterInstallMode::Unspecified => "Install (unspecified mode)",
                         CanisterInstallMode::Install => "Install",
@@ -632,32 +647,18 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     };
                     let (canister_id, _) = a
                         .canister_and_function()
-                        .map_err(|e| anyhow!(display_governance_error(e)))?;
+                        .map_err(|e| anyhow!(display_governance_error(e.into())))?;
                     let canister_name = canister_id_to_nns_canister_name(canister_id);
                     writeln!(fmt, "{install_mode} canister {canister_name}")?;
-                    writeln!(
-                        fmt,
-                        "WASM blob hash: {}",
-                        hex::encode(Sha256::digest(a.wasm_module()))
-                    )?;
+                    writeln!(fmt, "WASM blob hash: {}", hex::encode(a.wasm_module_hash()))?;
                     if a.skip_stopping_before_installing() {
                         writeln!(
                             fmt,
                             "Canister will NOT be stopped before installing new WASM"
                         )?;
                     }
-                    if let Some(arg) = &a.arg {
-                        if let Ok(payload) = get_idl_string(
-                            arg,
-                            canister_id.into(),
-                            get_default_role(canister_id.into()).unwrap_or_default(),
-                            ".",
-                            "args",
-                        ) {
-                            writeln!(fmt, "Init args: {payload}",)?;
-                        } else {
-                            writeln!(fmt, "Init args: {}", hex::encode(arg))?;
-                        }
+                    if let Some(arg) = &a.arg_hash {
+                        writeln!(fmt, "Init args hash: {}", hex::encode(arg))?;
                     }
                 }
                 Action::StopOrStartCanister(a) => {
@@ -666,26 +667,25 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         CanisterAction::Stop => "Stop",
                         CanisterAction::Unspecified => "Start/stop (unspecified)",
                     };
-                    let (canister_id, _) = a
+                    let (canister_id, _) = StopOrStartCanister::from(a)
                         .canister_and_function()
-                        .map_err(|e| anyhow!(display_governance_error(e)))?;
+                        .map_err(|e| anyhow!(display_governance_error(e.into())))?;
                     let canister_name = canister_id_to_nns_canister_name(canister_id);
 
                     writeln!(fmt, "{action} canister {canister_name}")?;
                 }
                 Action::UpdateCanisterSettings(a) => {
+                    let settings = a.settings.clone();
+                    let a = UpdateCanisterSettings::from(a);
                     let (canister_id, _) = a
                         .canister_and_function()
-                        .map_err(|e| anyhow!(display_governance_error(e)))?;
+                        .map_err(|e| anyhow!(display_governance_error(e.into())))?;
                     let canister_name = canister_id_to_nns_canister_name(canister_id);
                     writeln!(fmt, "Update settings of canister {canister_name}")?;
-                    fmt.push_str(&display_canister_settings(a.settings.unwrap())?);
+                    fmt.push_str(&display_canister_settings(settings.unwrap())?);
                 }
                 Action::ManageNeuron(a) => {
-                    let neuron = a
-                        .get_neuron_id_or_subaccount()
-                        .map_err(|e| anyhow!(e.error_message))?
-                        .context("neuron ID was null")?;
+                    let neuron = a.neuron_id_or_subaccount.context("neuron ID was null")?;
                     let neuron = display_neuron_id(neuron);
                     match a.command.context("command was null")? {
                         ProposalCommand::ClaimOrRefresh(_) => {
@@ -743,6 +743,26 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                             fmt,
                             "Merge {percentage}% of maturity into the stake of neuron {neuron}",
                             percentage = c.percentage_to_merge
+                        )?,
+                        ProposalCommand::DisburseMaturity(c) => writeln!(
+                            fmt,
+                            "Disburse {percentage}% of maturity from neuron {neuron} to {account}",
+                            percentage = c.percentage_to_disburse,
+                            account = if let Some(account) = c.to_account {
+                                if let Some(owner) = account.owner {
+                                    format!(
+                                        "account {}",
+                                        icrc1_account(
+                                            owner.0,
+                                            account.subaccount.map(|x| x[..].try_into().unwrap())
+                                        )
+                                    )
+                                } else {
+                                    "unknown account".into()
+                                }
+                            } else {
+                                "the owner".into()
+                            }
                         )?,
                         ProposalCommand::RegisterVote(c) => {
                             if let Some(proposal) = c.proposal {
@@ -837,7 +857,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
             }
         }
     } else {
-        writeln!(fmt, "Unknown proposal ({:?})", proposal_info.topic())?;
+        writeln!(fmt, "Unknown proposal ({:?})", topic)?;
     }
     if let Some(id) = proposal_info.id {
         writeln!(fmt, "Proposal ID: {}", id.id)?;
