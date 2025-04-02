@@ -6,7 +6,12 @@ Sending message with
   Method name: list_neurons
   Arguments:   (
   record {
+    page_size = null;
+    include_public_neurons_in_full_neurons = null;
     neuron_ids = vec { 123 : nat64; 456 : nat64; 789 : nat64 };
+    page_number = null;
+    include_empty_neurons_readable_by_caller = null;
+    neuron_subaccounts = null;
     include_neurons_readable_by_caller = false;
   },
 )
