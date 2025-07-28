@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-IC_COMMIT="c7993fa049275b6700df8dfcc02f90d0fca82f24"
+IC_COMMIT="e915efecc8af90993ccfc499721ebe826aadba60"
 
 if [[ -z "${DOWNLOAD_DIR:-}" ]]; then
   DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
