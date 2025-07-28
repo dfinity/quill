@@ -2,14 +2,15 @@ use std::{fs, path::PathBuf};
 
 use crate::{
     lib::{
+        get_local_candid,
         signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
         AuthInfo, ROLE_SNS_GOVERNANCE,
     },
     AnyhowResult,
 };
 use anyhow::Error;
-use candid::{CandidType, Decode, Encode, TypeEnv};
-use candid_parser::parse_idl_args;
+use candid::{Decode, Encode, Principal, TypeEnv};
+use candid_parser::{parse_idl_args, IDLProg};
 use clap::Parser;
 use ic_sns_governance::pb::v1::{manage_neuron, ManageNeuron, Proposal};
 
@@ -85,6 +86,12 @@ pub fn exec(
 
 fn parse_proposal_from_candid_string(proposal_candid: String) -> AnyhowResult<Proposal> {
     let args = parse_idl_args(&proposal_candid)?;
-    let args: Vec<u8> = args.to_bytes_with_types(&TypeEnv::default(), &[Proposal::ty()])?;
+    let mut env = TypeEnv::default();
+    candid_parser::check_prog(
+        &mut env,
+        &get_local_candid(Principal::anonymous(), ROLE_SNS_GOVERNANCE)?.parse::<IDLProg>()?,
+    )?;
+    let args: Vec<u8> =
+        args.to_bytes_with_types(&env, &[env.find_type("Proposal").unwrap().clone()])?;
     Decode!(args.as_slice(), Proposal).map_err(Error::msg)
 }
