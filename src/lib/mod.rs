@@ -615,7 +615,7 @@ pub fn now_nanos() -> u64 {
 }
 
 pub fn e8s_to_tokens(e8s: Nat) -> BigDecimal {
-    BigDecimal::new(e8s.0.into(), 8)
+    BigDecimal::new(e8s.0.into(), 8).normalized()
 }
 
 pub fn key_encryption_params<'a>(salt: &'a [u8; 16], iv: &'a [u8; 16]) -> Parameters<'a> {

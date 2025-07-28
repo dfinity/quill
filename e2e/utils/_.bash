@@ -53,7 +53,9 @@ standard_nns_setup() {
     mkdir -p "$(dirname "$E2E_NETWORKS_JSON")"
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_networks.json" "$E2E_NETWORKS_JSON"
     dfx_start "$@"
-    NO_CLOBBER="1" "$BATS_TEST_DIRNAME"/../utils/setup_nns.bash
+    # NO_CLOBBER="1" "$BATS_TEST_DIRNAME"/../utils/setup_nns.bash
+    dfx extension install nns
+    dfx nns install --ledger-accounts 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752 22ca7edac648b814e81d7946e8bacea99280e07c5f51a04ba7a38009d8ad8e89 76374de112443a5415f4bef978091a622b8f41035c99147abc1471fd99635661
     IC_URL="http://localhost:$(< "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")"
     export IC_URL
 }
@@ -109,24 +111,12 @@ determine_network_directory() {
 # Start the replica in the background.
 dfx_start() {
     dfx_patchelf
-
-    if [ "$GITHUB_WORKSPACE" ]; then
-        # no need for random ports on github workflow; even using a random port we sometimes
-        # get 'address in use', so the hope is to avoid that by using a fixed port.
-        FRONTEND_HOST="127.0.0.1:8000"
-    else
-        # Start on random port for parallel test execution (needed on nix/hydra)
-        FRONTEND_HOST="127.0.0.1:0"
-    fi
+    FRONTEND_HOST="127.0.0.1:8080"
     determine_network_directory
     # Bats creates a FD 3 for test output, but child processes inherit it and Bats will
     # wait for it to close. Because `dfx start` leaves child processes running, we need
     # to close this pipe, otherwise Bats will wait indefinitely.
-    if [[ "$*" == "" ]]; then
-        dfx start --background --host "$FRONTEND_HOST" 3>&- # Start on random port for parallel test execution
-    else
-        dfx start --background "$@" 3>&-
-    fi
+    dfx start --background --host "$FRONTEND_HOST" "$@" 3>&-
 
     local dfx_config_root port webserver_port
     dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY"
@@ -160,11 +150,11 @@ wait_until_replica_healthy() {
 
 # Stop the replica and verify it is very very stopped.
 dfx_stop() {
-    # to help tell if other icx-proxy processes are from this test:
+    # to help tell if other pocket-ic processes are from this test:
     echo "pwd: $(pwd)"
-    # A suspicion: "address already is use" errors are due to an extra icx-proxy process.
-    echo "icx-proxy processes:"
-    pgrep icx-proxy || echo "no pgrep/icx-proxy output"
+    # A suspicion: "address already is use" errors are due to an extra pocket-ic process.
+    echo "pocket-ic processes:"
+    pgrep pocket-ic || echo "no pgrep/pocket-ic output"
 
     dfx stop
     local dfx_root=.dfx/
