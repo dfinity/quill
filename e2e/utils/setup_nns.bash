@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-IC_COMMIT="2f9ae6bf5eafed03599fd29475100aca9f78ae81"
+IC_COMMIT="c7993fa049275b6700df8dfcc02f90d0fca82f24"
 
 if [[ -z "${DOWNLOAD_DIR:-}" ]]; then
   DOWNLOAD_DIR=$(mktemp -d -t dfx-e2e-XXXXXXXX)
@@ -70,7 +70,7 @@ get_wasm sns-wasm-canister.wasm
 get_wasm ic-icrc1-ledger.wasm
 get_wasm ic-ckbtc-minter.wasm
 
-NNS_URL="http://localhost:$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
+NNS_URL="http://localhost:$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")"
 
 "${DOWNLOAD_DIR}/ic-nns-init" \
   --url "$NNS_URL" \

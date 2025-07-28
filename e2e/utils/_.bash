@@ -54,7 +54,7 @@ standard_nns_setup() {
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_networks.json" "$E2E_NETWORKS_JSON"
     dfx_start "$@"
     NO_CLOBBER="1" "$BATS_TEST_DIRNAME"/../utils/setup_nns.bash
-    IC_URL="http://localhost:$(< "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-1.port")"
+    IC_URL="http://localhost:$(< "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")"
     export IC_URL
 }
 
@@ -129,10 +129,10 @@ dfx_start() {
     fi
 
     local dfx_config_root port webserver_port
-    dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY/replica-configuration"
+    dfx_config_root="$E2E_NETWORK_DATA_DIRECTORY"
     printf "Configuration Root for DFX: %s\n" "${dfx_config_root}"
-    test -f "${dfx_config_root}/replica-1.port"
-    port=$(cat "${dfx_config_root}/replica-1.port")
+    test -f "${dfx_config_root}/pocket-ic-port"
+    port=$(cat "${dfx_config_root}/pocket-ic-port")
 
     # Overwrite the default networks.local.bind 127.0.0.1:8000 with allocated port
     webserver_port=$(cat "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")
