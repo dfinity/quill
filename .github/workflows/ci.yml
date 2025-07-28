@@ -51,7 +51,7 @@ jobs:
               name: Format
               command: cargo fmt -- --check
             os:
-              name: ubuntu-20.04
+              name: ubuntu-latest
               family: ubuntu
     env:
       VCPKG_ROOT: 'C:\vcpkg'
