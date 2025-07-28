@@ -8,12 +8,14 @@ use ic_base_types::CanisterId;
 use ic_nns_constants::canister_id_to_nns_canister_name;
 use ic_nns_governance::{
     pb::v1::{
-        install_code::CanisterInstallMode, InstallCode, NnsFunction, ProposalStatus,
-        StopOrStartCanister, UpdateCanisterSettings,
+        install_code::CanisterInstallMode, stop_or_start_canister::CanisterAction,
+        update_canister_settings::LogVisibility, InstallCode, NeuronType, NnsFunction,
+        ProposalRewardStatus, ProposalStatus, StopOrStartCanister, Topic, UpdateCanisterSettings,
+        Visibility,
     },
     proposals::call_canister::CallCanister,
 };
-use ic_nns_governance_api::pb::v1::{
+use ic_nns_governance_api::{
     add_or_remove_node_provider::Change,
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
     manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
@@ -21,11 +23,9 @@ use ic_nns_governance_api::pb::v1::{
     neuron::DissolveState,
     proposal::Action,
     reward_node_provider::{RewardMode, RewardToAccount},
-    stop_or_start_canister::CanisterAction,
     update_canister_settings::CanisterSettings,
     ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
-    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, ProposalInfo, ProposalRewardStatus,
-    Topic,
+    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, NeuronState, ProposalInfo, Vote,
 };
 use indicatif::HumanBytes;
 use itertools::Itertools;
@@ -52,22 +52,24 @@ Created {creation}
 ",
                 age = format_duration_seconds(info.age_seconds),
                 icp = e8s_to_tokens(info.stake_e8s.into()),
-                power = e8s_to_tokens(info.deciding_voting_power().into()),
-                warning = if info.deciding_voting_power() != info.potential_voting_power() {
+                power = e8s_to_tokens(info.deciding_voting_power.unwrap_or_default().into()),
+                warning = if info.deciding_voting_power != info.potential_voting_power {
                     format!(
                         "(decayed, could be {})",
-                        e8s_to_tokens(info.potential_voting_power().into())
+                        e8s_to_tokens(info.potential_voting_power.unwrap_or_default().into())
                     )
                 } else {
                     "".into()
                 },
-                last_refreshed =
-                    format_timestamp_seconds(info.voting_power_refreshed_timestamp_seconds()),
-                state = info.state(),
+                last_refreshed = info
+                    .voting_power_refreshed_timestamp_seconds
+                    .map_or_else(|| "never".to_string(), format_timestamp_seconds),
+                state = NeuronState::from_repr(info.state).unwrap_or(NeuronState::Unspecified),
                 delay = format_duration_seconds(info.dissolve_delay_seconds),
                 creation = format_timestamp_seconds(info.created_timestamp_seconds)
             );
-            let visibility = info.visibility();
+            let visibility = Visibility::try_from(info.visibility.unwrap_or(i32::MAX))
+                .unwrap_or(Visibility::Unspecified);
             if let Some(cf) = info.joined_community_fund_timestamp_seconds {
                 writeln!(
                     fmt,
@@ -101,8 +103,10 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
     let neurons = Decode!(blob, ListNeuronsResponse)?;
     let mut fmt = String::new();
     for neuron in neurons.full_neurons {
-        let neuron_type = neuron.neuron_type();
-        let neuron_visibility = neuron.visibility();
+        let neuron_type = NeuronType::try_from(neuron.neuron_type.unwrap_or(0))
+            .unwrap_or(NeuronType::Unspecified);
+        let neuron_visibility =
+            Visibility::try_from(neuron.visibility.unwrap_or(0)).unwrap_or(Visibility::Unspecified);
         if let Some(id) = neuron.id {
             writeln!(fmt, "Neuron {}", id.id)?;
         } else {
@@ -128,27 +132,32 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                 e8s_to_tokens(staked_maturity.into())
             )?;
         }
-        if neuron.auto_stake_maturity() {
+        if neuron.auto_stake_maturity.unwrap_or(false) {
             writeln!(fmt, "Auto staking maturity: Yes")?;
         }
-        if neuron.deciding_voting_power() == neuron.potential_voting_power() {
+        if neuron.deciding_voting_power.unwrap_or_default()
+            == neuron.potential_voting_power.unwrap_or_default()
+        {
             writeln!(
                 fmt,
                 "Voting power: {}",
-                e8s_to_tokens(neuron.deciding_voting_power().into())
+                e8s_to_tokens(neuron.deciding_voting_power.unwrap_or_default().into())
             )?;
         } else {
             writeln!(
                 fmt,
                 "Voting power: {} (decayed, could be {})",
-                e8s_to_tokens(neuron.deciding_voting_power().into()),
-                e8s_to_tokens(neuron.potential_voting_power().into())
+                e8s_to_tokens(neuron.deciding_voting_power.unwrap_or_default().into()),
+                e8s_to_tokens(neuron.potential_voting_power.unwrap_or_default().into())
             )?;
         }
         writeln!(
             fmt,
             "Voting power last refreshed: {}",
-            format_timestamp_seconds(neuron.voting_power_refreshed_timestamp_seconds())
+            neuron
+                .voting_power_refreshed_timestamp_seconds
+                .map(|ts| { format_timestamp_seconds(ts) })
+                .unwrap_or_else(|| "never".to_string())
         )?;
 
         if let Some(timestamp) = neuron.spawn_at_timestamp_seconds {
@@ -314,7 +323,7 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
         Command::DisburseMaturity(c) => {
             format!(
                 "Successfully disbursed {} maturity",
-                e8s_to_tokens(c.amount_disbursed_e8s().into())
+                e8s_to_tokens(c.amount_disbursed_e8s.unwrap_or_default().into())
             )
         }
         Command::MakeProposal(c) => {
@@ -339,6 +348,7 @@ pub fn display_manage_neuron(blob: &[u8]) -> AnyhowResult<String> {
             c.transfer_block_height
         ),
         Command::RefreshVotingPower(_) => "Successfully refreshed neuron's voting power".into(),
+        Command::SetFollowing(_) => "Successfully set following relationship".into(),
     };
     Ok(fmt)
 }
@@ -434,7 +444,8 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     bail!("SNS proposals currently unsupported") //todo
                 }
                 Action::ExecuteNnsFunction(a) => {
-                    let function = NnsFunction::from(a.nns_function());
+                    let function =
+                        NnsFunction::try_from(a.nns_function).unwrap_or(NnsFunction::Unspecified);
                     writeln!(fmt, "Execute NNS function {:?}", function)?;
                     if a.payload.starts_with(b"DIDL") {
                         let (canister_id, method) = function
@@ -572,7 +583,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     fmt.push('\n');
                 }
                 Action::RewardNodeProviders(a) => {
-                    if a.use_registry_derived_rewards() {
+                    if a.use_registry_derived_rewards.unwrap_or(false) {
                         writeln!(
                             fmt,
                             "Reward node providers {}",
@@ -662,7 +673,9 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     }
                 }
                 Action::StopOrStartCanister(a) => {
-                    let action = match a.action() {
+                    let action = match CanisterAction::try_from(a.action.unwrap_or_default())
+                        .unwrap_or(CanisterAction::Unspecified)
+                    {
                         CanisterAction::Start => "Start",
                         CanisterAction::Stop => "Stop",
                         CanisterAction::Unspecified => "Start/stop (unspecified)",
@@ -683,6 +696,23 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     let canister_name = canister_id_to_nns_canister_name(canister_id);
                     writeln!(fmt, "Update settings of canister {canister_name}")?;
                     fmt.push_str(&display_canister_settings(settings.unwrap())?);
+                }
+                Action::FulfillSubnetRentalRequest(req) => {
+                    writeln!(
+                        fmt,
+                        "Fulfill request to rent subnet by user {}",
+                        req.user
+                            .map_or_else(|| "<unknown>".to_string(), |user| user.to_string())
+                    )?;
+                    writeln!(
+                        fmt,
+                        "Replica version: {}\nNodes:",
+                        req.replica_version_id.unwrap_or_default()
+                    )?;
+                    for node in req.node_ids.unwrap_or_default() {
+                        writeln!(fmt, " - {}", node)?;
+                    }
+                    fmt.push('\n');
                 }
                 Action::ManageNeuron(a) => {
                     let neuron = a.neuron_id_or_subaccount.context("neuron ID was null")?;
@@ -723,7 +753,12 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                             )?;
                         }
                         ProposalCommand::Follow(c) => {
-                            writeln!(fmt, "Configure neuron {neuron} to follow {ids} for proposals of type {topic:?}", topic = c.topic(), ids = c.followees.iter().map(|id| id.id).format(", "))?;
+                            writeln!(
+                                fmt,
+                                "Configure neuron {neuron} to follow {ids} for proposals of type {topic:?}",
+                                topic = Topic::try_from(c.topic).unwrap_or(Topic::Unspecified),
+                                ids = c.followees.iter().map(|id| id.id).format(", ")
+                            )?;
                         }
                         ProposalCommand::MakeProposal(_) => {
                             bail!("nested proposals not supported")
@@ -770,17 +805,21 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                                     fmt,
                                     "Vote {yn:?} on proposal {proposal} from neuron {neuron}",
                                     proposal = proposal.id,
-                                    yn = c.vote()
+                                    yn = Vote::from_repr(c.vote)
                                 )?
                             } else {
-                                writeln!(fmt, "Vote {yn:?} from neuron {neuron}", yn = c.vote())?;
+                                writeln!(
+                                    fmt,
+                                    "Vote {yn:?} from neuron {neuron}",
+                                    yn = Vote::from_repr(c.vote)
+                                )?;
                             }
                         }
                         ProposalCommand::Spawn(c) => {
                             if let Some(controller) = c.new_controller {
-                                writeln!(fmt, "Spawn {percentage}% of the maturity of neuron {neuron} to {controller}", percentage = c.percentage_to_spawn())?;
+                                writeln!(fmt, "Spawn {percentage}% of the maturity of neuron {neuron} to {controller}", percentage = c.percentage_to_spawn.unwrap_or_default())?;
                             } else {
-                                writeln!(fmt, "Spawn {percentage}% of the maturity of neuron {neuron} to its owner", percentage = c.percentage_to_spawn())?;
+                                writeln!(fmt, "Spawn {percentage}% of the maturity of neuron {neuron} to its owner", percentage = c.percentage_to_spawn.unwrap_or_default())?;
                             }
                         }
                         ProposalCommand::Split(c) => writeln!(
@@ -791,10 +830,27 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         ProposalCommand::StakeMaturity(c) => writeln!(
                             fmt,
                             "Stake {percentage}% of the maturity of neuron {neuron}",
-                            percentage = c.percentage_to_stake()
+                            percentage = c.percentage_to_stake.unwrap_or_default()
                         )?,
                         ProposalCommand::RefreshVotingPower(_) => {
                             writeln!(fmt, "Refresh the voting power of neuron {neuron}")?
+                        }
+                        ProposalCommand::SetFollowing(c) => {
+                            writeln!(fmt, "Set neuron following")?;
+                            for topic in c.topic_following.unwrap_or_default() {
+                                writeln!(
+                                    fmt,
+                                    "For {topic:?}: {followees}",
+                                    topic = Topic::try_from(topic.topic.unwrap_or_default())
+                                        .unwrap_or(Topic::Unspecified),
+                                    followees = topic
+                                        .followees
+                                        .unwrap_or_default()
+                                        .iter()
+                                        .map(|id| id.id)
+                                        .format(", ")
+                                )?;
+                            }
                         }
                         ProposalCommand::Configure(c) => {
                             match c.operation.context("operation was null")? {
@@ -848,7 +904,10 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                                 Operation::SetVisibility(set_visibility) => writeln!(
                                     fmt,
                                     "Set visibility of {neuron} to {visibility:?}",
-                                    visibility = set_visibility.visibility()
+                                    visibility = Visibility::try_from(
+                                        set_visibility.visibility.unwrap_or_default()
+                                    )
+                                    .unwrap_or(Visibility::Unspecified)
                                 )?,
                             }
                         }
@@ -1001,8 +1060,12 @@ fn display_canister_settings(settings: CanisterSettings) -> AnyhowResult<String>
     if let Some(compute) = settings.compute_allocation {
         writeln!(fmt, "Compute allocation: {compute}%")?;
     }
-    if settings.log_visibility.is_some() {
-        writeln!(fmt, "Log visibility: {:?}", settings.log_visibility())?;
+    if let Some(visibility) = settings.log_visibility {
+        writeln!(
+            fmt,
+            "Log visibility: {:?}",
+            LogVisibility::try_from(visibility).unwrap_or(LogVisibility::Unspecified)
+        )?;
     }
     if let Some(limit) = settings.wasm_memory_limit {
         writeln!(fmt, "WASM memory limit: {}", HumanBytes(limit))?;
