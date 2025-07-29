@@ -53,7 +53,6 @@ standard_nns_setup() {
     mkdir -p "$(dirname "$E2E_NETWORKS_JSON")"
     cp "${BATS_TEST_DIRNAME}/../assets/minimum_networks.json" "$E2E_NETWORKS_JSON"
     dfx_start "$@"
-    # NO_CLOBBER="1" "$BATS_TEST_DIRNAME"/../utils/setup_nns.bash
     dfx extension install nns
     dfx nns install --ledger-accounts 345f723e9e619934daac6ae0f4be13a7b0ba57d6a608e511a00fd0ded5866752 22ca7edac648b814e81d7946e8bacea99280e07c5f51a04ba7a38009d8ad8e89 76374de112443a5415f4bef978091a622b8f41035c99147abc1471fd99635661
     IC_URL="http://localhost:$(< "$E2E_NETWORK_DATA_DIRECTORY/webserver-port")"
