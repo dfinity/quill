@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Updated to rev c7993fa049275b6700df8dfcc02f90d0fca82f24, adding support for the `FulfillSubnetRentalRequest` proposal.
 - `--refresh-followers` has been renamed to the more accurate `--refresh-following`.
 
 ## [0.5.3] - 2025-01-06
