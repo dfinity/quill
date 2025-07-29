@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  rust: 1.75.0
+  rust: 1.82.0
 
 jobs:
   build:
@@ -17,13 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             name: linux-musl
             target: x86_64-unknown-linux-musl
             target_file: target/x86_64-unknown-linux-musl/release/quill
             asset_name: quill-linux-x86_64-musl
             features: []
-          - os: windows-2019
+          - os: windows-2022
             name: windows
             target_file: target/release/quill.exe
             asset_name: quill-windows-x86_64.exe
@@ -38,13 +38,13 @@ jobs:
             target_file: target/release/quill
             asset_name: quill-macos-arm64
             build_deps: scripts/workflows/provision-darwin-arm64-build.sh
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             name: linux-arm32
             target: arm-unknown-linux-gnueabihf
             target_file: target/arm-unknown-linux-gnueabihf/release/quill
             asset_name: quill-linux-arm32
             features: [hsm]
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             name: linux
             target_file: target/release/quill
             asset_name: quill-linux-x86_64

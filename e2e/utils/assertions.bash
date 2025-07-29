@@ -57,9 +57,9 @@ assert_command_fail() {
 # Asserts that `dfx start` and `replica` are no longer running
 assert_no_dfx_start_or_replica_processes() {
     ! ( pgrep "dfx start" )
-    if [ -e "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-pid" ];
+    if [ -e "$E2E_NETWORK_DATA_DIRECTORY/pocket-ic-pid" ];
     then
-      ! ( kill -0 "$(cat "$E2E_NETWORK_DATA_DIRECTORY/replica-configuration/replica-pid")" 2>/dev/null )
+      ! ( kill -0 "$(cat "$E2E_NETWORK_DATA_DIRECTORY/pocket-ic-pid")" 2>/dev/null )
     fi
 }
 
