@@ -74,9 +74,9 @@ pub fn format_t_cycles(cycles: Nat) -> String {
     let t_cycles = BigDecimal::new(cycles.0.into(), 12);
     let e10 = t_cycles.digits();
     if e10 < 14 {
-        format!("{:.1}T", t_cycles)
+        format!("{t_cycles:.1}T")
     } else {
-        format!("{:.0}T", t_cycles)
+        format!("{t_cycles:.0}T")
     }
 }
 
