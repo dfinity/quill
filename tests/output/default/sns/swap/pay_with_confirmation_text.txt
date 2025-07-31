@@ -6,7 +6,7 @@ Sending message with
   Method name: transfer
   Arguments:   (
   record {
-    to = blob "\bf\f3\21\8e\70\8b\09\18\7a\58\6a\1f\39\7e\df\08\19\64\e5\60\a5\a0\f6\43\5f\ac\04\4c\7f\4a\25\e9";
+    to = blob "\ca\ee\4f\b7\75\0b\cb\ba\82\74\67\ea\40\df\ec\22\5f\f4\7e\87\2f\c7\ee\e5\8d\80\69\17\8b\a0\3e\70";
     fee = record { e8s = 10_000 : nat64 };
     memo = 100 : nat64;
     from_subaccount = null;
@@ -20,7 +20,7 @@ Sending message with
 
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
-  Canister id: rkp4c-7iaaa-aaaaa-aaaca-cai
+  Canister id: zcdfx-6iaaa-aaaaq-aaagq-cai
   Method name: refresh_buyer_tokens
   Arguments:   (
   record {
