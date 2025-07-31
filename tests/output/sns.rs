@@ -14,6 +14,7 @@ ledger_compatible![
     neuron_permission,
     dissolve,
     disburse,
+    // swap,
     // make_proposal,
     // stake_neuron,
     stake_maturity,
