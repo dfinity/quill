@@ -9,7 +9,7 @@ use candid::{CandidType, Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
-use ic_nns_governance::pb::v1::manage_neuron::RefreshVotingPower;
+use ic_nns_governance::pb::v1::manage_neuron::{DisburseMaturity, RefreshVotingPower};
 use ic_nns_governance::pb::v1::{
     manage_neuron::{
         configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Command,
@@ -144,6 +144,18 @@ pub struct ManageOpts {
     /// This must be done every so often to avoid neurons diminishing in voting power.
     #[arg(long, alias = "refresh-followers")]
     refresh_following: bool,
+
+    /// Disburse the neuron's maturity to its controller's account.
+    #[arg(long)]
+    disburse_maturity: bool,
+
+    /// Set the percentage of the neuron's maturity to disburse.
+    #[arg(long, value_parser = 1..=100)]
+    disburse_maturity_percentage: Option<i64>,
+
+    /// Disburse the neuron's maturity to the specified NNS account.
+    #[arg(long)]
+    disburse_maturity_to: Option<ParsedNnsAccount>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -427,6 +439,36 @@ Cannot use --ledger with these flags. This version of quill only supports the fo
             command: Some(Command::RefreshVotingPower(RefreshVotingPower {})),
             neuron_id_or_subaccount: id.clone(),
             id: None,
+        })?;
+        msgs.push(args);
+    }
+
+    if opts.disburse_maturity
+        || opts.disburse_maturity_to.is_some()
+        || opts.disburse_maturity_percentage.is_some()
+    {
+        let percentage_to_disburse = opts.disburse_maturity_percentage.unwrap_or(100) as u32;
+        let disburse = match opts.disburse_maturity_to {
+            Some(ParsedNnsAccount::Original(ident)) => DisburseMaturity {
+                percentage_to_disburse,
+                to_account: None,
+                to_account_identifier: Some(ident.into()),
+            },
+            Some(ParsedNnsAccount::Icrc1(account)) => DisburseMaturity {
+                percentage_to_disburse,
+                to_account: Some(account.into()),
+                to_account_identifier: None,
+            },
+            None => DisburseMaturity {
+                percentage_to_disburse,
+                to_account: None,
+                to_account_identifier: None,
+            },
+        };
+        let args = Encode!(&ManageNeuron {
+            id: None,
+            command: Some(Command::DisburseMaturity(disburse)),
+            neuron_id_or_subaccount: id.clone(),
         })?;
         msgs.push(args);
     }

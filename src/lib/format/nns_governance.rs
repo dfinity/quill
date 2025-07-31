@@ -207,7 +207,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
             )?;
         }
         if neuron.neuron_type.is_some() {
-            writeln!(fmt, "Neuron type: {:?}", neuron_type)?;
+            writeln!(fmt, "Neuron type: {neuron_type:?}")?;
         }
         if neuron.kyc_verified {
             writeln!(fmt, "KYC verified: Yes")?;
@@ -392,9 +392,9 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
         .with_context(|| format!("unknown reward status {reward_status}"))?;
     if let Some(proposal) = proposal_info.proposal {
         if let Some(title) = proposal.title {
-            writeln!(fmt, "\"{}\" ({:?})", title, topic)?;
+            writeln!(fmt, "\"{title}\" ({topic:?})")?;
         } else {
-            writeln!(fmt, "Untitled proposal ({:?})", topic)?;
+            writeln!(fmt, "Untitled proposal ({topic:?})")?;
         }
         if !proposal.summary.is_empty() {
             writeln!(fmt, "Summary: \"{}\"", proposal.summary)?;
@@ -446,7 +446,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                 Action::ExecuteNnsFunction(a) => {
                     let function =
                         NnsFunction::try_from(a.nns_function).unwrap_or(NnsFunction::Unspecified);
-                    writeln!(fmt, "Execute NNS function {:?}", function)?;
+                    writeln!(fmt, "Execute NNS function {function:?}")?;
                     if a.payload.starts_with(b"DIDL") {
                         let (canister_id, method) = function
                             .canister_and_function()
@@ -710,7 +710,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         req.replica_version_id.unwrap_or_default()
                     )?;
                     for node in req.node_ids.unwrap_or_default() {
-                        writeln!(fmt, " - {}", node)?;
+                        writeln!(fmt, " - {node}")?;
                     }
                     fmt.push('\n');
                 }
@@ -916,7 +916,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
             }
         }
     } else {
-        writeln!(fmt, "Unknown proposal ({:?})", topic)?;
+        writeln!(fmt, "Unknown proposal ({topic:?})")?;
     }
     if let Some(id) = proposal_info.id {
         writeln!(fmt, "Proposal ID: {}", id.id)?;
@@ -1045,7 +1045,7 @@ fn display_canister_settings(settings: CanisterSettings) -> AnyhowResult<String>
                     .map_or_else(|c| c.to_string(), canister_id_to_nns_canister_name)
             })
             .format(", ");
-        writeln!(fmt, "Controllers: {}", controllers)?;
+        writeln!(fmt, "Controllers: {controllers}")?;
     }
     if let Some(freezing) = settings.freezing_threshold {
         writeln!(
