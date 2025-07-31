@@ -2,12 +2,12 @@ Sending message with
 
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
-  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Canister id: zfcdd-tqaaa-aaaaq-aaaga-cai
   Method name: icrc1_transfer
   Arguments:   (
   record {
     to = record {
-      owner = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+      owner = principal "zqfso-syaaa-aaaaq-aaafq-cai";
       subaccount = opt blob "\72\8a\c1\3b\10\49\a3\ac\af\fe\13\f1\3b\c7\1e\fd\9b\34\97\65\80\d4\0d\f2\79\b2\73\20\6e\f1\34\24";
     };
     fee = null;
@@ -21,7 +21,7 @@ Sending message with
 
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
-  Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
+  Canister id: zqfso-syaaa-aaaaq-aaafq-cai
   Method name: manage_neuron
   Arguments:   (
   record {

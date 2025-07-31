@@ -2,7 +2,7 @@ Sending message with
 
   Call type:   update
   Sender:      2vxsx-fae
-  Canister id: rkp4c-7iaaa-aaaaa-aaaca-cai
+  Canister id: zcdfx-6iaaa-aaaaq-aaagq-cai
   Method name: get_buyer_state
   Arguments:   (
   record {

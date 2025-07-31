@@ -4,16 +4,19 @@ const NEURON_ID: &str = "2313380519530470538";
 
 // uncomment tests on next ledger app update
 ledger_compatible![
-    // hot_key,
+    hot_key,
     additional_dissolve_delay_seconds,
-    // disburse,
+    disburse,
+    // disburse_maturity,
     dissolve,
-    // follow,
-    // community_fund,
+    follow,
+    community_fund,
     maturity,
     merge,
+    refresh_following,
+    set_visibility,
     split,
-    // vote
+    vote
 ];
 
 #[test]

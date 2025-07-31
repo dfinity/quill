@@ -266,7 +266,7 @@ pub fn supported_transaction(canister_id: &Principal, method_name: &str) -> bool
             || method_name == "list_neurons_pb"
             || method_name == "update_node_provider"
     } else if *canister_id == ledger_canister_id() {
-        method_name == "send_pb" || method_name == "icrc1_transfer"
+        method_name == "send_pb" || method_name == "icrc1_transfer" || method_name == "transfer"
     } else {
         method_name == "icrc1_transfer"
             || method_name == "manage_neuron"
