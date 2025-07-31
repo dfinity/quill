@@ -1,14 +1,12 @@
 use crate::lib::{
     genesis_token_canister_id,
-    ledger::LedgerIdentity,
     signing::{sign_ingress_with_request_status_query, IngressWithRequestId},
     AnyhowResult, AuthInfo, ROLE_NNS_GTC,
 };
 use anyhow::anyhow;
 use candid::Encode;
 use clap::Parser;
-use k256::{elliptic_curve::sec1::ToEncodedPoint, PublicKey};
-use pkcs8::DecodePublicKey;
+use k256::elliptic_curve::sec1::ToEncodedPoint;
 
 /// Claim seed neurons from the Genesis Token Canister.
 #[derive(Parser)]
@@ -27,7 +25,12 @@ pub fn exec(auth: &AuthInfo) -> AnyhowResult<Vec<IngressWithRequestId>> {
                 sig,
             )?])
         }
+        #[cfg(feature = "ledger")]
         AuthInfo::Ledger => {
+            use crate::lib::ledger::LedgerIdentity;
+            use k256::PublicKey;
+            use pkcs8::DecodePublicKey;
+
             let point = PublicKey::from_public_key_der(&LedgerIdentity::new()?.public_key()?.1)?
                 .to_encoded_point(false);
             let sig = Encode!(&hex::encode(point.as_bytes()))?;
