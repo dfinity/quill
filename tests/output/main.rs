@@ -55,6 +55,11 @@ fn quill_query(cmd: &str) -> Output {
 }
 
 #[must_use]
+fn quill_sns(cmd: &str) -> Output {
+    quill_inner(cmd, sns_args())
+}
+
+#[must_use]
 fn quill_sns_query(cmd: &str) -> Output {
     quill_inner(cmd, ["--dry-run".into()].into_iter().chain(sns_args()))
 }
