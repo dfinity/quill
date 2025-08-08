@@ -3,7 +3,13 @@ use crate::{
     PRINCIPAL,
 };
 
-ledger_compatible![balance, withdrawal_address, transfer];
+ledger_compatible![
+    balance,
+    withdrawal_address,
+    transfer,
+    // update_balance,
+    // retrieve_btc
+];
 
 #[test]
 fn balance() {

@@ -167,13 +167,11 @@ enum NativeVisibility {
 pub fn exec(auth: &AuthInfo, opts: ManageOpts) -> AnyhowResult<Vec<IngressWithRequestId>> {
     if opts.ledger {
         ensure!(
-            opts.add_hot_key.is_none() && opts.remove_hot_key.is_none() && !opts.disburse && opts.disburse_amount.is_none() && opts.disburse_to.is_none()
-            && !opts.clear_manage_neuron_followees && !opts.join_community_fund && !opts.leave_community_fund
-            && opts.follow_topic.is_none() && opts.follow_neurons.is_none() && opts.register_vote.is_none() && !opts.reject
-            && opts.set_visibility.is_none() && !opts.refresh_following,
+            !opts.disburse_maturity && opts.disburse_maturity_to.is_none()
+            && opts.disburse_maturity_percentage.is_none(),
             "\
-Cannot use --ledger with these flags. This version of quill only supports the following neuron-manage operations with a Ledger device:
---additional-dissolve-delay-seconds, --start-dissolving, --stop-dissolving, --split, --merge-from-neuron, --spawn, --stake-maturity, --auto-stake-maturity"
+Cannot use --ledger with these flags. This version of quill does not support the --disburse-maturity, --disburse-maturity-to, \
+or --disburse-maturity-percentage flags with a Ledger device"
         );
     }
     let mut msgs = Vec::new();

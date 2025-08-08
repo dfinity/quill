@@ -2,7 +2,7 @@ Sending message with
 
   Call type:   update
   Sender:      fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae
-  Canister id: ryjl3-tyaaa-aaaaa-aaaba-cai
+  Canister id: zfcdd-tqaaa-aaaaq-aaaga-cai
   Method name: icrc1_transfer
   Arguments:   (
   record {

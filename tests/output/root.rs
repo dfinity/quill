@@ -4,16 +4,17 @@ use tempfile::NamedTempFile;
 
 use crate::{
     escape_p, ledger_compatible, quill, quill_authed, quill_query, quill_query_authed, quill_send,
-    OutputExt,
+    quill_sns, OutputExt,
 };
 
 // Uncomment tests on next ledger app update
 ledger_compatible![
     account_balance,
-    // claim_neurons,
+    claim_neurons,
     list_neurons,
-    // neuron_stake,
+    neuron_stake,
     public_ids,
+    transfer,
     transfer_icrc1,
 ];
 
@@ -190,8 +191,8 @@ fn ledger_fail_early() {
     quill("replace-node-provider-id --ledger --node-operator-id fdsgv-62ihb-nbiqv-xgic5-iefsv-3cscz-tmbzv-63qd5-vh43v-dqfrt-pae \
             --node-provider-id pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae")
         .diff_err("ledger_incompatible/by_function.txt");
-    quill("neuron-stake --ledger --amount 12 --name myNeuron")
+    quill_sns("sns new-sale-ticket --ledger --amount-icp-e8s 100000 --subaccount e000d80101")
         .diff_err("ledger_incompatible/by_command.txt");
-    quill("neuron-manage 1 --ledger --join-community-fund")
+    quill("neuron-manage 1 --ledger --disburse-maturity")
         .diff_err("ledger_incompatible/by_flag.txt");
 }
