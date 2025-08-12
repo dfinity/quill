@@ -27,6 +27,7 @@ mod get_swap_refund;
 mod list_deployed_snses;
 mod make_proposal;
 mod make_upgrade_canister_proposal;
+mod make_commit_proposed_batch_proposal;
 mod neuron_id;
 mod neuron_permission;
 mod new_sale_ticket;
@@ -71,6 +72,7 @@ pub enum SnsCommand {
     ListDeployedSnses(list_deployed_snses::ListDeployedSnsesOpts),
     MakeProposal(make_proposal::MakeProposalOpts),
     MakeUpgradeCanisterProposal(make_upgrade_canister_proposal::MakeUpgradeCanisterProposalOpts),
+    MakeCommitProposedBatchProposal(make_commit_proposed_batch_proposal::MakeCommitProposedBatchProposalOpts),
     NeuronId(neuron_id::NeuronIdOpts),
     NeuronPermission(neuron_permission::NeuronPermissionOpts),
     NewSaleTicket(new_sale_ticket::NewSaleTicketOpts),
@@ -122,6 +124,10 @@ pub fn dispatch(auth: &AuthInfo, opts: SnsOpts, qr: bool, fetch_root_key: bool) 
         SnsCommand::ListDeployedSnses(opts) => list_deployed_snses::exec(opts, fetch_root_key)?,
         SnsCommand::MakeProposal(opts) => {
             let out = make_proposal::exec(auth, &canister_ids?, opts)?;
+            print_vec(qr, &out)?;
+        }
+        SnsCommand::MakeCommitProposedBatchProposal(opts) => {
+            let out = make_commit_proposed_batch_proposal::exec(auth, &canister_ids?, opts)?;
             print_vec(qr, &out)?;
         }
         SnsCommand::MakeUpgradeCanisterProposal(opts) => {
