@@ -7,11 +7,13 @@ use ic_nns_governance::{
     pb::v1::{
         add_or_remove_node_provider::Change,
         claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
+        install_code::CanisterInstallMode,
         manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
         manage_neuron_response::Command,
         neuron::DissolveState,
         proposal::Action,
         reward_node_provider::RewardMode,
+        stop_or_start_canister::CanisterAction,
         ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, KnownNeuronData,
         ListNeuronsResponse, ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo,
         NeuronState, NeuronType, ProposalInfo, Topic, Visibility,

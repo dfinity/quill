@@ -115,7 +115,7 @@ Set default followees
 For {{self::get_topic(topic)|fmt("{:?}")}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
 {% endfor -%}
 {% when InstallCode with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.install_mode() -%}
-  {% when Unspecified %}Install (unspecified mode) {% when Install %}Install {% when Reinstall %}Reinstall {% when Upgrade %}Upgrade {% endmatch -%}
+  {% when CanisterInstallMode::Unspecified %}Install (unspecified mode) {% when CanisterInstallMode::Install %}Install {% when CanisterInstallMode::Reinstall %}Reinstall {% when CanisterInstallMode::Upgrade %}Upgrade {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
 WASM blob hash: {{Sha256::digest(a.wasm_module())|hex}}
 {% if a.skip_stopping_before_installing() -%}
@@ -125,7 +125,7 @@ Canister will NOT be stopped before installing new WASM
 Init args: {{arg|candid_payload(canister_id, ".")}}
 {% endif -%}
 {% when StopOrStartCanister with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.action() -%}
-  {% when Start %}Start {% when Stop %}Stop {% when Unspecified %}Start/stop (unspecified) {% endmatch -%}
+  {% when CanisterAction::Start %}Start {% when CanisterAction::Stop %}Stop {% when CanisterAction::Unspecified %}Start/stop (unspecified) {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
 {% when UpdateCanisterSettings with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% let settings = a.settings.as_ref().unwrap() -%}
 Update settings of canister {{canister_id|nns_canister_name}}

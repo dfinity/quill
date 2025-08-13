@@ -96,6 +96,7 @@ pub fn format_n_cycles(cycles: Nat) -> String {
 }
 
 pub mod filters {
+    use askama::Values;
     use bigdecimal::BigDecimal;
     use candid::{Nat, Principal};
     use ic_base_types::{CanisterId, PrincipalId};
@@ -110,7 +111,11 @@ pub mod filters {
 
     use super::{format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds};
 
-    pub fn tokens_e8s(e8s: impl IntoNat, units: &str) -> askama::Result<String> {
+    pub fn tokens_e8s(
+        e8s: impl IntoNat,
+        _values: &dyn Values,
+        units: &str,
+    ) -> askama::Result<String> {
         if units == "." {
             Ok(format!("{}", e8s_to_tokens(e8s.into_nat())))
         } else {
@@ -120,46 +125,48 @@ pub mod filters {
 
     pub fn tokens_e8s_guess(
         e8s: impl IntoNat,
+        _values: &dyn Values,
         canister: impl ToPrincipal,
     ) -> askama::Result<String> {
         let canister = canister.to_principal();
         if canister == ledger_canister_id() {
-            tokens_e8s(e8s, "ICP")
+            tokens_e8s(e8s, _values, "ICP")
         } else if canister == ckbtc_canister_id(false) {
-            tokens_e8s(e8s, "ckBTC")
+            tokens_e8s(e8s, _values, "ckBTC")
         } else if canister == ckbtc_canister_id(true) {
-            tokens_e8s(e8s, "ckTESTBTC")
+            tokens_e8s(e8s, _values, "ckTESTBTC")
         } else {
-            tokens_e8s(e8s, "tokens")
+            tokens_e8s(e8s, _values, "tokens")
         }
     }
 
-    pub fn dur_seconds(seconds: impl ToU64) -> askama::Result<String> {
+    pub fn dur_seconds(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_duration_seconds(seconds.to_u64()))
     }
 
-    pub fn ts_seconds(seconds: impl ToU64) -> askama::Result<String> {
+    pub fn ts_seconds(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_timestamp_seconds(seconds.to_u64()))
     }
 
-    pub fn ts_nanos(seconds: impl ToU64) -> askama::Result<String> {
+    pub fn ts_nanos(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_timestamp_nanoseconds(seconds.to_u64()))
     }
 
-    pub fn hex(bytes: impl AsRef<[u8]>) -> askama::Result<String> {
+    pub fn hex(bytes: impl AsRef<[u8]>, _values: &dyn Values) -> askama::Result<String> {
         Ok(hex::encode(bytes))
     }
 
-    pub fn cycles_t(cycles: impl IntoNat) -> askama::Result<String> {
+    pub fn cycles_t(cycles: impl IntoNat, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_t_cycles(cycles.into_nat()))
     }
 
-    pub fn cycles_n(cycles: impl IntoNat) -> askama::Result<String> {
+    pub fn cycles_n(cycles: impl IntoNat, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_n_cycles(cycles.into_nat()))
     }
 
     pub fn candid_payload(
         bytes: impl AsRef<[u8]>,
+        _values: &dyn Values,
         canister: impl ToPrincipal,
         function: &str,
     ) -> askama::Result<String> {
@@ -183,19 +190,26 @@ pub mod filters {
         Ok(msg)
     }
 
-    pub fn num_ufixed(n: impl IntoNat, digits: i64) -> askama::Result<BigDecimal> {
+    pub fn num_ufixed(
+        n: impl IntoNat,
+        _values: &dyn Values,
+        digits: i64,
+    ) -> askama::Result<BigDecimal> {
         let nat = n.into_nat();
         let bigint = nat.0;
         Ok(BigDecimal::new(bigint.into(), digits))
     }
 
-    pub fn nns_canister_name(canister: impl ToPrincipal) -> askama::Result<String> {
+    pub fn nns_canister_name(
+        canister: impl ToPrincipal,
+        _values: &dyn Values,
+    ) -> askama::Result<String> {
         Ok(canister_id_to_nns_canister_name(
             CanisterId::unchecked_from_principal(canister.to_principal().into()),
         ))
     }
 
-    pub fn bytes(n: impl ToU64) -> askama::Result<String> {
+    pub fn bytes(n: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
         let n = n.to_u64();
         Ok(HumanBytes(n).to_string())
     }
