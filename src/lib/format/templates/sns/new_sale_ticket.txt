@@ -1,0 +1,46 @@
+{% match result -%}
+{% when TicketResult::Ok with (ticket) -%}
+{% if let Some(ticket) = ticket.ticket -%}
+Successfully created ticket with ID {{ticket.ticket_id}}
+Creation time: {{ticket.creation_time|ts_nanos}}
+Ticket amount: {{ticket.amount_icp_e8s|tokens_e8s("ICP")}}
+  {% if let Some(account) = ticket.account -%}
+    {% if account.owner.is_some() -%}
+Ticket owner: {{self::icrc1_helper(account)?}}
+    {% endif -%}
+  {% endif -%}
+{% else -%}
+Ticket successfully created (no data available)
+{% endif -%}
+{% when TicketResult::Err with (error) -%}
+Ticket creation error: {% match error.error_type() -%}
+  {% when InvalidPrincipal -%}
+This principal is forbidden from creating tickets
+  {% when InvalidSubaccount -%}
+Invalid subaccount, not 32 bytes (64 hex digits)
+  {% when InvalidUserAmount -%}
+  {% if let Some(user_amount) = error.invalid_user_amount %}
+Invalid amount, must be between {{user_amount.min_amount_icp_e8s_included|tokens_e8s("ICP")}} and {{user_amount.max_amount_icp_e8s_included|tokens_e8s("ICP")}} ICP
+  {% else -%}
+Invalid amount, not within the required range
+  {% endif -%}
+  {% when SaleClosed -%}
+Token sale has already been closed
+  {% when SaleNotOpen -%}
+Token sale has not yet opened
+  {% when TicketExists -%}
+An open ticket from this account already exists.
+  {% if let Some(ticket) = error.existing_ticket %}
+Ticket ID: {{ticket.ticket_id}}
+Creation time: {{ticket.creation_time|ts_nanos}}
+Ticket amount: {{ticket.amount_icp_e8s|tokens_e8s("ICP")}}
+    {% if let Some(account) = ticket.account -%}
+      {% if account.owner.is_some() -%}
+Ticket owner: {{self::icrc1_helper(account)?}}
+      {% endif -%}
+    {% endif -%}
+  {% endif -%}
+  {% when Unspecified -%}
+unknown
+  {% endmatch -%}
+{% endmatch -%}

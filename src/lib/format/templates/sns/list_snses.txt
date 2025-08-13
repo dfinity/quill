@@ -1,0 +1,17 @@
+{% for sns in instances -%}
+{% let root = sns.root_canister_id.context("root canister was null")? -%}
+https://dashboard.internetcomputer.org/sns/{{root}}
+Root canister: {{root}}
+{% if let Some(ledger) = sns.ledger_canister_id -%}
+Ledger canister: {{ledger}}
+{% endif -%}
+{% if let Some(governance) = sns.governance_canister_id -%}
+Governance canister: {{governance}}
+{% endif -%}
+{% if let Some(swap) = sns.swap_canister_id -%}
+Swap canister: {{swap}}
+{% endif -%}
+{% if let Some(index) = sns.index_canister_id -%}
+Index canister: {{index}}
+{% endif -%}
+{% endfor -%}

@@ -1,0 +1,6 @@
+{% match result -%}
+{% when RefundResult::Ok with (transfer) -%}
+Refunded ICP {% if let Some(index) = transfer.block_height %}at block index {{index}}{% else %}(unknown block index){% endif %}
+{% when RefundResult::Err with (error) -%}
+Refund error: {{error.description()}}
+{% endmatch -%}

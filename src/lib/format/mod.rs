@@ -103,7 +103,9 @@ pub mod filters {
     use indicatif::HumanBytes;
 
     use crate::lib::{
-        ckbtc_canister_id, e8s_to_tokens, get_default_role, get_idl_string, ledger_canister_id,
+        ckbtc_canister_id, e8s_to_tokens,
+        format::{format_n_cycles, format_t_cycles},
+        get_default_role, get_idl_string, ledger_canister_id,
     };
 
     use super::{format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds};
@@ -146,6 +148,14 @@ pub mod filters {
 
     pub fn hex(bytes: impl AsRef<[u8]>) -> askama::Result<String> {
         Ok(hex::encode(bytes))
+    }
+
+    pub fn cycles_t(cycles: impl IntoNat) -> askama::Result<String> {
+        Ok(format_t_cycles(cycles.into_nat()))
+    }
+
+    pub fn cycles_n(cycles: impl IntoNat) -> askama::Result<String> {
+        Ok(format_n_cycles(cycles.into_nat()))
     }
 
     pub fn candid_payload(

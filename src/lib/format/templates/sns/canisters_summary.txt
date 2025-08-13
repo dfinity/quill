@@ -1,0 +1,31 @@
+System canisters:
+
+Root:
+{{root}}
+
+Governance:
+{{governance}}
+
+Ledger:
+{{ledger}}
+
+Swap:
+{{swap}}
+
+Index:
+{{index}}
+{%- if !dapps.is_empty() %}
+
+Dapp canisters:
+{% for dapp in dapps -%}
+{{dapp}}
+
+{% endfor -%}
+{% endif -%}
+{% if !archives.is_empty() -%}
+Archive canisters:
+{% for archive in archives -%}
+{{archive}}
+
+{% endfor -%}
+{% endif -%}

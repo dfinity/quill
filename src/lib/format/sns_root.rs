@@ -1,114 +1,95 @@
+use askama::Template;
 use candid::{Decode, Principal};
-use ic_sns_root::{CanisterSummary, GetSnsCanistersSummaryResponse};
-use indicatif::HumanBytes;
-use itertools::Itertools;
-use std::fmt::Write;
+use ic_nervous_system_clients::canister_status::CanisterStatusResultV2;
+use ic_sns_root::GetSnsCanistersSummaryResponse;
 
-use crate::lib::{format::format_n_cycles, AnyhowResult};
+use crate::lib::{format::filters, AnyhowResult};
 
-use super::format_t_cycles;
+const NNS_ROOT: Principal =
+    Principal::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x01]);
 
 pub fn display_canisters_summary(blob: &[u8]) -> AnyhowResult<String> {
     let response = Decode!(blob, GetSnsCanistersSummaryResponse)?;
-    let root = response.root_canister_summary().canister_id().0;
-    let governance = response.governance_canister_summary().canister_id().0;
-    let mut fmt = format!(
-        "\
-System canisters:
-
-Root:
-{root}
-
-Governance:
-{governance}
-
-Ledger:
-{ledger}
-
-Index:
-{index}
-
-Swap:
-{swap}",
-        root = display_canister_summary(response.root_canister_summary(), root, governance)?,
-        governance =
-            display_canister_summary(response.governance_canister_summary(), root, governance)?,
-        ledger = display_canister_summary(response.ledger_canister_summary(), root, governance)?,
-        index = display_canister_summary(response.index_canister_summary(), root, governance)?,
-        swap = display_canister_summary(response.swap_canister_summary(), root, governance)?,
-    );
-    if !response.dapps.is_empty() {
-        fmt.push_str("\n\nDapp canisters:");
-        for dapp in &response.dapps {
-            write!(
-                fmt,
-                "\n\n{}",
-                display_canister_summary(dapp, root, governance)?
-            )?;
-        }
+    let root_summary = response.root_canister_summary();
+    let governance_summary = response.governance_canister_summary();
+    let ledger_summary = response.ledger_canister_summary();
+    let index_summary = response.index_canister_summary();
+    let swap_summary = response.swap_canister_summary();
+    let root = root_summary.canister_id().0;
+    let governance = governance_summary.canister_id().0;
+    let fmt = CanistersSummary {
+        root: SingleCanisterSummary {
+            status: root_summary.status().clone(),
+            canister_id: root_summary.canister_id().0,
+            root,
+            governance,
+        },
+        governance: SingleCanisterSummary {
+            status: governance_summary.status().clone(),
+            canister_id: governance_summary.canister_id().0,
+            root,
+            governance,
+        },
+        ledger: SingleCanisterSummary {
+            status: ledger_summary.status().clone(),
+            canister_id: ledger_summary.canister_id().0,
+            root,
+            governance,
+        },
+        index: SingleCanisterSummary {
+            status: index_summary.status().clone(),
+            canister_id: index_summary.canister_id().0,
+            root,
+            governance,
+        },
+        swap: SingleCanisterSummary {
+            status: swap_summary.status().clone(),
+            canister_id: swap_summary.canister_id().0,
+            root,
+            governance,
+        },
+        dapps: response
+            .dapp_canister_summaries()
+            .iter()
+            .map(|summary| SingleCanisterSummary {
+                status: summary.status().clone(),
+                canister_id: summary.canister_id().0,
+                root,
+                governance,
+            })
+            .collect(),
+        archives: response
+            .archives_canister_summaries()
+            .iter()
+            .map(|summary| SingleCanisterSummary {
+                status: summary.status().clone(),
+                canister_id: summary.canister_id().0,
+                root,
+                governance,
+            })
+            .collect(),
     }
-    if !response.archives.is_empty() {
-        fmt.push_str("\n\nArchive canisters:");
-        for archive in &response.archives {
-            write!(
-                fmt,
-                "\n\n{}",
-                display_canister_summary(archive, root, governance)?
-            )?;
-        }
-    }
+    .render()?;
     Ok(fmt)
 }
 
-fn display_canister_summary(
-    summary: &CanisterSummary,
+#[derive(Template)]
+#[template(path = "sns/canister_summary.txt")]
+struct SingleCanisterSummary {
+    status: CanisterStatusResultV2,
+    canister_id: Principal,
     root: Principal,
     governance: Principal,
-) -> AnyhowResult<String> {
-    const NNS_ROOT: Principal =
-        Principal::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x01]);
-    let status = summary.status();
-    let canister_id = summary.canister_id();
-    let mut fmt = format!(
-        "\
-Canister ID: {canister_id}, status: {status:?}
-Cycles: {cycles}, memory usage: {memory}",
-        status = status.status(),
-        cycles = format_t_cycles(status.cycles.clone()),
-        memory = HumanBytes(status.memory_size().get())
-    );
-    if let Some(hash) = &status.module_hash {
-        write!(fmt, "\nInstalled module: hash {}", hex::encode(hash))?;
-    }
-    let freezing = &status.settings.freezing_threshold;
-    let idle = &status.idle_cycles_burned_per_day;
-    let freezing_time = freezing.clone() / idle.clone();
-    write!(
-        fmt,
-        "
-Freezing threshold: {freezing} cycles ({freezing_time} days at current idle usage of {idle}/day)
-Memory allocation: {memory}%, compute allocation: {compute}%
-Controllers: {controllers}",
-        freezing = format_t_cycles(freezing.clone()),
-        idle = format_n_cycles(idle.clone()),
-        memory = status.settings.memory_allocation,
-        compute = status.settings.compute_allocation,
-        controllers = status
-            .settings
-            .controllers
-            .iter()
-            .format_with(", ", |c, f| if c.0 == NNS_ROOT {
-                f(&"NNS root")
-            } else if c.0 == governance {
-                f(&"SNS governance")
-            } else if c.0 == root {
-                f(&"SNS root")
-            } else if *c == canister_id {
-                f(&"self")
-            } else {
-                f(c)
-            })
-    )?;
+}
 
-    Ok(fmt)
+#[derive(Template)]
+#[template(path = "sns/canisters_summary.txt")]
+struct CanistersSummary {
+    root: SingleCanisterSummary,
+    governance: SingleCanisterSummary,
+    ledger: SingleCanisterSummary,
+    index: SingleCanisterSummary,
+    swap: SingleCanisterSummary,
+    dapps: Vec<SingleCanisterSummary>,
+    archives: Vec<SingleCanisterSummary>,
 }

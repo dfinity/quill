@@ -239,7 +239,7 @@ Deadline: {{deadline|ts_seconds}}
 Rejection cost: {{proposal_info.reject_cost_e8s|tokens_e8s("ICP")}}
 {% endif -%}
 {% if let Some(tally) = proposal_info.latest_tally -%}
-Current tally: Y {{tally.yes|tokens_e8s(".")}} ({{tally.yes / tally.total * 100}}%), N {{tally.no|tokens_e8s(".")}} ({{tally.no / tally.total * 100}}%) as of {{tally.timestamp_seconds|ts_seconds}}
+Current tally: Y {{tally.yes|tokens_e8s(".")}} ({{(tally.yes / tally.total * 100)|fmt("{:.2}")}}%), N {{tally.no|tokens_e8s(".")}} ({{(tally.no / tally.total * 100)|fmt("{:.2}")}}%) as of {{tally.timestamp_seconds|ts_seconds}}
 {% endif -%}
 {% if proposal_info.reward_event_round != 0 -%}
 Reward event round: {{proposal_info.reward_event_round}}

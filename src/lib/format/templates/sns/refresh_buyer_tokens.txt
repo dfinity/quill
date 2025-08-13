@@ -1,0 +1,2 @@
+Ticket balance: {{response.icp_accepted_participation_e8s|tokens_e8s("ICP")}}
+Total transferred ICP: {{response.icp_ledger_account_balance_e8s|tokens_e8s("ICP")}}
