@@ -73,9 +73,9 @@ pub fn format_t_cycles(cycles: Nat) -> String {
     let t_cycles = BigDecimal::new(cycles.0.into(), 12);
     let e10 = t_cycles.digits();
     if e10 < 14 {
-        format!("{:.1}T", t_cycles)
+        format!("{t_cycles:.1}T")
     } else {
-        format!("{:.0}T", t_cycles)
+        format!("{t_cycles:.0}T")
     }
 }
 
@@ -98,19 +98,15 @@ pub fn format_n_cycles(cycles: Nat) -> String {
 pub mod filters {
     use bigdecimal::BigDecimal;
     use candid::{Nat, Principal};
-    use ic_base_types::CanisterId;
+    use ic_base_types::{CanisterId, PrincipalId};
     use ic_nns_constants::canister_id_to_nns_canister_name;
-    use ic_nns_governance::pb::v1::manage_neuron::NeuronIdOrSubaccount;
     use indicatif::HumanBytes;
 
     use crate::lib::{
         ckbtc_canister_id, e8s_to_tokens, get_default_role, get_idl_string, ledger_canister_id,
     };
 
-    use super::{
-        format_duration_seconds, format_n_cycles, format_t_cycles, format_timestamp_nanoseconds,
-        format_timestamp_seconds,
-    };
+    use super::{format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds};
 
     pub fn tokens_e8s(e8s: impl IntoNat, units: &str) -> askama::Result<String> {
         if units == "." {
@@ -120,12 +116,16 @@ pub mod filters {
         }
     }
 
-    pub fn tokens_e8s_guess(e8s: impl IntoNat, canister: &Principal) -> askama::Result<String> {
-        if *canister == ledger_canister_id() {
+    pub fn tokens_e8s_guess(
+        e8s: impl IntoNat,
+        canister: impl ToPrincipal,
+    ) -> askama::Result<String> {
+        let canister = canister.to_principal();
+        if canister == ledger_canister_id() {
             tokens_e8s(e8s, "ICP")
-        } else if *canister == ckbtc_canister_id(false) {
+        } else if canister == ckbtc_canister_id(false) {
             tokens_e8s(e8s, "ckBTC")
-        } else if *canister == ckbtc_canister_id(true) {
+        } else if canister == ckbtc_canister_id(true) {
             tokens_e8s(e8s, "ckTESTBTC")
         } else {
             tokens_e8s(e8s, "tokens")
@@ -144,29 +144,22 @@ pub mod filters {
         Ok(format_timestamp_nanoseconds(seconds.to_u64()))
     }
 
-    pub fn cycles_t(cycles: impl IntoNat) -> askama::Result<String> {
-        Ok(format_t_cycles(cycles.into_nat()))
-    }
-
-    pub fn cycles_precise(cycles: impl IntoNat) -> askama::Result<String> {
-        Ok(format_n_cycles(cycles.into_nat()))
-    }
-
     pub fn hex(bytes: impl AsRef<[u8]>) -> askama::Result<String> {
         Ok(hex::encode(bytes))
     }
 
     pub fn candid_payload(
         bytes: impl AsRef<[u8]>,
-        canister: &Principal,
+        canister: impl ToPrincipal,
         function: &str,
     ) -> askama::Result<String> {
+        let canister = canister.to_principal();
         let bytes = bytes.as_ref();
         let msg = if bytes.starts_with(b"DIDL") {
             if let Ok(idl) = get_idl_string(
                 bytes,
-                *canister,
-                get_default_role(*canister).unwrap_or_default(),
+                canister,
+                get_default_role(canister).unwrap_or_default(),
                 function,
                 "args",
             ) {
@@ -186,23 +179,15 @@ pub mod filters {
         Ok(BigDecimal::new(bigint.into(), digits))
     }
 
-    pub fn nns_canister_name(canister: &(impl Into<CanisterId> + Copy)) -> askama::Result<String> {
-        Ok(canister_id_to_nns_canister_name((*canister).into()))
+    pub fn nns_canister_name(canister: impl ToPrincipal) -> askama::Result<String> {
+        Ok(canister_id_to_nns_canister_name(
+            CanisterId::unchecked_from_principal(canister.to_principal().into()),
+        ))
     }
 
     pub fn bytes(n: impl ToU64) -> askama::Result<String> {
         let n = n.to_u64();
         Ok(HumanBytes(n).to_string())
-    }
-
-    pub fn neuron_or_sub(neuron: &NeuronIdOrSubaccount) -> askama::Result<String> {
-        let fmt = match neuron {
-            NeuronIdOrSubaccount::NeuronId(i) => format!("{}", i.id),
-            NeuronIdOrSubaccount::Subaccount(s) => {
-                format!("with subaccount {}", hex::encode(s))
-            }
-        };
-        Ok(fmt)
     }
 
     pub trait IntoNat {
@@ -240,12 +225,45 @@ pub mod filters {
         }
     }
 
+    impl ToU64 for u32 {
+        fn to_u64(&self) -> u64 {
+            *self as u64
+        }
+    }
+
     impl<T> ToU64 for &T
     where
         T: ToU64,
     {
         fn to_u64(&self) -> u64 {
             T::to_u64(self)
+        }
+    }
+
+    pub trait ToPrincipal {
+        fn to_principal(&self) -> Principal;
+    }
+    impl ToPrincipal for Principal {
+        fn to_principal(&self) -> Principal {
+            *self
+        }
+    }
+    impl ToPrincipal for CanisterId {
+        fn to_principal(&self) -> Principal {
+            self.get().0
+        }
+    }
+    impl ToPrincipal for PrincipalId {
+        fn to_principal(&self) -> Principal {
+            self.0
+        }
+    }
+    impl<T> ToPrincipal for &T
+    where
+        T: ToPrincipal,
+    {
+        fn to_principal(&self) -> Principal {
+            T::to_principal(self)
         }
     }
 }
