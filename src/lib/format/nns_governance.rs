@@ -203,8 +203,13 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
 
 pub fn display_neuron_ids(blob: &[u8]) -> AnyhowResult<String> {
     let ids = Decode!(blob, Vec<u64>)?;
-    let fmt = ids.into_iter().format(", ");
-    Ok(format!("Neurons: {fmt}"))
+    #[derive(Template)]
+    #[template(path = "nns/neuron_ids.txt")]
+    struct NeuronIds {
+        ids: Vec<u64>,
+    }
+    let fmt = NeuronIds { ids }.render()?;
+    Ok(fmt)
 }
 
 pub fn display_claim_gtc_neurons(blob: &[u8]) -> AnyhowResult<String> {
@@ -218,9 +223,14 @@ pub fn display_claim_gtc_neurons(blob: &[u8]) -> AnyhowResult<String> {
 
 pub fn display_claim_or_refresh_neuron_from_account(blob: &[u8]) -> AnyhowResult<String> {
     let res = Decode!(blob, ClaimOrRefreshNeuronFromAccountResponse)?;
+    #[derive(Template)]
+    #[template(path = "nns/claim_or_refresh_neuron_from_account.txt")]
+    struct ClaimOrRefreshNeuronFromAccount {
+        id: u64,
+    }
     let fmt = if let Some(res) = res.result {
         match res {
-            ClaimResult::NeuronId(id) => format!("Successfully staked ICP in neuron {}", id.id),
+            ClaimResult::NeuronId(id) => ClaimOrRefreshNeuronFromAccount { id: id.id }.render()?,
             ClaimResult::Error(e) => display_governance_error(e),
         }
     } else {

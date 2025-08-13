@@ -1,0 +1,1 @@
+Successfully staked ICP in neuron {{id}}
