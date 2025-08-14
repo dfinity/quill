@@ -10,9 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         os: 
-          - name: ubuntu-20.04
-            family: ubuntu
           - name: ubuntu-22.04
+            family: ubuntu
+          - name: ubuntu-24.04
             family: ubuntu
           - name: macos-13-large
             family: darwin
@@ -20,9 +20,11 @@ jobs:
             family: darwin
           - name: macos-14-xlarge
             family: darwin-arm64
-          - name: windows-2019
-            family: windows
+          - name: macos-15
+            family: darwin-arm64
           - name: windows-2022
+            family: windows
+          - name: windows-2025
             family: windows
         task: 
         - name: Clippy
@@ -49,7 +51,7 @@ jobs:
               name: Format
               command: cargo fmt -- --check
             os:
-              name: ubuntu-20.04
+              name: ubuntu-latest
               family: ubuntu
     env:
       VCPKG_ROOT: 'C:\vcpkg'

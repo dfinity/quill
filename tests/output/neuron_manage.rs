@@ -4,16 +4,19 @@ const NEURON_ID: &str = "2313380519530470538";
 
 // uncomment tests on next ledger app update
 ledger_compatible![
-    // hot_key,
+    hot_key,
     additional_dissolve_delay_seconds,
-    // disburse,
+    disburse,
+    // disburse_maturity,
     dissolve,
-    // follow,
-    // community_fund,
+    follow,
+    community_fund,
     maturity,
     merge,
+    refresh_following,
+    set_visibility,
     split,
-    // vote
+    vote
 ];
 
 #[test]
@@ -125,4 +128,12 @@ fn set_visibility() {
 fn refresh_following() {
     quill_send(&format!("neuron-manage {NEURON_ID} --refresh-following"))
         .diff("neuron_manage/refresh_following.txt")
+}
+
+#[test]
+fn disburse_maturity() {
+    quill_send(&format!("neuron-manage {NEURON_ID} --disburse-maturity"))
+        .diff("neuron_manage/disburse_maturity.txt");
+    quill_send(&format!("neuron-manage {NEURON_ID} --disburse-maturity --disburse-maturity-percentage 50 --disburse-maturity-to {ALICE}"))
+        .diff("neuron_manage/disburse_maturity_percentage_to.txt");
 }

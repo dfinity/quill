@@ -21,7 +21,6 @@ use ic_nns_governance::{
     proposals::call_canister::CallCanister,
 };
 use itertools::Itertools;
-use sha2::{Digest, Sha256};
 
 use crate::lib::{format::filters, AnyhowResult};
 

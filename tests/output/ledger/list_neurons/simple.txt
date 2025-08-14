@@ -4,4 +4,14 @@ Sending message with
   Sender:      5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe
   Canister id: rrkah-fqaaa-aaaaa-aaaaq-cai
   Method name: list_neurons
-  Arguments:   (record { neuron_ids = vec {}; include_neurons_readable_by_caller = true })
+  Arguments:   (
+  record {
+    page_size = null;
+    include_public_neurons_in_full_neurons = null;
+    neuron_ids = vec {};
+    page_number = null;
+    include_empty_neurons_readable_by_caller = null;
+    neuron_subaccounts = null;
+    include_neurons_readable_by_caller = true;
+  },
+)

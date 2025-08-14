@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.4] - 2025-08-11
+
+- Ledger support has been updated. Ledger devices can now be used to vote and follow, disburse neurons (but not neuron maturity), add hotkeys, and set neuron visibility; as well as stake new neurons or claim them from Genesis, and transfer to all types of NNS accounts.
+- Added command for disbursing maturity from neurons, `quill neuron-manage --disburse-maturity`, with optional parameters `--disburse-maturity-percentage` and `--disburse-maturity-to`.
+- Updated to rev c7993fa049275b6700df8dfcc02f90d0fca82f24, adding support for the `FulfillSubnetRentalRequest` proposal.
 - `--refresh-followers` has been renamed to the more accurate `--refresh-following`.
 
 ## [0.5.3] - 2025-01-06
