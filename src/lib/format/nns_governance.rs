@@ -6,23 +6,29 @@ use candid::{Decode, Nat, Principal};
 use ic_nns_governance::{
     pb::v1::{
         add_or_remove_node_provider::Change,
-        claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
         install_code::CanisterInstallMode,
         manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
-        manage_neuron_response::Command,
-        neuron::DissolveState,
         proposal::Action,
         reward_node_provider::RewardMode,
         stop_or_start_canister::CanisterAction,
-        ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, KnownNeuronData,
-        ListNeuronsResponse, ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo,
-        NeuronState, NeuronType, ProposalInfo, Topic, Visibility,
+        Account, GovernanceError, KnownNeuronData, NeuronState, NeuronType, ProposalRewardStatus,
+        Topic, Visibility,
     },
     proposals::call_canister::CallCanister,
 };
+use ic_nns_governance_api::{
+    claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
+    manage_neuron_response::Command, neuron::DissolveState,
+    ClaimOrRefreshNeuronFromAccountResponse, ListNeuronsResponse, ListProposalInfoResponse,
+    ManageNeuronResponse, NeuronInfo, ProposalInfo, ProposalStatus,
+};
 use itertools::Itertools;
+use sha2::{Digest, Sha256};
 
-use crate::lib::{format::filters, AnyhowResult};
+use crate::lib::{
+    format::{filters, icrc1_account},
+    AnyhowResult, ParsedAccount,
+};
 
 pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
     let info = Decode!(blob, Result<NeuronInfo, GovernanceError>)?;
@@ -46,15 +52,19 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
         Ok(info) => GetNeuronInfo {
             age_seconds: info.age_seconds,
             stake: info.stake_e8s.into(),
-            deciding: info.deciding_voting_power().into(),
-            potential: info.potential_voting_power().into(),
-            last_refreshed_seconds: info.voting_power_refreshed_timestamp_seconds(),
-            state: info.state(),
-            visibility: info.visibility.map(|_| info.visibility()),
+            deciding: info.deciding_voting_power.unwrap_or_default().into(),
+            potential: info.potential_voting_power.unwrap_or_default().into(),
+            last_refreshed_seconds: info
+                .voting_power_refreshed_timestamp_seconds
+                .context("voting power refreshed timestamp was null")?,
+            state: NeuronState::try_from(info.state).unwrap_or_default(),
+            visibility: info
+                .visibility
+                .map(|vis| Visibility::try_from(vis).unwrap_or_default()),
             dissolve_delay_seconds: info.dissolve_delay_seconds,
             created_seconds: info.created_timestamp_seconds,
             community_fund_seconds: info.joined_community_fund_timestamp_seconds,
-            known_neuron_data: info.known_neuron_data,
+            known_neuron_data: info.known_neuron_data.map(Into::into),
             retrieved_seconds: info.retrieved_at_timestamp_seconds,
         }
         .render()?,
@@ -102,45 +112,53 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
         neurons: neurons
             .full_neurons
             .into_iter()
-            .map(|neuron| FullNeuron {
-                aging_seconds: neuron.aging_since_timestamp_seconds,
-                auto_stake_maturity: neuron.auto_stake_maturity(),
-                community_fund_seconds: neuron.joined_community_fund_timestamp_seconds,
-                controller: neuron.controller.map(|p| p.0),
-                created_seconds: neuron.created_timestamp_seconds,
-                deciding: neuron.deciding_voting_power().into(),
-                dissolve_delay: neuron.dissolve_state,
-                followees: neuron
-                    .followees
-                    .iter()
-                    .map(|(topic, followees)| {
-                        (
-                            Topic::try_from(*topic).unwrap(),
-                            followees
-                                .followees
-                                .iter()
-                                .map(|followee| followee.id)
-                                .collect_vec(),
-                        )
-                    })
-                    .collect(),
-                hotkeys: neuron.hot_keys.iter().map(|p| p.0).collect(),
-                last_refreshed_seconds: neuron.voting_power_refreshed_timestamp_seconds(),
-                neuron_type: neuron.neuron_type.map(|_| neuron.neuron_type()),
-                potential: neuron.potential_voting_power().into(),
-                visibility: neuron.visibility.map(|_| neuron.visibility()),
-                id: neuron.id.unwrap().id,
-                known_neuron_data: neuron.known_neuron_data,
-                kyc_verified: neuron.kyc_verified,
-                not_for_profit: neuron.not_for_profit,
-                recent_votes: (!neuron.recent_ballots.is_empty())
-                    .then_some(neuron.recent_ballots.len()),
-                spawn_at_seconds: neuron.spawn_at_timestamp_seconds,
-                staked_icp_e8s: neuron.cached_neuron_stake_e8s.into(),
-                staked_maturity: neuron.staked_maturity_e8s_equivalent.map(|n| n.into()),
-                total_followees: neuron.followees.values().map(|f| f.followees.len()).sum(),
+            .map(|neuron| {
+                Ok(FullNeuron {
+                    aging_seconds: neuron.aging_since_timestamp_seconds,
+                    auto_stake_maturity: neuron.auto_stake_maturity.unwrap_or_default(),
+                    community_fund_seconds: neuron.joined_community_fund_timestamp_seconds,
+                    controller: neuron.controller.map(|p| p.0),
+                    created_seconds: neuron.created_timestamp_seconds,
+                    deciding: neuron.deciding_voting_power.unwrap_or(0).into(),
+                    dissolve_delay: neuron.dissolve_state,
+                    followees: neuron
+                        .followees
+                        .iter()
+                        .map(|(topic, followees)| {
+                            (
+                                Topic::try_from(*topic).unwrap(),
+                                followees
+                                    .followees
+                                    .iter()
+                                    .map(|followee| followee.id)
+                                    .collect_vec(),
+                            )
+                        })
+                        .collect(),
+                    hotkeys: neuron.hot_keys.iter().map(|p| p.0).collect(),
+                    last_refreshed_seconds: neuron
+                        .voting_power_refreshed_timestamp_seconds
+                        .context("voting power refreshed timestamp was null")?,
+                    neuron_type: neuron
+                        .neuron_type
+                        .map(|t| NeuronType::try_from(t).unwrap_or_default()),
+                    potential: neuron.potential_voting_power.unwrap_or_default().into(),
+                    visibility: neuron
+                        .visibility
+                        .map(|vis| Visibility::try_from(vis).unwrap_or_default()),
+                    id: neuron.id.unwrap().id,
+                    known_neuron_data: neuron.known_neuron_data.map(Into::into),
+                    kyc_verified: neuron.kyc_verified,
+                    not_for_profit: neuron.not_for_profit,
+                    recent_votes: (!neuron.recent_ballots.is_empty())
+                        .then_some(neuron.recent_ballots.len()),
+                    spawn_at_seconds: neuron.spawn_at_timestamp_seconds,
+                    staked_icp_e8s: neuron.cached_neuron_stake_e8s.into(),
+                    staked_maturity: neuron.staked_maturity_e8s_equivalent.map(|n| n.into()),
+                    total_followees: neuron.followees.values().map(|f| f.followees.len()).sum(),
+                })
             })
-            .collect(),
+            .collect::<AnyhowResult<Vec<_>>>()?,
     }
     .render()?;
     Ok(fmt)
@@ -232,7 +250,7 @@ pub fn display_claim_or_refresh_neuron_from_account(blob: &[u8]) -> AnyhowResult
     let fmt = if let Some(res) = res.result {
         match res {
             ClaimResult::NeuronId(id) => ClaimOrRefreshNeuronFromAccount { id: id.id }.render()?,
-            ClaimResult::Error(e) => display_governance_error(e),
+            ClaimResult::Error(e) => display_governance_error(e.into()),
         }
     } else {
         "Unknown result of call".to_string()
@@ -248,8 +266,16 @@ fn map_governance_error<T>(res: Result<T, GovernanceError>) -> AnyhowResult<T> {
     res.map_err(|e| anyhow!(e.error_message))
 }
 
-fn get_topic(topic: &i32) -> Topic {
-    Topic::try_from(*topic).unwrap_or_default()
+fn get_topic(topic: &i32) -> AnyhowResult<Topic> {
+    Topic::try_from(*topic).context("Unknown topic")
+}
+
+fn get_status(status: &i32) -> AnyhowResult<ProposalStatus> {
+    ProposalStatus::from_repr(*status).context("Unknown proposal status")
+}
+
+fn get_reward_status(status: &i32) -> AnyhowResult<ProposalRewardStatus> {
+    ProposalRewardStatus::try_from(*status).context("Unknown proposal reward status")
 }
 
 fn sns_unsupported() -> AnyhowResult<String> {
@@ -258,4 +284,15 @@ fn sns_unsupported() -> AnyhowResult<String> {
 
 fn nested_proposals_not_supported() -> AnyhowResult<String> {
     bail!("Nested proposals not supported")
+}
+
+fn icrc1_helper(account: &Account) -> AnyhowResult<ParsedAccount> {
+    Ok(icrc1_account(
+        account.owner.unwrap().0,
+        Some(account.subaccount.as_ref().map_or(Ok([0; 32]), |s| {
+            s.subaccount[..]
+                .try_into()
+                .map_err(|_| anyhow!("subaccount had wrong length"))
+        })?),
+    ))
 }

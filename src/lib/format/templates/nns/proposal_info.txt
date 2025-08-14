@@ -24,7 +24,7 @@ URL: {{proposal.url}}
 {% endif -%}
 {% if let Some(action) = proposal.action -%}
 Proposed action: {#+ -#}
-{% match action -%}
+{% match Action::from(action.clone()) -%}
 {% when RegisterKnownNeuron with (a) -%}
 Register known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
   {%- if let Some(data) = a.known_neuron_data %} as {{data.name}}
@@ -147,6 +147,12 @@ Log visibility: {{settings.log_visibility()|fmt("{:?}")}}
 {% if let Some(limit) = settings.wasm_memory_limit -%}
 WASM memory limit: {{limit|bytes}}
 {% endif -%}
+{% when FulfillSubnetRentalRequest with (o) -%}
+Fulfill request to rent subnet by user {% if let Some(user) = o.user %}{{user}}{% else %}<unknown>{% endif %}
+Replica version: {{o.replica_version_id}}
+Nodes: {% for node in o.node_ids %}
+- {{node}}
+{%- endfor %}
 {% when CreateServiceNervousSystem with (o) -%}{{self::sns_unsupported()?}}
 {% when OpenSnsTokenSwap with (o) -%}{{self::sns_unsupported()?}}
 {% when SetSnsTokenSwapOpenTimeWindow with (o) -%}{{self::sns_unsupported()?}}
@@ -187,6 +193,12 @@ Split off {{c.amount_e8s|tokens_e8s("ICP")}} from neuron {% call neuron %} as a 
 Stake {{c.percentage_to_stake()}}% of the maturity of neuron {% call neuron %}
   {% when RefreshVotingPower with (c) -%}
 Refresh the voting power of neuron {% call neuron %}
+  {% when DisburseMaturity with (c) -%}
+Disburse {{c.percentage_to_disburse}}% of the maturity from neuron {% call neuron %} to {% if let Some(account) = c.to_account %}{{self::icrc1_helper(account)?}}{% else if let Some(account) = c.to_account_identifier %}{{account.hash|hex}}{% else %}its owner{% endif %}
+  {% when SetFollowing with (c) -%}
+Change followees of neuron {% call neuron %}{% if c.topic_following.len() != 0 %}: {% for topic in c.topic_following -%}
+for {% if let Some(topic) = topic.topic %}{{self::get_topic(topic)|fmt("{:?}")}}{% else %}unspecified topic{% endif %}: {% if topic.followees.len() != 0 %}{% for followee in topic.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor -%}{% else %}nobody{% endif %}{% if !loop.last %}; {% endif %}{% endfor %}
+{% else %} to no followees{% endif %}
   {% when Configure with (c) -%}
     {% match c.operation.as_ref().context("operation was null")? -%}
     {% when AddHotKey with (o) -%}
@@ -213,13 +225,13 @@ Set visibility of neuron {% call neuron %} to {{o.visibility()|fmt("{:?}")}}
   {% endmatch -%}
 {% endmatch -%}
 {% else -%}
-Unknown proposal ({{proposal_info.topic()|fmt("{:?}")}})
+Unknown proposal ({{self::get_topic(proposal_info.topic)?|fmt("{:?}")}})
 {% endif -%}
 {% if let Some(id) = proposal_info.id -%}
 Proposal ID: {{id.id}}
 {% endif -%}
 Created at {{proposal_info.proposal_timestamp_seconds|ts_seconds}}{% if let Some(proposer) = proposal_info.proposer -%} by neuron {{proposer.id}}{% endif %}
-Status: {{proposal_info.status()|fmt("{:?}")}}, reward status: {{proposal_info.reward_status()|fmt("{:?}")}}
+Status: {{self::get_status(proposal_info.status)?|fmt("{:?}")}}, reward status: {{self::get_reward_status(proposal_info.reward_status)?|fmt("{:?}")}}
 {% if let Some(reason) = proposal_info.failure_reason -%}
 Failure reason: {{reason.error_message}}
 {% endif -%}

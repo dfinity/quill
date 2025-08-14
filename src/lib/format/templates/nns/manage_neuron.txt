@@ -29,8 +29,12 @@ Successfully staked maturity ({{c.staked_maturity_e8s|tokens_e8s(".")}} staked m
 Successfully merged {{c.merged_maturity_e8s|tokens_e8s(".")}} maturity (total stake now {{c.new_stake_e8s|tokens_e8s(".")}})
 {% when Disburse with (c) -%}
 Successfully disbursed ICP at block index {{c.transfer_block_height}}
+{% when DisburseMaturity with (c) -%}
+Successfully disbursed {% if let Some(maturity) = c.amount_disbursed_e8s %}{{maturity|tokens_e8s("maturity")}}{% else %}maturity{% endif %}
 {% when RefreshVotingPower with (_) -%}
 Successfully refreshed neuron's voting power
+{% when SetFollowing with (_) -%}
+Successfully set following relationship
 {% when Error with (e) -%}
 NNS error: {{e.error_message}}
 {% endmatch -%}

@@ -25,4 +25,6 @@ Successfully merged {{c.merged_maturity_e8s|tokens_e8s("maturity")}} (total stak
 Neuron successfully split off to {% if let Some(id) = c.created_neuron_id %}new neuron {{id}}{% else %}unknown new neuron{% endif %}
 {% when StakeMaturity with (c) -%}
 Successfully staked maturity ({{c.staked_maturity_e8s|tokens_e8s("maturity")}} staked total, {{c.maturity_e8s|tokens_e8s("maturity")}} unstaked)
+{% when SetFollowing with (c) -%}
+Successfully set following relationship
 {% endmatch -%}
