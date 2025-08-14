@@ -1,0 +1,28 @@
+{% match command -%}
+{% when Error with (error) -%}
+SNS governance error: {{error.error_message}}
+{% when Configure with (_) -%}
+Neuron successfully configured
+{% when RegisterVote with (_) -%}
+Successfully voted
+{% when Follow with (_) -%}
+Successfully set following relationship
+{% when AddNeuronPermission with (_) -%}
+Successfully added neuron permissions
+{% when RemoveNeuronPermission with (_) -%}
+Successfully removed neuron permissions
+{% when Disburse with (c) -%}
+Succcessfully disbursed ICP at block index {{c.transfer_block_height}}
+{% when ClaimOrRefresh with (c) -%}
+Successfully updated the stake of {% if let Some(id) = c.refreshed_neuron_id %}neuron {{id}}{% else %}unknown neuron{% endif %}
+{% when DisburseMaturity with (c) -%}
+Successfully disbursed {{c.amount_deducted_e8s()|tokens_e8s("maturity")}}
+{% when MakeProposal with (c) -%}
+Successfully created new proposal with {% if let Some(id) = c.proposal_id %}proposal {{id.id}}{% else %}unknown proposal{% endif %}
+{% when MergeMaturity with (c) -%}
+Successfully merged {{c.merged_maturity_e8s|tokens_e8s("maturity")}} (total stake now {{c.new_stake_e8s|tokens_e8s(".")}})
+{% when Split with (c) -%}
+Neuron successfully split off to {% if let Some(id) = c.created_neuron_id %}new neuron {{id}}{% else %}unknown new neuron{% endif %}
+{% when StakeMaturity with (c) -%}
+Successfully staked maturity ({{c.staked_maturity_e8s|tokens_e8s("maturity")}} staked total, {{c.maturity_e8s|tokens_e8s("maturity")}} unstaked)
+{% endmatch -%}
