@@ -447,11 +447,11 @@ or --disburse-maturity-percentage flags with a Ledger device"
     {
         let percentage_to_disburse = opts.disburse_maturity_percentage.unwrap_or(100) as u32;
         let disburse = match opts.disburse_maturity_to {
-            Some(ParsedNnsAccount::Original(ident)) => DisburseMaturity {
-                percentage_to_disburse,
-                to_account: None,
-                to_account_identifier: Some(ident.into()),
-            },
+            Some(ParsedNnsAccount::Original(_)) => {
+                return Err(anyhow!("Disburse maturity is temporarily disabled for arbitrary accounts.\
+                Use an ICRC-1 account, or if --disburse-maturity-to is not specified, the controller of \
+                the neuron will be used."));
+            }
             Some(ParsedNnsAccount::Icrc1(account)) => DisburseMaturity {
                 percentage_to_disburse,
                 to_account: Some(account.into()),
