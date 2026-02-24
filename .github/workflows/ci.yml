@@ -14,11 +14,9 @@ jobs:
             family: ubuntu
           - name: ubuntu-24.04
             family: ubuntu
-          - name: macos-13-large
+          - name: macos-15-intel
             family: darwin
-          - name: macos-14-large
-            family: darwin
-          - name: macos-14-xlarge
+          - name: macos-14
             family: darwin-arm64
           - name: macos-15
             family: darwin-arm64

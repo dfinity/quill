@@ -18,9 +18,9 @@ jobs:
           - os: ubuntu-22.04
             binary_path: target/release
             build_deps: scripts/workflows/provision-linux-build.sh
-          - os: macos-14-large
+          - os: macos-15
             binary_path: target/release
-            build_deps: scripts/workflows/provision-darwin-build.sh
+            build_deps: scripts/workflows/provision-darwin-arm64-build.sh
     steps:
       - uses: actions/checkout@v4
 
