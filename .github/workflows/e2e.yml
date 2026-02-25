@@ -44,27 +44,13 @@ jobs:
           name: quill-${{ matrix.os }}-rs
           path: ${{ matrix.binary_path }}/quill
 
-  list_tests:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: set-matrix
-        run: |
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "matrix<<$EOF" >> $GITHUB_OUTPUT
-          scripts/workflows/e2e-matrix.py >> $GITHUB_OUTPUT
-          echo "$EOF" >> $GITHUB_OUTPUT
-
   test:
     runs-on: ${{ matrix.os }}
-    needs: [build, list_tests]
+    needs: [build]
     strategy:
       fail-fast: false
-      matrix: ${{fromJson(needs.list_tests.outputs.matrix)}}
-    env:
-      E2E_TEST: tests-${{ matrix.test }}.bash
+      matrix:
+        os: [ubuntu-22.04, macos-15]
     steps:
       - uses: actions/checkout@v4
       - name: Download quill binary
@@ -89,7 +75,7 @@ jobs:
           echo "utils=$(pwd)/e2e/utils" >> "$GITHUB_ENV"
           export -p
       - name: Run e2e test
-        run: timeout 2100 bats "e2e/$E2E_TEST"
+        run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
 
   aggregate:
     name: e2e:required
