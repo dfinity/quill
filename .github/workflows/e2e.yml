@@ -30,11 +30,6 @@ jobs:
         if: ${{ contains(matrix.os, 'ubuntu') }}
         run: sudo apt-get install -y libudev-dev
 
-      - name: Build release
-        run: |
-          cargo build --release --locked
-          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
-
       - name: Install dfx
         uses: dfinity/setup-dfx@main
 
@@ -42,13 +37,29 @@ jobs:
         if: ${{ contains(matrix.os, 'macos') }}
         run: brew install coreutils
 
-      - name: Setup Bats and bats libs
-        id: setup-bats
-        uses: bats-core/bats-action@4.0.0
+      # bats-core/bats-action@4.0.0 doesn't propagate GITHUB_TOKEN to its
+      # internal shell steps, causing unauthenticated GitHub API 403 errors.
+      - name: Install Bats and bats-support
+        run: |
+          BATS_DIR="$HOME/.local/share/bats"
+          mkdir -p "$BATS_DIR"
+
+          # Install bats-core
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          /tmp/bats-core/install.sh "$BATS_DIR"
+          echo "$BATS_DIR/bin" >> "$GITHUB_PATH"
+
+          # Install bats-support library
+          git clone --depth 1 https://github.com/bats-core/bats-support.git "$BATS_DIR/bats-support"
+
+          echo "BATS_LIB_PATH=$BATS_DIR" >> "$GITHUB_ENV"
+
+      - name: Build release
+        run: |
+          cargo build --release --locked
+          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
 
       - name: Run e2e test
-        env:
-          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
         run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
 
   aggregate:
