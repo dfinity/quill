@@ -7,20 +7,14 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: e2e build (${{ matrix.os }})
+  test:
+    name: e2e (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         # windows not supported by dfx
-        include:
-          - os: ubuntu-22.04
-            binary_path: target/release
-            build_deps: scripts/workflows/provision-linux-build.sh
-          - os: macos-15
-            binary_path: target/release
-            build_deps: scripts/workflows/provision-darwin-arm64-build.sh
+        os: [ubuntu-22.04, macos-15]
     steps:
       - uses: actions/checkout@v4
 
@@ -32,48 +26,22 @@ jobs:
             target
           key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
-      - name: Install dependencies
-        run: ${{ matrix.build_deps }}
-
       - name: Build release
-        run: cargo build --release --locked
+        run: |
+          cargo build --release --locked
+          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: quill-${{ matrix.os }}-rs
-          path: ${{ matrix.binary_path }}/quill
-
-  test:
-    runs-on: ${{ matrix.os }}
-    needs: [build]
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, macos-15]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download quill binary
-        uses: actions/download-artifact@v4
-        with:
-          name: quill-${{ matrix.os }}-rs
-          path: /usr/local/bin
-      - name: Setup quill binary
-        run: chmod +x /usr/local/bin/quill
       - name: Install dfx
         uses: dfinity/setup-dfx@main
+
       - name: Install coreutils (macOS)
         if: ${{ contains(matrix.os, 'macos') }}
         run: brew install coreutils
+
       - name: Setup Bats and bats libs
         id: setup-bats
         uses: bats-core/bats-action@4.0.0
-      - name: Prepare environment
-        run: |
-          echo "archive=$(pwd)/e2e/archive" >> "$GITHUB_ENV"
-          echo "assets=$(pwd)/e2e/assets" >> "$GITHUB_ENV"
-          echo "utils=$(pwd)/e2e/utils" >> "$GITHUB_ENV"
-          echo "DOWNLOAD_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
+
       - name: Run e2e test
         env:
           BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}

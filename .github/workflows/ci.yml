@@ -4,53 +4,32 @@ on: pull_request
 
 jobs:
   ci:
-    name: ${{ matrix.task.name }} (${{ matrix.os.name }})
-    runs-on: ${{ matrix.os.name }}
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: 
-          - name: ubuntu-22.04
-            family: ubuntu
-          - name: ubuntu-24.04
-            family: ubuntu
-          - name: macos-15-intel
-            family: darwin
-          - name: macos-14
-            family: darwin-arm64
-          - name: macos-15
-            family: darwin-arm64
-          - name: windows-2022
-            family: windows
-          - name: windows-2025
-            family: windows
-        task: 
-        - name: Clippy
-          command: |
-            cargo hack clippy --each-feature --no-dev-deps -- -D warnings
-            cargo clippy --tests --benches -- -D warnings
-        - name: Test
-          command: cargo test
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - macos-15-intel
+          - macos-14
+          - macos-15
+          - windows-2022
+          - windows-2025
+        task:
+          - name: Clippy
+            command: |
+              cargo hack clippy --each-feature --no-dev-deps -- -D warnings
+              cargo clippy --tests --benches -- -D warnings
+          - name: Test
+            command: cargo test
         include:
-          - os:
-              family: ubuntu
-            build_deps: scripts/workflows/provision-linux-build.sh
-          - os:
-              family: darwin
-            build_deps: scripts/workflows/provision-darwin-build.sh
-          - os:
-              family: darwin-arm64
-            build_deps: scripts/workflows/provision-darwin-arm64-build.sh
-          - os:
-              family: windows
-            build_deps: scripts/workflows/provision-windows-build.ps1
           # formatting doesn't depend on build environment, not included in main matrix
           - task:
               name: Format
               command: cargo fmt -- --check
-            os:
-              name: ubuntu-latest
-              family: ubuntu
+            os: ubuntu-latest
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
@@ -63,10 +42,7 @@ jobs:
             ~/.cargo/git
             target
             ${{ env.VCPKG_ROOT }}
-          key: ${{ matrix.os.name }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
-
-      - name: Install dependencies
-        run: ${{ matrix.build_deps }}
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
       - uses: taiki-e/install-action@v2
         with:
