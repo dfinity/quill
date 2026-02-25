@@ -45,7 +45,9 @@ jobs:
           mkdir -p "$BATS_DIR"
 
           # Install bats-core
-          npm install -g bats
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          /tmp/bats-core/install.sh "$BATS_DIR"
+          echo "$BATS_DIR/bin" >> "$GITHUB_PATH"
 
           # Install bats-support library
           git clone --depth 1 https://github.com/bats-core/bats-support.git "$BATS_DIR/bats-support"
