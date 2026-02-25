@@ -42,15 +42,22 @@ jobs:
         if: ${{ contains(matrix.os, 'macos') }}
         run: brew install coreutils
 
-      - name: Setup Bats and bats libs
-        id: setup-bats
-        uses: bats-core/bats-action@4.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # bats-core/bats-action@4.0.0 doesn't propagate GITHUB_TOKEN to its
+      # internal shell steps, causing unauthenticated GitHub API 403 errors.
+      - name: Install Bats and bats-support
+        run: |
+          BATS_DIR="$HOME/.local/share/bats"
+          mkdir -p "$BATS_DIR"
+
+          # Install bats-core
+          npm install -g bats
+
+          # Install bats-support library
+          git clone --depth 1 https://github.com/bats-core/bats-support.git "$BATS_DIR/bats-support"
+
+          echo "BATS_LIB_PATH=$BATS_DIR" >> "$GITHUB_ENV"
 
       - name: Run e2e test
-        env:
-          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
         run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
 
   aggregate:
