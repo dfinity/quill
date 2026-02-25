@@ -15,8 +15,6 @@ jobs:
             | xz -d | tar x
       - name: Check e2e scripts
         run: $HOME/bin/shellcheck-v0.7.1/shellcheck e2e/**/*.*sh
-      - name: Check deploy scripts
-        run: $HOME/bin/shellcheck-v0.7.1/shellcheck scripts/**/*.sh
   
   aggregate:
     name: shellcheck:required

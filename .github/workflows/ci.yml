@@ -44,6 +44,10 @@ jobs:
             ${{ env.VCPKG_ROOT }}
           key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
+      - name: Install libudev (Linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        run: sudo apt-get install -y libudev-dev
+
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-hack@0.6.11

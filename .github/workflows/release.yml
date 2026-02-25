@@ -58,6 +58,10 @@ jobs:
             ${{ env.VCPKG_ROOT }}
           key: ${{ matrix.os }}-cargo-${{ env.rust }}-release-1
 
+      - name: Install libudev (Linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        run: sudo apt-get install -y libudev-dev
+
       - name: Install target
         if: ${{ matrix.target }}
         run: rustup target add ${{ matrix.target }}

@@ -26,6 +26,10 @@ jobs:
             target
           key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
+      - name: Install libudev (Linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        run: sudo apt-get install -y libudev-dev
+
       - name: Build release
         run: |
           cargo build --release --locked
