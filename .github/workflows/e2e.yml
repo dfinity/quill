@@ -62,19 +62,21 @@ jobs:
         run: chmod +x /usr/local/bin/quill
       - name: Install dfx
         uses: dfinity/setup-dfx@main
-      - name: Provision Darwin
+      - name: Install coreutils (macOS)
         if: ${{ contains(matrix.os, 'macos') }}
-        run: bash scripts/workflows/provision-darwin-e2e.sh
-      - name: Provision Linux
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: bash scripts/workflows/provision-linux-e2e.sh
+        run: brew install coreutils
+      - name: Setup Bats and bats libs
+        id: setup-bats
+        uses: bats-core/bats-action@4.0.0
       - name: Prepare environment
         run: |
           echo "archive=$(pwd)/e2e/archive" >> "$GITHUB_ENV"
           echo "assets=$(pwd)/e2e/assets" >> "$GITHUB_ENV"
           echo "utils=$(pwd)/e2e/utils" >> "$GITHUB_ENV"
-          export -p
+          echo "DOWNLOAD_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
       - name: Run e2e test
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
         run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
 
   aggregate:
