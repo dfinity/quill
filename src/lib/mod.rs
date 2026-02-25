@@ -445,7 +445,7 @@ pub fn get_account_id(
 pub fn mnemonic_to_key(mnemonic: &Mnemonic) -> AnyhowResult<SecretKey> {
     let seed = Seed::new(mnemonic, "");
     let ext = bip32::XPrv::derive_from_path(seed, &derivation_path())
-        .map_err(|err| anyhow!("{:?}", err))
+        .map_err(|err| anyhow!("{err:?}"))
         .context("Failed to derive BIP32 extended private key")?;
     let secret = ext.private_key();
     let secret_key = SecretKey::from(secret);
