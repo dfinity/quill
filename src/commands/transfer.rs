@@ -102,6 +102,6 @@ pub fn parse_tokens(amount: &str) -> AnyhowResult<Tokens> {
             let e8s = &e8s[..8];
             new_tokens(parse(tokens)?, parse(e8s)?)
         }
-        _ => bail!("Cannot parse amount {}", amount),
+        _ => bail!("Cannot parse amount {amount}"),
     }
 }

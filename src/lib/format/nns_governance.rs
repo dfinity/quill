@@ -5,7 +5,11 @@ use bigdecimal::BigDecimal;
 use candid::Decode;
 use chrono::Utc;
 use ic_base_types::CanisterId;
-use ic_nns_constants::canister_id_to_nns_canister_name;
+use ic_nns_constants::{
+    canister_id_to_nns_canister_name, CYCLES_MINTING_CANISTER_ID, LIFELINE_CANISTER_ID,
+    MIGRATION_CANISTER_ID, REGISTRY_CANISTER_ID, ROOT_CANISTER_ID, SNS_WASM_CANISTER_ID,
+    SUBNET_RENTAL_CANISTER_ID,
+};
 use ic_nns_governance::{
     pb::v1::{
         install_code::CanisterInstallMode, stop_or_start_canister::CanisterAction,
@@ -18,7 +22,9 @@ use ic_nns_governance::{
 use ic_nns_governance_api::{
     add_or_remove_node_provider::Change,
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
-    manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
+    manage_neuron::{
+        configure::Operation, ManageNeuronProposalCommand as ProposalCommand, NeuronIdOrSubaccount,
+    },
     manage_neuron_response::Command,
     neuron::DissolveState,
     proposal::Action,
@@ -35,6 +41,100 @@ use crate::lib::{
     format::{format_duration_seconds, format_t_cycles, format_timestamp_seconds, icrc1_account},
     get_default_role, get_idl_string, AnyhowResult,
 };
+
+fn nns_function_canister_and_method(
+    function: NnsFunction,
+) -> Result<(CanisterId, &'static str), String> {
+    let pair = match function {
+        NnsFunction::Unspecified => return Err("Unspecified NNS function".to_string()),
+        NnsFunction::AssignNoid => (REGISTRY_CANISTER_ID, "add_node_operator"),
+        NnsFunction::CreateSubnet => (REGISTRY_CANISTER_ID, "create_subnet"),
+        NnsFunction::AddNodeToSubnet => (REGISTRY_CANISTER_ID, "add_nodes_to_subnet"),
+        NnsFunction::RemoveNodesFromSubnet => (REGISTRY_CANISTER_ID, "remove_nodes_from_subnet"),
+        NnsFunction::ChangeSubnetMembership => (REGISTRY_CANISTER_ID, "change_subnet_membership"),
+        NnsFunction::NnsCanisterInstall => (ROOT_CANISTER_ID, "add_nns_canister"),
+        NnsFunction::HardResetNnsRootToVersion => {
+            (LIFELINE_CANISTER_ID, "hard_reset_root_to_version")
+        }
+        NnsFunction::RecoverSubnet => (REGISTRY_CANISTER_ID, "recover_subnet"),
+        NnsFunction::ReviseElectedGuestosVersions => {
+            (REGISTRY_CANISTER_ID, "revise_elected_guestos_versions")
+        }
+        NnsFunction::UpdateNodeOperatorConfig => {
+            (REGISTRY_CANISTER_ID, "update_node_operator_config")
+        }
+        NnsFunction::DeployGuestosToAllSubnetNodes => {
+            (REGISTRY_CANISTER_ID, "deploy_guestos_to_all_subnet_nodes")
+        }
+        NnsFunction::ReviseElectedHostosVersions => {
+            (REGISTRY_CANISTER_ID, "revise_elected_hostos_versions")
+        }
+        NnsFunction::DeployHostosToSomeNodes => {
+            (REGISTRY_CANISTER_ID, "deploy_hostos_to_some_nodes")
+        }
+        NnsFunction::UpdateConfigOfSubnet => (REGISTRY_CANISTER_ID, "update_subnet"),
+        NnsFunction::IcpXdrConversionRate => {
+            (CYCLES_MINTING_CANISTER_ID, "set_icp_xdr_conversion_rate")
+        }
+        NnsFunction::ClearProvisionalWhitelist => {
+            (REGISTRY_CANISTER_ID, "clear_provisional_whitelist")
+        }
+        NnsFunction::SetAuthorizedSubnetworks => {
+            (CYCLES_MINTING_CANISTER_ID, "set_authorized_subnetwork_list")
+        }
+        NnsFunction::SetFirewallConfig => (REGISTRY_CANISTER_ID, "set_firewall_config"),
+        NnsFunction::AddFirewallRules => (REGISTRY_CANISTER_ID, "add_firewall_rules"),
+        NnsFunction::RemoveFirewallRules => (REGISTRY_CANISTER_ID, "remove_firewall_rules"),
+        NnsFunction::UpdateFirewallRules => (REGISTRY_CANISTER_ID, "update_firewall_rules"),
+        NnsFunction::StopOrStartNnsCanister => (ROOT_CANISTER_ID, "stop_or_start_nns_canister"),
+        NnsFunction::RemoveNodes => (REGISTRY_CANISTER_ID, "remove_nodes"),
+        NnsFunction::UninstallCode => (CanisterId::ic_00(), "uninstall_code"),
+        NnsFunction::UpdateNodeRewardsTable => (REGISTRY_CANISTER_ID, "update_node_rewards_table"),
+        NnsFunction::AddOrRemoveDataCenters => (REGISTRY_CANISTER_ID, "add_or_remove_data_centers"),
+        NnsFunction::RemoveNodeOperators => (REGISTRY_CANISTER_ID, "remove_node_operators"),
+        NnsFunction::RerouteCanisterRanges => (REGISTRY_CANISTER_ID, "reroute_canister_ranges"),
+        NnsFunction::PrepareCanisterMigration => {
+            (REGISTRY_CANISTER_ID, "prepare_canister_migration")
+        }
+        NnsFunction::CompleteCanisterMigration => {
+            (REGISTRY_CANISTER_ID, "complete_canister_migration")
+        }
+        NnsFunction::AddSnsWasm => (SNS_WASM_CANISTER_ID, "add_wasm"),
+        NnsFunction::UpdateSubnetType => (CYCLES_MINTING_CANISTER_ID, "update_subnet_type"),
+        NnsFunction::ChangeSubnetTypeAssignment => {
+            (CYCLES_MINTING_CANISTER_ID, "change_subnet_type_assignment")
+        }
+        NnsFunction::UpdateSnsWasmSnsSubnetIds => (SNS_WASM_CANISTER_ID, "update_sns_subnet_list"),
+        NnsFunction::InsertSnsWasmUpgradePathEntries => {
+            (SNS_WASM_CANISTER_ID, "insert_upgrade_path_entries")
+        }
+        NnsFunction::BitcoinSetConfig => (ROOT_CANISTER_ID, "call_canister"),
+        NnsFunction::AddApiBoundaryNodes => (REGISTRY_CANISTER_ID, "add_api_boundary_nodes"),
+        NnsFunction::RemoveApiBoundaryNodes => (REGISTRY_CANISTER_ID, "remove_api_boundary_nodes"),
+        NnsFunction::DeployGuestosToSomeApiBoundaryNodes => (
+            REGISTRY_CANISTER_ID,
+            "deploy_guestos_to_some_api_boundary_nodes",
+        ),
+        NnsFunction::DeployGuestosToAllUnassignedNodes => (
+            REGISTRY_CANISTER_ID,
+            "deploy_guestos_to_all_unassigned_nodes",
+        ),
+        NnsFunction::UpdateSshReadonlyAccessForAllUnassignedNodes => (
+            REGISTRY_CANISTER_ID,
+            "update_ssh_readonly_access_for_all_unassigned_nodes",
+        ),
+        NnsFunction::SubnetRentalRequest => {
+            (SUBNET_RENTAL_CANISTER_ID, "execute_rental_request_proposal")
+        }
+        NnsFunction::PauseCanisterMigrations => (MIGRATION_CANISTER_ID, "disable_api"),
+        NnsFunction::UnpauseCanisterMigrations => (MIGRATION_CANISTER_ID, "enable_api"),
+        NnsFunction::SetSubnetOperationalLevel => {
+            (REGISTRY_CANISTER_ID, "set_subnet_operational_level")
+        }
+        _ => return Err(format!("Unknown or obsolete NNS function: {function:?}")),
+    };
+    Ok(pair)
+}
 
 pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
     let info = Decode!(blob, Result<NeuronInfo, GovernanceError>)?;
@@ -448,9 +548,8 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         NnsFunction::try_from(a.nns_function).unwrap_or(NnsFunction::Unspecified);
                     writeln!(fmt, "Execute NNS function {function:?}")?;
                     if a.payload.starts_with(b"DIDL") {
-                        let (canister_id, method) = function
-                            .canister_and_function()
-                            .map_err(|e| anyhow!(e.error_message))?;
+                        let (canister_id, method) =
+                            nns_function_canister_and_method(function).map_err(|e| anyhow!(e))?;
                         if let Ok(idl) = get_idl_string(
                             &a.payload,
                             canister_id.into(),
@@ -711,6 +810,57 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                     )?;
                     for node in req.node_ids.unwrap_or_default() {
                         writeln!(fmt, " - {node}")?;
+                    }
+                    fmt.push('\n');
+                }
+                Action::DeregisterKnownNeuron(a) => {
+                    write!(fmt, "Deregister known neuron")?;
+                    if let Some(id) = a.id {
+                        write!(fmt, " {}", id.id)?;
+                    }
+                    fmt.push('\n');
+                }
+                Action::BlessAlternativeGuestOsVersion(a) => {
+                    writeln!(fmt, "Bless alternative GuestOS version")?;
+                    if let Some(hash) = &a.rootfs_hash {
+                        writeln!(fmt, "Rootfs hash: {hash}")?;
+                    }
+                    if let Some(chip_ids) = &a.chip_ids {
+                        for chip_id in chip_ids {
+                            writeln!(fmt, "Chip ID: {}", hex::encode(chip_id))?;
+                        }
+                    }
+                    if let Some(measurements) = &a.base_guest_launch_measurements {
+                        if let Some(ms) = &measurements.guest_launch_measurements {
+                            for m in ms {
+                                if let Some(measurement) = &m.measurement {
+                                    writeln!(
+                                        fmt,
+                                        "Launch measurement: {}",
+                                        hex::encode(measurement)
+                                    )?;
+                                }
+                            }
+                        }
+                    }
+                }
+                Action::TakeCanisterSnapshot(a) => {
+                    write!(fmt, "Take canister snapshot")?;
+                    if let Some(canister_id) = a.canister_id {
+                        write!(fmt, " of canister {canister_id}")?;
+                    }
+                    if let Some(replace) = &a.replace_snapshot {
+                        write!(fmt, " (replacing snapshot {})", hex::encode(replace))?;
+                    }
+                    fmt.push('\n');
+                }
+                Action::LoadCanisterSnapshot(a) => {
+                    write!(fmt, "Load canister snapshot")?;
+                    if let Some(snapshot_id) = &a.snapshot_id {
+                        write!(fmt, " {}", hex::encode(snapshot_id))?;
+                    }
+                    if let Some(canister_id) = a.canister_id {
+                        write!(fmt, " into canister {canister_id}")?;
                     }
                     fmt.push('\n');
                 }
