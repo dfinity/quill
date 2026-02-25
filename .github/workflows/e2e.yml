@@ -30,11 +30,6 @@ jobs:
         if: ${{ contains(matrix.os, 'ubuntu') }}
         run: sudo apt-get install -y libudev-dev
 
-      - name: Build release
-        run: |
-          cargo build --release --locked
-          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
-
       - name: Install dfx
         uses: dfinity/setup-dfx@main
 
@@ -56,6 +51,11 @@ jobs:
           git clone --depth 1 https://github.com/bats-core/bats-support.git "$BATS_DIR/bats-support"
 
           echo "BATS_LIB_PATH=$BATS_DIR" >> "$GITHUB_ENV"
+
+      - name: Build release
+        run: |
+          cargo build --release --locked
+          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
 
       - name: Run e2e test
         run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
