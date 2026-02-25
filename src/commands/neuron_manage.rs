@@ -302,7 +302,8 @@ or --disburse-maturity-percentage flags with a Ledger device"
         let args = Encode!(&ManageNeuron {
             id: None,
             command: Some(Command::Split(Split {
-                amount_e8s: amount * 100_000_000
+                amount_e8s: amount * 100_000_000,
+                memo: Some(0),
             })),
             neuron_id_or_subaccount: id.clone(),
         })?;
