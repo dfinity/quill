@@ -33,9 +33,9 @@ jobs:
     env:
       VCPKG_ROOT: 'C:\vcpkg'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             ~/.cargo/registry
@@ -48,7 +48,7 @@ jobs:
         if: ${{ contains(matrix.os, 'ubuntu') }}
         run: sudo apt-get install -y libudev-dev
 
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@80e6af7a2ec7f280fffe2d0a9d3a12a9d11d86e9 # v2.75.1
         with:
           tool: cargo-hack@0.6.11
 
