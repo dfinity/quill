@@ -5,7 +5,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
 use anyhow::{anyhow, bail, ensure, Context};
-use candid::{CandidType, Encode, Principal};
+use candid::{Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
