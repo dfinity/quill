@@ -12,15 +12,17 @@ use ic_nns_constants::{
 };
 use ic_nns_governance::{
     pb::v1::{
-        install_code::CanisterInstallMode, stop_or_start_canister::CanisterAction,
-        update_canister_settings::LogVisibility, InstallCode, NeuronType, NnsFunction,
-        ProposalRewardStatus, ProposalStatus, StopOrStartCanister, Topic, UpdateCanisterSettings,
-        Visibility,
+        canister_settings::LogVisibility as PbLogVisibility,
+        canister_settings::SnapshotVisibility as PbSnapshotVisibility,
+        install_code::CanisterInstallMode, stop_or_start_canister::CanisterAction, InstallCode,
+        NeuronType, NnsFunction, ProposalRewardStatus, ProposalStatus, StopOrStartCanister, Topic,
+        UpdateCanisterSettings, Visibility,
     },
     proposals::call_canister::CallCanister,
 };
 use ic_nns_governance_api::{
     add_or_remove_node_provider::Change,
+    canister_settings::LogVisibility,
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
     manage_neuron::{
         configure::Operation, ManageNeuronProposalCommand as ProposalCommand, NeuronIdOrSubaccount,
@@ -29,9 +31,9 @@ use ic_nns_governance_api::{
     neuron::DissolveState,
     proposal::Action,
     reward_node_provider::{RewardMode, RewardToAccount},
-    update_canister_settings::CanisterSettings,
-    ClaimOrRefreshNeuronFromAccountResponse, GovernanceError, ListNeuronsResponse,
-    ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, NeuronState, ProposalInfo, Vote,
+    CanisterSettings, ClaimOrRefreshNeuronFromAccountResponse, GovernanceError,
+    ListNeuronsResponse, ListProposalInfoResponse, ManageNeuronResponse, NeuronInfo, NeuronState,
+    ProposalInfo, Vote,
 };
 use indicatif::HumanBytes;
 use itertools::Itertools;
@@ -186,6 +188,15 @@ Created {creation}
             if info.visibility.is_some() {
                 writeln!(fmt, "Neuron visibility: {visibility:?}")?;
             }
+            if let Some(bonus_base) = info.eight_year_gang_bonus_base_e8s {
+                if bonus_base > 0 {
+                    writeln!(
+                        fmt,
+                        "8 Year Gang bonus base: {} ICP",
+                        e8s_to_tokens(bonus_base.into())
+                    )?;
+                }
+            }
             write!(
                 fmt,
                 "Accurate as of {}",
@@ -260,6 +271,15 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                 .unwrap_or_else(|| "never".to_string())
         )?;
 
+        if let Some(bonus_base) = neuron.eight_year_gang_bonus_base_e8s {
+            if bonus_base > 0 {
+                writeln!(
+                    fmt,
+                    "8 Year Gang bonus base: {} ICP",
+                    e8s_to_tokens(bonus_base.into())
+                )?;
+            }
+        }
         if let Some(timestamp) = neuron.spawn_at_timestamp_seconds {
             writeln!(
                 fmt,
@@ -1063,6 +1083,22 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
                         }
                     }
                 }
+                Action::CreateCanisterAndInstallCode(a) => {
+                    write!(fmt, "Create canister and install code")?;
+                    if let Some(subnet) = a.host_subnet_id {
+                        write!(fmt, " on subnet {subnet}")?;
+                    }
+                    fmt.push('\n');
+                    if let Some(settings) = a.canister_settings {
+                        fmt.push_str(&display_canister_settings(settings)?);
+                    }
+                    if let Some(hash) = a.wasm_module_hash {
+                        writeln!(fmt, "WASM module hash: {}", hex::encode(hash))?;
+                    }
+                    if let Some(hash) = a.install_arg_hash {
+                        writeln!(fmt, "Install arg hash: {}", hex::encode(hash))?;
+                    }
+                }
             }
         }
     } else {
@@ -1201,7 +1237,7 @@ fn display_canister_settings(settings: CanisterSettings) -> AnyhowResult<String>
         writeln!(
             fmt,
             "Freezing threshold: {} cycles",
-            format_t_cycles(freezing.into())
+            format_t_cycles(candid::Nat::from(freezing))
         )?;
     }
     if let Some(memory) = settings.memory_allocation {
@@ -1214,7 +1250,16 @@ fn display_canister_settings(settings: CanisterSettings) -> AnyhowResult<String>
         writeln!(
             fmt,
             "Log visibility: {:?}",
-            LogVisibility::try_from(visibility).unwrap_or(LogVisibility::Unspecified)
+            PbLogVisibility::try_from(visibility)
+                .map(LogVisibility::from)
+                .unwrap_or(LogVisibility::Unspecified)
+        )?;
+    }
+    if let Some(visibility) = settings.snapshot_visibility {
+        writeln!(
+            fmt,
+            "Snapshot visibility: {:?}",
+            PbSnapshotVisibility::try_from(visibility).unwrap_or(PbSnapshotVisibility::Unspecified)
         )?;
     }
     if let Some(limit) = settings.wasm_memory_limit {
