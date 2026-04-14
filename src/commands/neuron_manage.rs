@@ -5,7 +5,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
 use anyhow::{anyhow, bail, ensure, Context};
-use candid::{CandidType, Encode, Principal};
+use candid::{Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
@@ -29,11 +29,6 @@ mod pb {
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
 pub const ONE_YEAR_SECONDS: u32 = (4 * 365 + 1) * ONE_DAY_SECONDS / 4;
 pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
-
-#[derive(CandidType)]
-pub struct AccountIdentifier {
-    hash: Vec<u8>,
-}
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum EnableState {
