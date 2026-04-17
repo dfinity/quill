@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::bail;
 use clap::Parser;
-use sec1::LineEnding;
+use sec1::{EncodeEcPrivateKey, LineEnding};
 
 use crate::{
     lib::{AnyhowResult, AuthInfo},
@@ -25,7 +25,7 @@ pub fn exec(auth: &AuthInfo, opts: DecryptPemOpts) -> AnyhowResult<()> {
     write_file(
         &opts.output_path,
         "PEM",
-        pk.to_sec1_pem(LineEnding::default())?.as_bytes(),
+        EncodeEcPrivateKey::to_sec1_pem(pk, LineEnding::default())?.as_bytes(),
     )?;
     eprintln!("Wrote PEM file to {}", opts.output_path.display());
     Ok(())
