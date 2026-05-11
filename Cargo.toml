@@ -57,7 +57,7 @@ pkcs8 = { version = "0.10.0", features = ["encryption"] }
 qrcodegen = "1.8"
 rand = { version = "0.8.4", features = ["getrandom"] }
 ring = "0.17.7"
-rpassword = "7.5.0"
+rpassword = "7.5.2"
 scopeguard = "1"
 sec1 = { version = "0.7.0", features = ["std"] }
 serde = { version = "1.0.130", features = ["derive"] }
