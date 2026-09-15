@@ -11,6 +11,6 @@
   {% when Tainted with (utxo) -%}
   {% call heading(utxo) %} UTXO rejected: the KYT process determined the BTC is tainted
   {% when Checked with (utxo) -%}
-  {% call heading(utxo) %} The deposted BTC cleared the KYT check, but minting ckBTC failed. Retry this command.
+  {% call heading(utxo) %} The deposited BTC cleared the KYT check, but minting ckBTC failed. Retry this command.
 {% endmatch -%}
 {% endfor -%}

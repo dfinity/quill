@@ -1,7 +1,8 @@
 use askama::Template;
-use candid::{Decode, Principal};
+use candid::{Decode, Nat, Principal};
 use ic_nervous_system_clients::canister_status::CanisterStatusResultV2;
 use ic_sns_root::GetSnsCanistersSummaryResponse;
+use num_bigint::BigUint;
 
 use crate::lib::{format::filters, AnyhowResult};
 
@@ -80,6 +81,25 @@ struct SingleCanisterSummary {
     canister_id: Principal,
     root: Principal,
     governance: Principal,
+}
+
+/// The cycle reserve the freezing threshold currently corresponds to. The threshold
+/// itself is a number of seconds of idle operation; the replica turns it into cycles
+/// as `idle_cycles_burned_per_day * freezing_threshold / SECONDS_PER_DAY` (see
+/// `CyclesAccountManager::freeze_threshold_cycles`).
+fn freezing_threshold_cycles(status: &CanisterStatusResultV2) -> Nat {
+    const SECONDS_PER_DAY: u32 = 24 * 60 * 60;
+    Nat(
+        status.idle_cycles_burned_per_day.0.clone() * status.settings.freezing_threshold.0.clone()
+            / BigUint::from(SECONDS_PER_DAY),
+    )
+}
+
+/// The canister's explicit memory allocation in bytes, or `None` when it has none and
+/// runs on best-effort memory — which the management canister reports as `0`.
+fn memory_allocation(status: &CanisterStatusResultV2) -> Option<&Nat> {
+    let allocation = &status.settings.memory_allocation;
+    (allocation.0 != BigUint::ZERO).then_some(allocation)
 }
 
 #[derive(Template)]

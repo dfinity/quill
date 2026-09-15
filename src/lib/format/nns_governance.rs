@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Write};
+use std::fmt::{self, Display, Formatter, Write};
 
 use anyhow::{anyhow, bail, Context};
 use askama::Template;
@@ -33,7 +33,7 @@ use itertools::Itertools;
 
 use crate::lib::{
     format::{filters, icrc1_account},
-    AnyhowResult, ParsedAccount,
+    AnyhowResult,
 };
 
 pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
@@ -107,7 +107,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
         kyc_verified: bool,
         not_for_profit: bool,
         recent_votes: Option<usize>,
-        followees: HashMap<Topic, Vec<u64>>,
+        followees: Vec<(ProposalTopic, Vec<u64>)>,
         total_followees: usize,
         visibility: Option<Visibility>,
         eight_year_gang_bonus: Option<Nat>,
@@ -136,12 +136,16 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                     eight_year_gang_bonus: eight_year_gang_bonus(
                         neuron.eight_year_gang_bonus_base_e8s,
                     ),
+                    // Keyed by topic id rather than by `Topic` so that two ids this
+                    // binary doesn't recognize don't collapse into a single entry,
+                    // and sorted because the response's map has no stable order.
                     followees: neuron
                         .followees
                         .iter()
+                        .sorted_by_key(|&(topic, _)| *topic)
                         .map(|(topic, followees)| {
                             (
-                                Topic::try_from(*topic).unwrap_or_default(),
+                                ProposalTopic::from(*topic),
                                 followees
                                     .followees
                                     .iter()
@@ -453,8 +457,33 @@ fn percentage(part: &u64, total: &u64) -> BigDecimal {
     (BigDecimal::from(*part) / BigDecimal::from(*total) * 100_u8).round(2)
 }
 
-fn get_topic(topic: &i32) -> AnyhowResult<Topic> {
-    Topic::try_from(*topic).context("Unknown topic")
+/// A governance topic, tolerating ids this build of quill doesn't know about.
+///
+/// Governance adds topics over time, and neither a neuron's following nor a whole
+/// proposal should become undisplayable because one id in it postdates this binary.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum ProposalTopic {
+    Known(Topic),
+    Unknown(i32),
+}
+
+impl From<i32> for ProposalTopic {
+    fn from(topic: i32) -> Self {
+        Topic::try_from(topic).map_or(Self::Unknown(topic), Self::Known)
+    }
+}
+
+impl Display for ProposalTopic {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Known(topic) => write!(f, "{topic:?}"),
+            Self::Unknown(id) => write!(f, "unknown topic {id}"),
+        }
+    }
+}
+
+fn topic(topic: &i32) -> ProposalTopic {
+    ProposalTopic::from(*topic)
 }
 
 fn get_status(status: &i32) -> AnyhowResult<ProposalStatus> {
@@ -473,13 +502,16 @@ fn nested_proposals_not_supported() -> AnyhowResult<String> {
     bail!("Nested proposals not supported")
 }
 
-fn icrc1_helper(account: &Account) -> AnyhowResult<ParsedAccount> {
-    Ok(icrc1_account(
-        account.owner.unwrap().0,
-        Some(account.subaccount.as_ref().map_or(Ok([0; 32]), |s| {
-            s.subaccount[..]
-                .try_into()
-                .map_err(|_| anyhow!("subaccount had wrong length"))
-        })?),
-    ))
+/// The textual form of an ICRC-1 account named by a governance command. The owner is
+/// optional in the wire format, so an account can legitimately arrive without one.
+fn icrc1_helper(account: &Account) -> AnyhowResult<String> {
+    let Some(owner) = account.owner else {
+        return Ok("unknown account".to_string());
+    };
+    let subaccount = account.subaccount.as_ref().map_or(Ok([0; 32]), |s| {
+        s.subaccount[..]
+            .try_into()
+            .map_err(|_| anyhow!("subaccount had wrong length"))
+    })?;
+    Ok(icrc1_account(owner.0, Some(subaccount)).to_string())
 }

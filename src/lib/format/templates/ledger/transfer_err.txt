@@ -4,7 +4,7 @@ Transfer error: wrong transfer fee specified, should be {{expected_fee.get_e8s()
 {% when TransferError::InsufficientFunds with {balance} -%}
 Transfer error: the transferred-from account has an insufficient balance ({{balance.get_e8s()|tokens_e8s("ICP")}})
 {% when TransferError::TxTooOld with {allowed_window_nanos} -%}
-Transfer error: the transaction is too old (expired at {{allowed_window_nanos|ts_nanos}})
+Transfer error: the transaction is too old (the ledger only accepts transactions created within the last {{allowed_window_nanos|dur_nanos}})
 {% when TransferError::TxCreatedInFuture -%}
 Transfer error: the transaction is timestamped as being created in the future
 {% when TransferError::TxDuplicate with {duplicate_of} -%}

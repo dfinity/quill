@@ -57,7 +57,7 @@ Recent votes: {{recent_votes}}
 {% if !followees.is_empty() -%}
   {% if followees.len() < 4 -%}
   Followees: {% for (topic, neurons) in followees -%}
-    {%- if neurons.len() < 4 %}neurons {{neurons|join(", ")}}{% else %}{{neurons.len()}} followees{% endif %} (topic {{topic|fmt("{:?}")}})
+    {%- if neurons.len() < 4 %}neurons {{neurons|join(", ")}}{% else %}{{neurons.len()}} followees{% endif %} ({{topic}})
     {%- if !loop.last %}, {% endif %}{% endfor %}
   {% else -%}
   Followees: {{total_followees}}

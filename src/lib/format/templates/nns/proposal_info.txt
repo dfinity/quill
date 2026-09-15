@@ -20,7 +20,7 @@ Controllers: {% for controller in controllers.controllers %}{{controller|nns_can
 Freezing threshold: {{freezing|dur_seconds}}
 {% endif -%}
 {% if let Some(memory) = settings.memory_allocation -%}
-Memory allocation: {{memory}}%
+Memory allocation: {% if *memory == 0 %}none (best-effort){% else %}{{memory|bytes}}{% endif %}
 {% endif -%}
 {% if let Some(compute) = settings.compute_allocation -%}
 Compute allocation: {{compute}}%
@@ -34,6 +34,9 @@ Snapshot visibility: {{settings.snapshot_visibility()|fmt("{:?}")}}
 {% if let Some(limit) = settings.wasm_memory_limit -%}
 WASM memory limit: {{limit|bytes}}
 {% endif -%}
+{% if let Some(threshold) = settings.wasm_memory_threshold -%}
+WASM memory threshold: {{threshold|bytes}}
+{% endif -%}
 {% if self::no_canister_settings(settings) -%}
 No changes to canister settings
 {% endif -%}
@@ -42,7 +45,7 @@ No changes to canister settings
   {% match neuron %}{% when NeuronId with (i) %}{{i.id}}{% when Subaccount with (s) %}with subaccount {{s|hex}}{% endmatch -%}
 {% endmacro -%}
 {% if let Some(proposal) = proposal_info.proposal -%}
-{% if let Some(title) = proposal.title %}"{{title}}"{% else %}Untitled proposal{% endif %} ({{self::get_topic(proposal_info.topic)?|fmt("{:?}")}})
+{% if let Some(title) = proposal.title %}"{{title}}"{% else %}Untitled proposal{% endif %} ({{self::topic(proposal_info.topic)}})
 {% if !proposal.summary.is_empty() -%}
 Summary: "{{proposal.summary}}"
 {% endif -%}
@@ -137,7 +140,7 @@ Reward node providers
 {% when SetDefaultFollowees with (a) -%}
 Set default followees
 {% for (topic, followees) in a.default_followees -%}
-For {{self::get_topic(topic)?|fmt("{:?}")}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
+For {{self::topic(topic)}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
 {% endfor -%}
 {% when InstallCode with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.install_mode() -%}
   {% when CanisterInstallMode::Unspecified %}Install (unspecified mode) {% when CanisterInstallMode::Install %}Install {% when CanisterInstallMode::Reinstall %}Reinstall {% when CanisterInstallMode::Upgrade %}Upgrade {% endmatch -%}
@@ -211,8 +214,8 @@ Disburse {{c.amount_e8s|tokens_e8s("ICP")}} from neuron {% call neuron %} to a n
     {%- if let Some(controller) = c.new_controller %} owned by {{controller}}{% endif %} with dissolve delay {{c.dissolve_delay_seconds|dur_seconds}}
   {% when Follow with (c) -%}
 Configure neuron {% call neuron %} to follow {% for followee in c.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
-{#- +#} for proposals of type {{c.topic()|fmt("{:?}")}}
-  {% when MakeProposal (c) -%} {{self::nested_proposals_not_supported()?}}
+{#- +#} for proposals of type {{self::topic(c.topic)}}
+  {% when MakeProposal with (c) -%} {{self::nested_proposals_not_supported()?}}
   {% when Merge with (c) -%}
     {% if let Some(source) = c.source_neuron_id -%}
 Merge neuron {{source.id}} into neuron {% call neuron %}
@@ -235,7 +238,7 @@ Refresh the voting power of neuron {% call neuron %}
 Disburse {{c.percentage_to_disburse}}% of the maturity from neuron {% call neuron %} to {% if let Some(account) = c.to_account %}{{self::icrc1_helper(account)?}}{% else if let Some(account) = c.to_account_identifier %}{{account.hash|hex}}{% else %}its owner{% endif %}
   {% when SetFollowing with (c) -%}
 Change followees of neuron {% call neuron %}{% if c.topic_following.len() != 0 %}: {% for topic in c.topic_following -%}
-for {% if let Some(topic) = topic.topic %}{{self::get_topic(topic)?|fmt("{:?}")}}{% else %}unspecified topic{% endif %}: {% if topic.followees.len() != 0 %}{% for followee in topic.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor -%}{% else %}nobody{% endif %}{% if !loop.last %}; {% endif %}{% endfor -%}
+for {% if let Some(topic) = topic.topic %}{{self::topic(topic)}}{% else %}unspecified topic{% endif %}: {% if topic.followees.len() != 0 %}{% for followee in topic.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor -%}{% else %}nobody{% endif %}{% if !loop.last %}; {% endif %}{% endfor -%}
 {% else %} to no followees{% endif %}
   {% when Configure with (c) -%}
     {% match c.operation.as_ref().context("operation was null")? -%}
@@ -264,7 +267,7 @@ Set visibility of neuron {% call neuron %} to {{o.visibility()|fmt("{:?}")}}
 {% endmatch -%}
 {% endif -%}
 {% else -%}
-Unknown proposal ({{self::get_topic(proposal_info.topic)?|fmt("{:?}")}})
+Unknown proposal ({{self::topic(proposal_info.topic)}})
 {% endif -%}
 {% if let Some(id) = proposal_info.id -%}
 Proposal ID: {{id.id}}

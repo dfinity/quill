@@ -16,6 +16,8 @@ pub mod sns_governance;
 pub mod sns_root;
 pub mod sns_swap;
 pub mod sns_wasm;
+#[cfg(test)]
+mod tests;
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
     format!("{} UTC", datetime.format("%b %d %Y %X"))
@@ -30,6 +32,10 @@ pub fn format_timestamp_nanoseconds(nanoseconds: u64) -> String {
 }
 
 pub fn format_duration_seconds(mut seconds: u64) -> String {
+    if seconds == 0 {
+        // Every component would be filtered out below, leaving an empty string.
+        return "0 seconds".to_string();
+    }
     // Required for magic numbers like '8 years' to show up as such instead of '8 years 2 days'.
     const SECONDS_PER_YEAR: u64 = 31557600; // 365.25 * 24 * 60 * 60
     const SECONDS_PER_MONTH: u64 = SECONDS_PER_YEAR / 12;
@@ -144,6 +150,12 @@ pub mod filters {
         Ok(format_duration_seconds(seconds.to_u64()))
     }
 
+    pub fn dur_nanos(nanoseconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_duration_seconds(
+            nanoseconds.to_u64() / 1_000_000_000,
+        ))
+    }
+
     pub fn ts_seconds(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
         Ok(format_timestamp_seconds(seconds.to_u64()))
     }
@@ -252,6 +264,14 @@ pub mod filters {
     impl ToU64 for u32 {
         fn to_u64(&self) -> u64 {
             *self as u64
+        }
+    }
+
+    impl ToU64 for Nat {
+        /// Saturates rather than panicking: these values come off the wire, and a
+        /// nonsensically large one should not take down a display command.
+        fn to_u64(&self) -> u64 {
+            u64::try_from(&self.0).unwrap_or(u64::MAX)
         }
     }
 
