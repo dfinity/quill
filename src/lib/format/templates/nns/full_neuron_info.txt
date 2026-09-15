@@ -1,5 +1,7 @@
-Neuron {{id}}
+Neuron {% if let Some(id) = id %}{{id}}{% else %}(unknown id){% endif %}
+{% if let Some(aging_seconds) = aging_seconds -%}
 Aging since: {{aging_seconds|ts_seconds}}
+{% endif -%}
 Staked ICP: {{staked_icp_e8s|tokens_e8s("ICP")}}
 {% if let Some(staked_maturity) = staked_maturity -%}
 Staked maturity: {{staked_maturity|tokens_e8s(".")}}
@@ -7,11 +9,12 @@ Staked maturity: {{staked_maturity|tokens_e8s(".")}}
 {% if auto_stake_maturity -%}
 Auto stake maturity: Yes
 {% endif -%}
-Voting power: {{deciding|tokens_e8s(".")}} {% if deciding != potential %}(decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
-Voting power last refreshed: {{last_refreshed_seconds|ts_seconds}}
+Voting power: {{deciding|tokens_e8s(".")}}{% if deciding != potential %} (decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
+Voting power last refreshed: {% if let Some(last_refreshed_seconds) = last_refreshed_seconds %}{{last_refreshed_seconds|ts_seconds}}{% else %}never{% endif %}
 {% if let Some(spawn_at_seconds) = spawn_at_seconds -%}
 Spawning maturity as ICP at: {{spawn_at_seconds|ts_seconds}}
 {% endif -%}
+State: {{state|fmt("{:?}")}}
 {% if let Some(dissolve_delay) = dissolve_delay -%}
 {% match dissolve_delay %}
 {% when DissolveDelaySeconds with (seconds) -%}
@@ -51,7 +54,7 @@ Recent votes: {{recent_votes}}
 {% if !followees.is_empty() -%}
   {% if followees.len() < 4 -%}
   Followees: {% for (topic, neurons) in followees -%}
-    {%- if neurons.len() < 4 %}neurons {{neurons|join(", ")}}{% else %}{{neurons.len()}}{% endif %} followees (topic {{topic|fmt("{:?}")}})
+    {%- if neurons.len() < 4 %}neurons {{neurons|join(", ")}}{% else %}{{neurons.len()}} followees{% endif %} (topic {{topic|fmt("{:?}")}})
     {%- if !loop.last %}, {% endif %}{% endfor %}
   {% else -%}
   Followees: {{total_followees}}

@@ -1,7 +1,7 @@
 Age: {{age_seconds|dur_seconds}}
-Total stake: {{stake|tokens_e8s(".")}}
-Voting power: {{deciding|tokens_e8s(".")}} {% if deciding != potential %}(decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
-Voting power last refreshed: {{last_refreshed_seconds|ts_seconds}}
+Total stake: {{stake|tokens_e8s("ICP")}}
+Voting power: {{deciding|tokens_e8s(".")}}{% if deciding != potential %} (decayed, could be {{potential|tokens_e8s(".")}}){% endif %}
+Voting power last refreshed: {% if let Some(last_refreshed_seconds) = last_refreshed_seconds %}{{last_refreshed_seconds|ts_seconds}}{% else %}never{% endif %}
 State: {{state|fmt("{:?}")}}
 Dissolve delay: {{dissolve_delay_seconds|dur_seconds}}
 Created {{created_seconds|ts_seconds}}

@@ -1,1 +1,1 @@
-Begun retrieval process at block index at {{status.block_index}}
+Begun retrieval process at block index {{status.block_index}}

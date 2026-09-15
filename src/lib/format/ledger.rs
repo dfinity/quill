@@ -1,6 +1,7 @@
 use askama::Template;
 use candid::{Decode, Nat, Principal};
 use icp_ledger::{Tokens, TransferError};
+use icrc_ledger_types::icrc1::transfer::TransferError as Icrc1TransferError;
 
 use crate::lib::{format::filters, ledger_canister_id, AnyhowResult};
 
@@ -15,11 +16,17 @@ pub fn display_icp_transfer(blob: &[u8]) -> AnyhowResult<String> {
     }
 }
 
-use TransferError::*;
 #[derive(Template)]
 #[template(path = "ledger/transfer_err.txt")]
 struct TransferErr {
     error: TransferError,
+}
+
+#[derive(Template)]
+#[template(path = "ledger/icrc1_transfer_err.txt")]
+struct Icrc1TransferErr {
+    error: Icrc1TransferError,
+    canister: Principal,
 }
 
 #[derive(Template)]
@@ -52,11 +59,11 @@ pub fn display_account_balance_or_dfx(blob: &[u8]) -> AnyhowResult<String> {
     .render()?)
 }
 
-pub fn display_transfer(blob: &[u8]) -> AnyhowResult<String> {
-    let result = Decode!(blob, Result<Nat, TransferError>)?;
+pub fn display_transfer(blob: &[u8], canister: Principal) -> AnyhowResult<String> {
+    let result = Decode!(blob, Result<Nat, Icrc1TransferError>)?;
     match result {
         Ok(index) => Ok(Transfer { index }.render()?),
-        Err(error) => Ok(TransferErr { error }.render()?),
+        Err(error) => Ok(Icrc1TransferErr { error, canister }.render()?),
     }
 }
 

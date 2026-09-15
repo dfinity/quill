@@ -13,5 +13,5 @@ Swap canister: {{swap}}
 {% endif -%}
 {% if let Some(index) = sns.index_canister_id -%}
 Index canister: {{index}}
-{% endif -%}
+{% endif %}
 {% endfor -%}

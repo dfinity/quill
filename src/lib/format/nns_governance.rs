@@ -2,7 +2,10 @@ use std::{collections::HashMap, fmt::Write};
 
 use anyhow::{anyhow, bail, Context};
 use askama::Template;
+use bigdecimal::BigDecimal;
 use candid::{Decode, Nat, Principal};
+use chrono::Utc;
+use ic_base_types::PrincipalId;
 use ic_nns_governance::{
     pb::v1::{
         add_or_remove_node_provider::Change,
@@ -11,8 +14,9 @@ use ic_nns_governance::{
         proposal::Action,
         reward_node_provider::RewardMode,
         stop_or_start_canister::CanisterAction,
+        update_canister_settings::CanisterSettings,
         Account, GovernanceError, KnownNeuronData, NeuronState, NeuronType, ProposalRewardStatus,
-        Topic, Visibility,
+        RewardNodeProviders, Topic, Visibility,
     },
     proposals::call_canister::CallCanister,
 };
@@ -23,7 +27,6 @@ use ic_nns_governance_api::{
     ManageNeuronResponse, NeuronInfo, ProposalInfo, ProposalStatus,
 };
 use itertools::Itertools;
-use sha2::{Digest, Sha256};
 
 use crate::lib::{
     format::{filters, icrc1_account},
@@ -39,7 +42,7 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
         stake: Nat,
         deciding: Nat,
         potential: Nat,
-        last_refreshed_seconds: u64,
+        last_refreshed_seconds: Option<u64>,
         state: NeuronState,
         dissolve_delay_seconds: u64,
         created_seconds: u64,
@@ -54,9 +57,7 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
             stake: info.stake_e8s.into(),
             deciding: info.deciding_voting_power.unwrap_or_default().into(),
             potential: info.potential_voting_power.unwrap_or_default().into(),
-            last_refreshed_seconds: info
-                .voting_power_refreshed_timestamp_seconds
-                .context("voting power refreshed timestamp was null")?,
+            last_refreshed_seconds: info.voting_power_refreshed_timestamp_seconds,
             state: NeuronState::try_from(info.state).unwrap_or_default(),
             visibility: info
                 .visibility
@@ -76,19 +77,21 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
 
 pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
     use DissolveState::*;
+    let now_seconds = u64::try_from(Utc::now().timestamp()).unwrap();
     let neurons = Decode!(blob, ListNeuronsResponse)?;
     #[derive(Template)]
     #[template(path = "nns/full_neuron_info.txt")]
     struct FullNeuron {
-        id: u64,
-        aging_seconds: u64,
+        id: Option<u64>,
+        aging_seconds: Option<u64>,
         staked_icp_e8s: Nat,
         staked_maturity: Option<Nat>,
         auto_stake_maturity: bool,
         deciding: Nat,
         potential: Nat,
-        last_refreshed_seconds: u64,
+        last_refreshed_seconds: Option<u64>,
         spawn_at_seconds: Option<u64>,
+        state: NeuronState,
         dissolve_delay: Option<DissolveState>,
         created_seconds: u64,
         community_fund_seconds: Option<u64>,
@@ -113,8 +116,11 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
             .full_neurons
             .into_iter()
             .map(|neuron| {
+                let state = NeuronState::try_from(neuron.state(now_seconds) as i32)
+                    .unwrap_or(NeuronState::Unspecified);
                 Ok(FullNeuron {
-                    aging_seconds: neuron.aging_since_timestamp_seconds,
+                    aging_seconds: (neuron.aging_since_timestamp_seconds != u64::MAX)
+                        .then_some(neuron.aging_since_timestamp_seconds),
                     auto_stake_maturity: neuron.auto_stake_maturity.unwrap_or_default(),
                     community_fund_seconds: neuron.joined_community_fund_timestamp_seconds,
                     controller: neuron.controller.map(|p| p.0),
@@ -126,7 +132,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                         .iter()
                         .map(|(topic, followees)| {
                             (
-                                Topic::try_from(*topic).unwrap(),
+                                Topic::try_from(*topic).unwrap_or_default(),
                                 followees
                                     .followees
                                     .iter()
@@ -136,9 +142,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                         })
                         .collect(),
                     hotkeys: neuron.hot_keys.iter().map(|p| p.0).collect(),
-                    last_refreshed_seconds: neuron
-                        .voting_power_refreshed_timestamp_seconds
-                        .context("voting power refreshed timestamp was null")?,
+                    last_refreshed_seconds: neuron.voting_power_refreshed_timestamp_seconds,
                     neuron_type: neuron
                         .neuron_type
                         .map(|t| NeuronType::try_from(t).unwrap_or_default()),
@@ -146,7 +150,8 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                     visibility: neuron
                         .visibility
                         .map(|vis| Visibility::try_from(vis).unwrap_or_default()),
-                    id: neuron.id.unwrap().id,
+                    id: neuron.id.map(|id| id.id),
+                    state,
                     known_neuron_data: neuron.known_neuron_data.map(Into::into),
                     kyc_verified: neuron.kyc_verified,
                     not_for_profit: neuron.not_for_profit,
@@ -217,7 +222,7 @@ fn display_proposal_info(proposal_info: ProposalInfo) -> AnyhowResult<String> {
         proposal_info: ProposalInfo,
     }
     let fmt = GetProposalInfo { proposal_info }.render()?;
-    Ok(fmt)
+    Ok(fmt.trim_end().to_string())
 }
 
 pub fn display_neuron_ids(blob: &[u8]) -> AnyhowResult<String> {
@@ -264,6 +269,44 @@ pub fn display_governance_error(err: GovernanceError) -> String {
 
 fn map_governance_error<T>(res: Result<T, GovernanceError>) -> AnyhowResult<T> {
     res.map_err(|e| anyhow!(e.error_message))
+}
+
+/// The ids of the node providers being rewarded, skipping any reward whose provider
+/// or provider id is missing (matching the pre-template behavior).
+fn reward_node_provider_ids(rewards: &RewardNodeProviders) -> Vec<PrincipalId> {
+    rewards
+        .rewards
+        .iter()
+        .filter_map(|r| r.node_provider.as_ref().and_then(|p| p.id))
+        .collect()
+}
+
+/// True when an `UpdateCanisterSettings` proposal does not actually change anything.
+fn no_canister_settings(settings: &CanisterSettings) -> bool {
+    let CanisterSettings {
+        controllers,
+        compute_allocation,
+        memory_allocation,
+        freezing_threshold,
+        log_visibility,
+        wasm_memory_limit,
+        wasm_memory_threshold,
+    } = settings;
+    controllers.is_none()
+        && compute_allocation.is_none()
+        && memory_allocation.is_none()
+        && freezing_threshold.is_none()
+        && log_visibility.is_none()
+        && wasm_memory_limit.is_none()
+        && wasm_memory_threshold.is_none()
+}
+
+/// `part` as a percentage of `total`, rounded to two decimal places.
+fn percentage(part: &u64, total: &u64) -> BigDecimal {
+    if *total == 0 {
+        return BigDecimal::from(0);
+    }
+    (BigDecimal::from(*part) / BigDecimal::from(*total) * 100_u8).round(2)
 }
 
 fn get_topic(topic: &i32) -> AnyhowResult<Topic> {

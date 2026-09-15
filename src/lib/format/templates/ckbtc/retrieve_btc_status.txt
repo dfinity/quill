@@ -18,13 +18,13 @@ The BTC transaction has been completed (id {{txid}})
   {% when CallFailed -%}
 The BTC transaction failed. {{task.amount|tokens_e8s("ckBTC")}} is being reimbursed to {{task.account}}
   {% when TaintedDestination with {kyt_provider, kyt_fee} -%}
-The KYT process determined that the BTC destination is tainted. {{task.amount|tokens_e8s("ckBTC")}} is being reimbursed to {{task.account}}.
+The KYT process determined that the BTC destination is tainted. {{task.amount|tokens_e8s("ckBTC")}} is being reimbursed to {{task.account}}
 KYT fee: {{kyt_fee|tokens_e8s("ckBTC")}}, provider: {{kyt_provider}}
   {% endmatch -%}
 {% when Reimbursed with (task) -%}
   {% match task.reason %}
   {% when CallFailed -%}
-The BTC transaction failed. {{task.amount|tokens_e8s("ckBTC")}} has been reimbursed to {{task.account}} at block index {{task.mint_block_index}}.
+The BTC transaction failed. {{task.amount|tokens_e8s("ckBTC")}} has been reimbursed to {{task.account}} at block index {{task.mint_block_index}}
   {% when TaintedDestination with {kyt_provider, kyt_fee} -%}
 The KYT process determined that the BTC destination is tainted. {{task.amount|tokens_e8s("ckBTC")}} has been reimbursed to {{task.account}} at block index {{task.mint_block_index}}
 KYT fee: {{kyt_fee|tokens_e8s("ckBTC")}}, provider: {{kyt_provider}}

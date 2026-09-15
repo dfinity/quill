@@ -19,7 +19,7 @@ into {% if let Some(target) = c.target_neuron %}
   {%- if let Some(id) = target.id %}neuron {{id.id}}{% else %}neuron with account {{target.account|hex}}{% endif %}
   {%- else %}unknown neuron{% endif %}
 {% when DisburseToNeuron with (c) -%}
-Successfully disbursed into new neuron {% if let Some(id) = c.created_neuron_id %}new neuron {{id.id}}{% else %}unknown new neuron{% endif %}
+Successfully disbursed into {% if let Some(id) = c.created_neuron_id %}new neuron {{id.id}}{% else %}unknown new neuron{% endif %}
 {% when MakeProposal with (c) -%}
 Successfully created new proposal {% if let Some(id) = c.proposal_id %}with ID {{id.id}}
 https://dashboard.internetcomputer.org/proposal/{{id.id}} {%- else %}(unknown ID){% endif %}

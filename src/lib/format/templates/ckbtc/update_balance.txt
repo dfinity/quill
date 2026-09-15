@@ -1,5 +1,5 @@
 {% macro heading(utxo) -%}
-{{utxo.outpoint.txid}}({{utxo.value|tokens_e8s("BTC")}})
+{{utxo.outpoint.txid}}({{utxo.value|tokens_e8s("BTC")}}):
 {%- endmacro -%}
 
 {% for status in statuses -%}

@@ -1,24 +1,25 @@
-{% macro nodeprovider(a, provider) -%}
-  {% if let Some(id) = provider.id %}{{id}} {% endif -%}
-  {% if let Some(account) = provider.reward_account %}(reward account {{account.hash|hex}}) {% endif -%}
-with {{a.amount_e8s|tokens_e8s("ICP")}} {#+ -#}
-  {% if let Some(mode) = a.reward_mode -%}
-  {% match mode -%}
-  {% when RewardToAccount with (account) -%}
-    {% if let Some(to) = account.to_account -%}
-to account {{to.hash|hex}}{% else %}
-to unknown account{% endif %}
-  {% when RewardToNeuron with (n) -%}
-to neuron with {{n.dissolve_delay_seconds|dur_seconds}} dissolve delay
-  {% endmatch -%}
-  {% endif -%}
-{% endmacro -%}
+{% macro nodeprovider(provider) -%}
+{% if let Some(id) = provider.id %}{{id}} {% endif -%}
+{% if let Some(account) = provider.reward_account %}(reward account {{account.hash|hex}}) {% endif -%}
+{%- endmacro -%}
+{% macro rewardmode(a) -%}
+with {{a.amount_e8s|tokens_e8s("ICP")}}
+{%- if let Some(mode) = a.reward_mode -%}
+{%- match mode -%}
+{%- when RewardToAccount with (account) -%}
+{%- if let Some(to) = account.to_account %} to account {{to.hash|hex}}{% endif -%}
+{%- when RewardToNeuron with (n) %} to neuron with {{n.dissolve_delay_seconds|dur_seconds}} dissolve delay
+{%- endmatch -%}
+{%- endif -%}
+{%- endmacro -%}
 {% macro neuron %}{% let neuron = self::map_governance_error(a.get_neuron_id_or_subaccount())?.context("neuron ID was null")? -%}
   {% match neuron %}{% when NeuronId with (i) %}{{i.id}}{% when Subaccount with (s) %}with subaccount {{s|hex}}{% endmatch -%}
 {% endmacro -%}
-{% let proposal = proposal_info.proposal.as_ref().context("proposal was null")? -%}
-{% if let Some(title) = proposal.title %}"{{title}}"{% else %}Untitled proposal{% endif %} ({{proposal_info.topic|fmt("{:?}")}})
+{% if let Some(proposal) = proposal_info.proposal -%}
+{% if let Some(title) = proposal.title %}"{{title}}"{% else %}Untitled proposal{% endif %} ({{self::get_topic(proposal_info.topic)?|fmt("{:?}")}})
+{% if !proposal.summary.is_empty() -%}
 Summary: "{{proposal.summary}}"
+{% endif -%}
 {% if !proposal.url.is_empty() -%}
 URL: {{proposal.url}}
 {% endif -%}
@@ -27,7 +28,7 @@ Proposed action: {#+ -#}
 {% match Action::from(action.clone()) -%}
 {% when RegisterKnownNeuron with (a) -%}
 Register known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
-  {%- if let Some(data) = a.known_neuron_data %} as {{data.name}}
+  {%- if let Some(data) = a.known_neuron_data %} as {{data.name}}.
   {%- if let Some(desc) = data.description %} "{{desc}}"{% endif %}{% endif %}
 {% when ApproveGenesisKyc with (a) -%}
 Approve principals {{a.principals|join(", ")}} for Genesis KYC
@@ -96,33 +97,30 @@ Update network economics
     {% endif -%}
   {% endif -%}
 {% when RewardNodeProvider with (a) -%}
-Reward node provider {% if let Some(provider) = a.node_provider -%}{% call nodeprovider(a, provider) %}{% endif %}
+Reward node provider {% if let Some(provider) = a.node_provider %}{% call nodeprovider(provider) %}{% endif %}{% call rewardmode(a) %}
 {% when RewardNodeProviders with (a) -%}
 {% if a.use_registry_derived_rewards() -%}
-  {% for reward in a.rewards -%}
-  {% if let Some(provider) = reward.node_provider %}{% if let Some(id) = provider.id %}{{id}}{% endif %}{% endif -%}
-  {% if !loop.last %}, {% endif -%}
-  {% endfor %}
+Reward node providers {{self::reward_node_provider_ids(a)|join(", ")}}
 {% else -%}
 Reward node providers
 {% for reward in a.rewards -%}
-- {% if let Some(provider) = reward.node_provider %}{% call nodeprovider(reward, provider) %}{% else %}[unknown]{% endif %}
+- {% if let Some(provider) = reward.node_provider %}{% call nodeprovider(provider) %}{% else %}[unknown] {% endif %}{% call rewardmode(reward) %}
 {% endfor -%}
 {% endif -%}
 {% when SetDefaultFollowees with (a) -%}
 Set default followees
 {% for (topic, followees) in a.default_followees -%}
-For {{self::get_topic(topic)|fmt("{:?}")}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
+For {{self::get_topic(topic)?|fmt("{:?}")}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
 {% endfor -%}
 {% when InstallCode with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.install_mode() -%}
   {% when CanisterInstallMode::Unspecified %}Install (unspecified mode) {% when CanisterInstallMode::Install %}Install {% when CanisterInstallMode::Reinstall %}Reinstall {% when CanisterInstallMode::Upgrade %}Upgrade {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
-WASM blob hash: {{Sha256::digest(a.wasm_module())|hex}}
+WASM blob hash: {{a.wasm_module_hash()|hex}}
 {% if a.skip_stopping_before_installing() -%}
 Canister will NOT be stopped before installing new WASM
 {% endif -%}
-{% if let Some(arg) = a.arg -%}
-Init args: {{arg|candid_payload(canister_id, ".")}}
+{% if let Some(arg) = a.arg_hash -%}
+Init args hash: {{arg|hex}}
 {% endif -%}
 {% when StopOrStartCanister with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.action() -%}
   {% when CanisterAction::Start %}Start {% when CanisterAction::Stop %}Stop {% when CanisterAction::Unspecified %}Start/stop (unspecified) {% endmatch -%}
@@ -130,7 +128,7 @@ canister {{canister_id|nns_canister_name}}
 {% when UpdateCanisterSettings with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% let settings = a.settings.as_ref().unwrap() -%}
 Update settings of canister {{canister_id|nns_canister_name}}
 {% if let Some(controllers) = settings.controllers -%}
-Controllers: {% for controller in controllers.controllers %}{{controller|nns_canister_name}}{% if !loop.last %}, {% endif %}{% endfor -%}
+Controllers: {% for controller in controllers.controllers %}{{controller|nns_canister_name}}{% if !loop.last %}, {% endif %}{% endfor %}
 {% endif -%}
 {% if let Some(freezing) = settings.freezing_threshold -%}
 Freezing threshold: {{freezing|dur_seconds}}
@@ -147,12 +145,16 @@ Log visibility: {{settings.log_visibility()|fmt("{:?}")}}
 {% if let Some(limit) = settings.wasm_memory_limit -%}
 WASM memory limit: {{limit|bytes}}
 {% endif -%}
+{% if self::no_canister_settings(settings) -%}
+No changes to canister settings
+{% endif -%}
 {% when FulfillSubnetRentalRequest with (o) -%}
 Fulfill request to rent subnet by user {% if let Some(user) = o.user %}{{user}}{% else %}<unknown>{% endif %}
 Replica version: {{o.replica_version_id}}
-Nodes: {% for node in o.node_ids %}
-- {{node}}
-{%- endfor %}
+Nodes:
+{% for node in o.node_ids -%}
+ - {{node}}
+{% endfor %}
 {% when CreateServiceNervousSystem with (o) -%}{{self::sns_unsupported()?}}
 {% when OpenSnsTokenSwap with (o) -%}{{self::sns_unsupported()?}}
 {% when SetSnsTokenSwapOpenTimeWindow with (o) -%}{{self::sns_unsupported()?}}
@@ -169,8 +171,7 @@ Disburse neuron {% call neuron %}
     {% if let Some(to) = c.to_account %} to account {{to.hash|hex}}{% endif %}
   {% when DisburseToNeuron with (c) -%}
 Disburse {{c.amount_e8s|tokens_e8s("ICP")}} from neuron {% call neuron %} to a new{% if c.kyc_verified %} (KYC verified){% endif %} neuron
-    {%- if let Some(controller) = c.new_controller %} owned by {{controller}}{% endif -%}
-    with dissolve delay {{c.dissolve_delay_seconds|dur_seconds}}
+    {%- if let Some(controller) = c.new_controller %} owned by {{controller}}{% endif %} with dissolve delay {{c.dissolve_delay_seconds|dur_seconds}}
   {% when Follow with (c) -%}
 Configure neuron {% call neuron %} to follow {% for followee in c.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
 {#- +#} for proposals of type {{c.topic()|fmt("{:?}")}}
@@ -197,7 +198,7 @@ Refresh the voting power of neuron {% call neuron %}
 Disburse {{c.percentage_to_disburse}}% of the maturity from neuron {% call neuron %} to {% if let Some(account) = c.to_account %}{{self::icrc1_helper(account)?}}{% else if let Some(account) = c.to_account_identifier %}{{account.hash|hex}}{% else %}its owner{% endif %}
   {% when SetFollowing with (c) -%}
 Change followees of neuron {% call neuron %}{% if c.topic_following.len() != 0 %}: {% for topic in c.topic_following -%}
-for {% if let Some(topic) = topic.topic %}{{self::get_topic(topic)|fmt("{:?}")}}{% else %}unspecified topic{% endif %}: {% if topic.followees.len() != 0 %}{% for followee in topic.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor -%}{% else %}nobody{% endif %}{% if !loop.last %}; {% endif %}{% endfor %}
+for {% if let Some(topic) = topic.topic %}{{self::get_topic(topic)?|fmt("{:?}")}}{% else %}unspecified topic{% endif %}: {% if topic.followees.len() != 0 %}{% for followee in topic.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor -%}{% else %}nobody{% endif %}{% if !loop.last %}; {% endif %}{% endfor -%}
 {% else %} to no followees{% endif %}
   {% when Configure with (c) -%}
     {% match c.operation.as_ref().context("operation was null")? -%}
@@ -224,13 +225,14 @@ Set visibility of neuron {% call neuron %} to {{o.visibility()|fmt("{:?}")}}
     {% endmatch -%}
   {% endmatch -%}
 {% endmatch -%}
+{% endif -%}
 {% else -%}
 Unknown proposal ({{self::get_topic(proposal_info.topic)?|fmt("{:?}")}})
 {% endif -%}
 {% if let Some(id) = proposal_info.id -%}
 Proposal ID: {{id.id}}
 {% endif -%}
-Created at {{proposal_info.proposal_timestamp_seconds|ts_seconds}}{% if let Some(proposer) = proposal_info.proposer -%} by neuron {{proposer.id}}{% endif %}
+Created at {{proposal_info.proposal_timestamp_seconds|ts_seconds}}{% if let Some(proposer) = proposal_info.proposer %} by neuron {{proposer.id}}{% endif %}
 Status: {{self::get_status(proposal_info.status)?|fmt("{:?}")}}, reward status: {{self::get_reward_status(proposal_info.reward_status)?|fmt("{:?}")}}
 {% if let Some(reason) = proposal_info.failure_reason -%}
 Failure reason: {{reason.error_message}}
@@ -251,7 +253,7 @@ Deadline: {{deadline|ts_seconds}}
 Rejection cost: {{proposal_info.reject_cost_e8s|tokens_e8s("ICP")}}
 {% endif -%}
 {% if let Some(tally) = proposal_info.latest_tally -%}
-Current tally: Y {{tally.yes|tokens_e8s(".")}} ({{(tally.yes / tally.total * 100)|fmt("{:.2}")}}%), N {{tally.no|tokens_e8s(".")}} ({{(tally.no / tally.total * 100)|fmt("{:.2}")}}%) as of {{tally.timestamp_seconds|ts_seconds}}
+Current tally: Y {{tally.yes|tokens_e8s(".")}} ({{self::percentage(tally.yes, tally.total)}}%), N {{tally.no|tokens_e8s(".")}} ({{self::percentage(tally.no, tally.total)}}%) as of {{tally.timestamp_seconds|ts_seconds}}
 {% endif -%}
 {% if proposal_info.reward_event_round != 0 -%}
 Reward event round: {{proposal_info.reward_event_round}}

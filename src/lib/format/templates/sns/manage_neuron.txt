@@ -12,13 +12,13 @@ Successfully added neuron permissions
 {% when RemoveNeuronPermission with (_) -%}
 Successfully removed neuron permissions
 {% when Disburse with (c) -%}
-Succcessfully disbursed ICP at block index {{c.transfer_block_height}}
+Successfully disbursed ICP at block index {{c.transfer_block_height}}
 {% when ClaimOrRefresh with (c) -%}
 Successfully updated the stake of {% if let Some(id) = c.refreshed_neuron_id %}neuron {{id}}{% else %}unknown neuron{% endif %}
 {% when DisburseMaturity with (c) -%}
 Successfully disbursed {{c.amount_deducted_e8s()|tokens_e8s("maturity")}}
 {% when MakeProposal with (c) -%}
-Successfully created new proposal with {% if let Some(id) = c.proposal_id %}proposal {{id.id}}{% else %}unknown proposal{% endif %}
+Successfully created new proposal with {% if let Some(id) = c.proposal_id %}ID {{id.id}}{% else %}unknown ID{% endif %}
 {% when MergeMaturity with (c) -%}
 Successfully merged {{c.merged_maturity_e8s|tokens_e8s("maturity")}} (total stake now {{c.new_stake_e8s|tokens_e8s(".")}})
 {% when Split with (c) -%}

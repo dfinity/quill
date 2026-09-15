@@ -279,7 +279,7 @@ pub fn display_response(
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
         ROLE_ICRC1_LEDGER => match method_name {
-            "icrc1_transfer" => format::ledger::display_transfer(blob),
+            "icrc1_transfer" => format::ledger::display_transfer(blob, canister_id),
             "icrc1_balance_of" => format::ledger::display_balance(blob, canister_id),
             _ => get_idl_string(blob, canister_id, role, method_name, part),
         },
