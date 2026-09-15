@@ -74,21 +74,14 @@ echo "Updating candid files..." >&2
 download_from_ic_repo rs/bitcoin/ckbtc/minter/ckbtc_minter.did   candid/ckbtc_minter.did
 download_from_ic_repo rs/nns/governance/canister/governance.did  candid/governance.did
 download_from_ic_repo rs/nns/gtc/canister/gtc.did                candid/gtc.did
-download_from_ic_repo rs/rosetta-api/icrc1/ledger/ledger.did     candid/icrc1.did
-download_from_ic_repo rs/rosetta-api/icp_ledger/ledger.did       candid/ledger.did
+download_from_ic_repo rs/ledger_suite/icrc1/ledger/ledger.did    candid/icrc1.did
+download_from_ic_repo rs/ledger_suite/icp/ledger.did             candid/ledger.did
 download_from_ic_repo rs/registry/canister/canister/registry.did candid/registry.did
 download_from_ic_repo rs/sns/governance/canister/governance.did  candid/sns-governance.did
 download_from_ic_repo rs/sns/root/canister/root.did              candid/sns-root.did
 download_from_ic_repo rs/sns/swap/canister/swap.did              candid/sns-swap.did
 download_from_ic_repo rs/nns/sns-wasm/canister/sns-wasm.did      candid/snsw.did
 echo "Done updating candid files." >&2
-echo >&2
-
-# Phase 1.3: Update end to end test(s).
-sed -i '' \
-    "s/IC_COMMIT=.*/IC_COMMIT=\"${NEW_COMMIT_ID}\"/" \
-    e2e/utils/setup_nns.bash
-echo "Done updating end to end tests." >&2
 echo >&2
 
 # Phase 1.4: Update Cargo.lock.
@@ -114,11 +107,11 @@ fi
 
 # Finally, report results.
 echo >&2
-git diff --stat Cargo.toml candid e2e >&2
+git diff --stat Cargo.toml candid >&2
 echo >&2
 echo "🎉 Success!" >&2
-echo "I have changed Cargo.toml, updated files in the candid dir and updated end to" >&2
-echo "end tests. We are now referring to ic repo commit ${NEW_COMMIT_ID}." >&2
+echo "I have changed Cargo.toml and updated files in the candid dir." >&2
+echo "We are now referring to ic repo commit ${NEW_COMMIT_ID}." >&2
 echo "These changes have NOT been staged. Therefore, you can inspect them by" >&2
 echo "running `git diff`. Once you are satisfied, proceed with the rest of your" >&2
 echo "usual git workflow." >&2

@@ -7,24 +7,18 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: e2e build (${{ matrix.os }})
+  test:
+    name: e2e (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         # windows not supported by dfx
-        include:
-          - os: ubuntu-22.04
-            binary_path: target/release
-            build_deps: scripts/workflows/provision-linux-build.sh
-          - os: macos-14-large
-            binary_path: target/release
-            build_deps: scripts/workflows/provision-darwin-build.sh
+        os: [ubuntu-24.04, macos-15]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             ~/.cargo/git
@@ -32,64 +26,41 @@ jobs:
             target
           key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}-ci-1
 
-      - name: Install dependencies
-        run: ${{ matrix.build_deps }}
+      - name: Install libudev (Linux)
+        if: ${{ contains(matrix.os, 'ubuntu') }}
+        run: sudo apt-get install -y libudev-dev
+
+      - name: Install dfx
+        uses: dfinity/setup-dfx@e50c04f104ee4285ec010f10609483cf41e4d365 # main
+
+      - name: Install coreutils (macOS)
+        if: ${{ contains(matrix.os, 'macos') }}
+        run: brew install coreutils
+
+      # bats-core/bats-action@4.0.0 doesn't propagate GITHUB_TOKEN to its
+      # internal shell steps, causing unauthenticated GitHub API 403 errors.
+      - name: Install Bats and bats-support
+        run: |
+          BATS_DIR="$HOME/.local/share/bats"
+          mkdir -p "$BATS_DIR"
+
+          # Install bats-core
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          /tmp/bats-core/install.sh "$BATS_DIR"
+          echo "$BATS_DIR/bin" >> "$GITHUB_PATH"
+
+          # Install bats-support library
+          git clone --depth 1 https://github.com/bats-core/bats-support.git "$BATS_DIR/bats-support"
+
+          echo "BATS_LIB_PATH=$BATS_DIR" >> "$GITHUB_ENV"
 
       - name: Build release
-        run: cargo build --release --locked
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: quill-${{ matrix.os }}-rs
-          path: ${{ matrix.binary_path }}/quill
-
-  list_tests:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: set-matrix
         run: |
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "matrix<<$EOF" >> $GITHUB_OUTPUT
-          scripts/workflows/e2e-matrix.py >> $GITHUB_OUTPUT
-          echo "$EOF" >> $GITHUB_OUTPUT
+          cargo build --release --locked
+          echo "$(pwd)/target/release" >> "$GITHUB_PATH"
 
-  test:
-    runs-on: ${{ matrix.os }}
-    needs: [build, list_tests]
-    strategy:
-      fail-fast: false
-      matrix: ${{fromJson(needs.list_tests.outputs.matrix)}}
-    env:
-      E2E_TEST: tests-${{ matrix.test }}.bash
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download quill binary
-        uses: actions/download-artifact@v4
-        with:
-          name: quill-${{ matrix.os }}-rs
-          path: /usr/local/bin
-      - name: Setup quill binary
-        run: chmod +x /usr/local/bin/quill
-      - name: Install dfx
-        uses: dfinity/setup-dfx@main
-      - name: Provision Darwin
-        if: ${{ contains(matrix.os, 'macos') }}
-        run: bash scripts/workflows/provision-darwin-e2e.sh
-      - name: Provision Linux
-        if: ${{ contains(matrix.os, 'ubuntu') }}
-        run: bash scripts/workflows/provision-linux-e2e.sh
-      - name: Prepare environment
-        run: |
-          echo "archive=$(pwd)/e2e/archive" >> "$GITHUB_ENV"
-          echo "assets=$(pwd)/e2e/assets" >> "$GITHUB_ENV"
-          echo "utils=$(pwd)/e2e/utils" >> "$GITHUB_ENV"
-          export -p
       - name: Run e2e test
-        run: timeout 2100 bats "e2e/$E2E_TEST"
+        run: timeout 2100 bats e2e/tests-quill/create_neuron.bash
 
   aggregate:
     name: e2e:required

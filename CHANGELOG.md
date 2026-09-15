@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Disbursing maturity to non-icrc1 addresses is disabled as some CEX does not support minting
+  transactions well.
+
 ## [0.5.4] - 2025-08-11
 
 - Ledger support has been updated. Ledger devices can now be used to vote and follow, disburse neurons (but not neuron maturity), add hotkeys, and set neuron visibility; as well as stake new neurons or claim them from Genesis, and transfer to all types of NNS accounts.

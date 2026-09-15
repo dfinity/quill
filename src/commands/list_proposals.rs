@@ -4,7 +4,7 @@ use crate::{
 };
 use candid::Encode;
 use clap::Parser;
-use ic_nns_governance::pb::v1::ListProposalInfo;
+use ic_nns_governance_api::ListProposalInfoRequest;
 
 /// Queries for a list of pending proposals.
 #[derive(Parser)]
@@ -20,7 +20,7 @@ pub struct ListProposalsOpts {
 // We currently only support a subset of the functionality.
 #[tokio::main]
 pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult {
-    let args = Encode!(&ListProposalInfo {
+    let args = Encode!(&ListProposalInfoRequest {
         limit: opts.limit.unwrap_or(100),
         before_proposal: None,
         exclude_topic: vec![2 /*TOPIC_EXCHANGE_RATE*/, 9 /*TOPIC_KYC*/],
@@ -28,6 +28,7 @@ pub async fn exec(opts: ListProposalsOpts, fetch_root_key: bool) -> AnyhowResult
         include_status: Vec::new(),
         include_all_manage_neuron_proposals: Some(false),
         omit_large_fields: Some(false),
+        return_self_describing_action: None,
     })?;
     submit_unsigned_ingress(
         governance_canister_id(),

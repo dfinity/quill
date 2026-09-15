@@ -5,7 +5,11 @@ use askama::Template;
 use bigdecimal::BigDecimal;
 use candid::{Decode, Nat, Principal};
 use chrono::Utc;
-use ic_base_types::PrincipalId;
+use ic_base_types::{CanisterId, PrincipalId};
+use ic_nns_constants::{
+    CYCLES_MINTING_CANISTER_ID, LIFELINE_CANISTER_ID, MIGRATION_CANISTER_ID, REGISTRY_CANISTER_ID,
+    ROOT_CANISTER_ID, SNS_WASM_CANISTER_ID, SUBNET_RENTAL_CANISTER_ID,
+};
 use ic_nns_governance::{
     pb::v1::{
         add_or_remove_node_provider::Change,
@@ -14,15 +18,14 @@ use ic_nns_governance::{
         proposal::Action,
         reward_node_provider::RewardMode,
         stop_or_start_canister::CanisterAction,
-        update_canister_settings::CanisterSettings,
-        Account, GovernanceError, KnownNeuronData, NeuronState, NeuronType, ProposalRewardStatus,
-        RewardNodeProviders, Topic, Visibility,
+        Account, CanisterSettings, GovernanceError, KnownNeuronData, NeuronState, NeuronType,
+        NnsFunction, ProposalRewardStatus, RewardNodeProviders, Topic, Visibility,
     },
     proposals::call_canister::CallCanister,
 };
 use ic_nns_governance_api::{
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
-    manage_neuron_response::Command, neuron::DissolveState,
+    manage_neuron_response::Command, neuron::DissolveState, proposal::Action as ApiAction,
     ClaimOrRefreshNeuronFromAccountResponse, ListNeuronsResponse, ListProposalInfoResponse,
     ManageNeuronResponse, NeuronInfo, ProposalInfo, ProposalStatus,
 };
@@ -49,6 +52,7 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
         community_fund_seconds: Option<u64>,
         known_neuron_data: Option<KnownNeuronData>,
         visibility: Option<Visibility>,
+        eight_year_gang_bonus: Option<Nat>,
         retrieved_seconds: u64,
     }
     let fmt = match info {
@@ -66,6 +70,7 @@ pub fn display_get_neuron_info(blob: &[u8]) -> AnyhowResult<String> {
             created_seconds: info.created_timestamp_seconds,
             community_fund_seconds: info.joined_community_fund_timestamp_seconds,
             known_neuron_data: info.known_neuron_data.map(Into::into),
+            eight_year_gang_bonus: eight_year_gang_bonus(info.eight_year_gang_bonus_base_e8s),
             retrieved_seconds: info.retrieved_at_timestamp_seconds,
         }
         .render()?,
@@ -105,6 +110,7 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
         followees: HashMap<Topic, Vec<u64>>,
         total_followees: usize,
         visibility: Option<Visibility>,
+        eight_year_gang_bonus: Option<Nat>,
     }
     #[derive(Template)]
     #[template(path = "nns/list_neurons.txt")]
@@ -127,6 +133,9 @@ pub fn display_list_neurons(blob: &[u8]) -> AnyhowResult<String> {
                     created_seconds: neuron.created_timestamp_seconds,
                     deciding: neuron.deciding_voting_power.unwrap_or(0).into(),
                     dissolve_delay: neuron.dissolve_state,
+                    eight_year_gang_bonus: eight_year_gang_bonus(
+                        neuron.eight_year_gang_bonus_base_e8s,
+                    ),
                     followees: neuron
                         .followees
                         .iter()
@@ -289,6 +298,7 @@ fn no_canister_settings(settings: &CanisterSettings) -> bool {
         memory_allocation,
         freezing_threshold,
         log_visibility,
+        snapshot_visibility,
         wasm_memory_limit,
         wasm_memory_threshold,
     } = settings;
@@ -297,8 +307,142 @@ fn no_canister_settings(settings: &CanisterSettings) -> bool {
         && memory_allocation.is_none()
         && freezing_threshold.is_none()
         && log_visibility.is_none()
+        && snapshot_visibility.is_none()
         && wasm_memory_limit.is_none()
         && wasm_memory_threshold.is_none()
+}
+
+/// The hash of the WASM a `CreateCanisterAndInstallCode` proposal installs.
+///
+/// Read off the API action rather than the protobuf one the rest of the arm uses:
+/// the protobuf type stores the whole `wasm_module` and only caches its hash inside
+/// it, and `From<api::CreateCanisterAndInstallCode>` cannot reconstruct the module,
+/// so it sets `wasm_module: None` and the hash is lost in the conversion.
+fn create_canister_wasm_module_hash(action: &ApiAction) -> Option<&[u8]> {
+    match action {
+        ApiAction::CreateCanisterAndInstallCode(a) => a.wasm_module_hash.as_deref(),
+        _ => None,
+    }
+}
+
+/// The "8 year gang" dissolve delay bonus base, which is zero for every neuron that
+/// didn't have the maximum dissolve delay when the maximum was reduced, and is not
+/// worth displaying in that case.
+fn eight_year_gang_bonus(base_e8s: Option<u64>) -> Option<Nat> {
+    base_e8s.filter(|&base| base > 0).map(Nat::from)
+}
+
+/// The canister and method an `ExecuteNnsFunction` payload is destined for, or `None`
+/// for a payload that isn't Candid and therefore can't be decoded anyway. Resolving is
+/// deliberately skipped for such payloads so that an unrecognized function doesn't turn
+/// a hex-printable payload into a hard error.
+fn nns_function_target(
+    function: &NnsFunction,
+    payload: &[u8],
+) -> AnyhowResult<Option<(CanisterId, &'static str)>> {
+    if payload.starts_with(b"DIDL") {
+        nns_function_canister_and_method(*function)
+            .map(Some)
+            .map_err(|e| anyhow!(e))
+    } else {
+        Ok(None)
+    }
+}
+
+/// `NnsFunction::canister_and_function` was removed from the governance crate, so the
+/// mapping has to be maintained here.
+fn nns_function_canister_and_method(
+    function: NnsFunction,
+) -> Result<(CanisterId, &'static str), String> {
+    let pair = match function {
+        NnsFunction::Unspecified => return Err("Unspecified NNS function".to_string()),
+        NnsFunction::AssignNoid => (REGISTRY_CANISTER_ID, "add_node_operator"),
+        NnsFunction::CreateSubnet => (REGISTRY_CANISTER_ID, "create_subnet"),
+        NnsFunction::AddNodeToSubnet => (REGISTRY_CANISTER_ID, "add_nodes_to_subnet"),
+        NnsFunction::RemoveNodesFromSubnet => (REGISTRY_CANISTER_ID, "remove_nodes_from_subnet"),
+        NnsFunction::ChangeSubnetMembership => (REGISTRY_CANISTER_ID, "change_subnet_membership"),
+        NnsFunction::NnsCanisterInstall => (ROOT_CANISTER_ID, "add_nns_canister"),
+        NnsFunction::HardResetNnsRootToVersion => {
+            (LIFELINE_CANISTER_ID, "hard_reset_root_to_version")
+        }
+        NnsFunction::RecoverSubnet => (REGISTRY_CANISTER_ID, "recover_subnet"),
+        NnsFunction::ReviseElectedGuestosVersions => {
+            (REGISTRY_CANISTER_ID, "revise_elected_guestos_versions")
+        }
+        NnsFunction::UpdateNodeOperatorConfig => {
+            (REGISTRY_CANISTER_ID, "update_node_operator_config")
+        }
+        NnsFunction::DeployGuestosToAllSubnetNodes => {
+            (REGISTRY_CANISTER_ID, "deploy_guestos_to_all_subnet_nodes")
+        }
+        NnsFunction::ReviseElectedHostosVersions => {
+            (REGISTRY_CANISTER_ID, "revise_elected_hostos_versions")
+        }
+        NnsFunction::DeployHostosToSomeNodes => {
+            (REGISTRY_CANISTER_ID, "deploy_hostos_to_some_nodes")
+        }
+        NnsFunction::UpdateConfigOfSubnet => (REGISTRY_CANISTER_ID, "update_subnet"),
+        NnsFunction::IcpXdrConversionRate => {
+            (CYCLES_MINTING_CANISTER_ID, "set_icp_xdr_conversion_rate")
+        }
+        NnsFunction::ClearProvisionalWhitelist => {
+            (REGISTRY_CANISTER_ID, "clear_provisional_whitelist")
+        }
+        NnsFunction::SetAuthorizedSubnetworks => {
+            (CYCLES_MINTING_CANISTER_ID, "set_authorized_subnetwork_list")
+        }
+        NnsFunction::SetFirewallConfig => (REGISTRY_CANISTER_ID, "set_firewall_config"),
+        NnsFunction::AddFirewallRules => (REGISTRY_CANISTER_ID, "add_firewall_rules"),
+        NnsFunction::RemoveFirewallRules => (REGISTRY_CANISTER_ID, "remove_firewall_rules"),
+        NnsFunction::UpdateFirewallRules => (REGISTRY_CANISTER_ID, "update_firewall_rules"),
+        NnsFunction::StopOrStartNnsCanister => (ROOT_CANISTER_ID, "stop_or_start_nns_canister"),
+        NnsFunction::RemoveNodes => (REGISTRY_CANISTER_ID, "remove_nodes"),
+        NnsFunction::UninstallCode => (CanisterId::ic_00(), "uninstall_code"),
+        NnsFunction::UpdateNodeRewardsTable => (REGISTRY_CANISTER_ID, "update_node_rewards_table"),
+        NnsFunction::AddOrRemoveDataCenters => (REGISTRY_CANISTER_ID, "add_or_remove_data_centers"),
+        NnsFunction::RemoveNodeOperators => (REGISTRY_CANISTER_ID, "remove_node_operators"),
+        NnsFunction::RerouteCanisterRanges => (REGISTRY_CANISTER_ID, "reroute_canister_ranges"),
+        NnsFunction::PrepareCanisterMigration => {
+            (REGISTRY_CANISTER_ID, "prepare_canister_migration")
+        }
+        NnsFunction::CompleteCanisterMigration => {
+            (REGISTRY_CANISTER_ID, "complete_canister_migration")
+        }
+        NnsFunction::AddSnsWasm => (SNS_WASM_CANISTER_ID, "add_wasm"),
+        NnsFunction::UpdateSubnetType => (CYCLES_MINTING_CANISTER_ID, "update_subnet_type"),
+        NnsFunction::ChangeSubnetTypeAssignment => {
+            (CYCLES_MINTING_CANISTER_ID, "change_subnet_type_assignment")
+        }
+        NnsFunction::UpdateSnsWasmSnsSubnetIds => (SNS_WASM_CANISTER_ID, "update_sns_subnet_list"),
+        NnsFunction::InsertSnsWasmUpgradePathEntries => {
+            (SNS_WASM_CANISTER_ID, "insert_upgrade_path_entries")
+        }
+        NnsFunction::BitcoinSetConfig => (ROOT_CANISTER_ID, "call_canister"),
+        NnsFunction::AddApiBoundaryNodes => (REGISTRY_CANISTER_ID, "add_api_boundary_nodes"),
+        NnsFunction::RemoveApiBoundaryNodes => (REGISTRY_CANISTER_ID, "remove_api_boundary_nodes"),
+        NnsFunction::DeployGuestosToSomeApiBoundaryNodes => (
+            REGISTRY_CANISTER_ID,
+            "deploy_guestos_to_some_api_boundary_nodes",
+        ),
+        NnsFunction::DeployGuestosToAllUnassignedNodes => (
+            REGISTRY_CANISTER_ID,
+            "deploy_guestos_to_all_unassigned_nodes",
+        ),
+        NnsFunction::UpdateSshReadonlyAccessForAllUnassignedNodes => (
+            REGISTRY_CANISTER_ID,
+            "update_ssh_readonly_access_for_all_unassigned_nodes",
+        ),
+        NnsFunction::SubnetRentalRequest => {
+            (SUBNET_RENTAL_CANISTER_ID, "execute_rental_request_proposal")
+        }
+        NnsFunction::PauseCanisterMigrations => (MIGRATION_CANISTER_ID, "disable_api"),
+        NnsFunction::UnpauseCanisterMigrations => (MIGRATION_CANISTER_ID, "enable_api"),
+        NnsFunction::SetSubnetOperationalLevel => {
+            (REGISTRY_CANISTER_ID, "set_subnet_operational_level")
+        }
+        _ => return Err(format!("Unknown or obsolete NNS function: {function:?}")),
+    };
+    Ok(pair)
 }
 
 /// `part` as a percentage of `total`, rounded to two decimal places.

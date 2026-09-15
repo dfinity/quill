@@ -1,4 +1,4 @@
-load "${BATSLIB}"/load.bash
+bats_load_library bats-support
 load ../utils/assertions
 
 # Takes a name of the asset folder, and copy those files to the current project.

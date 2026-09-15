@@ -17,4 +17,7 @@ Description: "{{desc}}"
 {% if let Some(vis) = visibility -%}
 Neuron visibility: {{vis|fmt("{:?}")}}
 {% endif -%}
+{% if let Some(bonus) = eight_year_gang_bonus -%}
+8 Year Gang bonus base: {{bonus|tokens_e8s("ICP")}}
+{% endif -%}
 Accurate as of {{retrieved_seconds|ts_seconds}}

@@ -12,6 +12,32 @@ with {{a.amount_e8s|tokens_e8s("ICP")}}
 {%- endmatch -%}
 {%- endif -%}
 {%- endmacro -%}
+{% macro canistersettings(settings) -%}
+{% if let Some(controllers) = settings.controllers -%}
+Controllers: {% for controller in controllers.controllers %}{{controller|nns_canister_name}}{% if !loop.last %}, {% endif %}{% endfor %}
+{% endif -%}
+{% if let Some(freezing) = settings.freezing_threshold -%}
+Freezing threshold: {{freezing|dur_seconds}}
+{% endif -%}
+{% if let Some(memory) = settings.memory_allocation -%}
+Memory allocation: {{memory}}%
+{% endif -%}
+{% if let Some(compute) = settings.compute_allocation -%}
+Compute allocation: {{compute}}%
+{% endif -%}
+{% if settings.log_visibility.is_some() -%}
+Log visibility: {{settings.log_visibility()|fmt("{:?}")}}
+{% endif -%}
+{% if settings.snapshot_visibility.is_some() -%}
+Snapshot visibility: {{settings.snapshot_visibility()|fmt("{:?}")}}
+{% endif -%}
+{% if let Some(limit) = settings.wasm_memory_limit -%}
+WASM memory limit: {{limit|bytes}}
+{% endif -%}
+{% if self::no_canister_settings(settings) -%}
+No changes to canister settings
+{% endif -%}
+{%- endmacro -%}
 {% macro neuron %}{% let neuron = self::map_governance_error(a.get_neuron_id_or_subaccount())?.context("neuron ID was null")? -%}
   {% match neuron %}{% when NeuronId with (i) %}{{i.id}}{% when Subaccount with (s) %}with subaccount {{s|hex}}{% endmatch -%}
 {% endmacro -%}
@@ -30,6 +56,8 @@ Proposed action: {#+ -#}
 Register known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
   {%- if let Some(data) = a.known_neuron_data %} as {{data.name}}.
   {%- if let Some(desc) = data.description %} "{{desc}}"{% endif %}{% endif %}
+{% when DeregisterKnownNeuron with (a) -%}
+Deregister known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
 {% when ApproveGenesisKyc with (a) -%}
 Approve principals {{a.principals|join(", ")}} for Genesis KYC
 {% when AddOrRemoveNodeProvider with (a) -%}{% let change = a.change.as_ref().context("node provider change was null")? -%}
@@ -43,9 +71,8 @@ Remove node provider{% if let Some(id) = provider.id %} {{id}}{% endif %}
   {% endmatch -%}
 {% when ExecuteNnsFunction with (a) -%}
 {% let nns_function = a.nns_function() -%}
-{% let (canister_id, function) = self::map_governance_error(nns_function.canister_and_function())? -%}
 Execute NNS function {{nns_function|fmt("{:?}")}}
-Payload: {{a.payload|candid_payload(canister_id, function)}}
+Payload: {% if let Some((canister_id, function)) = self::nns_function_target(nns_function, a.payload)? %}{{a.payload|candid_payload(canister_id, function)}}{% else %}{{a.payload|hex}}{% endif %}
 {% when Motion with (a) -%}
 "{{a.motion_text}}" (motion)
 {% when ManageNetworkEconomics with (a) -%}
@@ -127,26 +154,17 @@ Init args hash: {{arg|hex}}
 canister {{canister_id|nns_canister_name}}
 {% when UpdateCanisterSettings with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% let settings = a.settings.as_ref().unwrap() -%}
 Update settings of canister {{canister_id|nns_canister_name}}
-{% if let Some(controllers) = settings.controllers -%}
-Controllers: {% for controller in controllers.controllers %}{{controller|nns_canister_name}}{% if !loop.last %}, {% endif %}{% endfor %}
+{% call canistersettings(settings) -%}
+{% when CreateCanisterAndInstallCode with (a) -%}
+Create canister and install code{% if let Some(subnet) = a.host_subnet_id %} on subnet {{subnet}}{% endif %}
+{% if let Some(settings) = a.canister_settings -%}
+{% call canistersettings(settings) -%}
 {% endif -%}
-{% if let Some(freezing) = settings.freezing_threshold -%}
-Freezing threshold: {{freezing|dur_seconds}}
+{% if let Some(hash) = self::create_canister_wasm_module_hash(action) -%}
+WASM module hash: {{hash|hex}}
 {% endif -%}
-{% if let Some(memory) = settings.memory_allocation -%}
-Memory allocation: {{memory}}%
-{% endif -%}
-{% if let Some(compute) = settings.compute_allocation -%}
-Compute allocation: {{compute}}%
-{% endif -%}
-{% if settings.log_visibility.is_some() -%}
-Log visibility: {{settings.log_visibility()|fmt("{:?}")}}
-{% endif -%}
-{% if let Some(limit) = settings.wasm_memory_limit -%}
-WASM memory limit: {{limit|bytes}}
-{% endif -%}
-{% if self::no_canister_settings(settings) -%}
-No changes to canister settings
+{% if let Some(hash) = a.install_arg_hash -%}
+Install arg hash: {{hash|hex}}
 {% endif -%}
 {% when FulfillSubnetRentalRequest with (o) -%}
 Fulfill request to rent subnet by user {% if let Some(user) = o.user %}{{user}}{% else %}<unknown>{% endif %}
@@ -155,6 +173,25 @@ Nodes:
 {% for node in o.node_ids -%}
  - {{node}}
 {% endfor %}
+{% when BlessAlternativeGuestOsVersion with (a) -%}
+Bless alternative GuestOS version
+{% if !a.rootfs_hash.is_empty() -%}
+Rootfs hash: {{a.rootfs_hash}}
+{% endif -%}
+{% for chip_id in a.chip_ids -%}
+Chip ID: {{chip_id|hex}}
+{% endfor -%}
+{% if let Some(measurements) = a.base_guest_launch_measurements -%}
+{% for m in measurements.guest_launch_measurements -%}
+Launch measurement: {{m.measurement|hex}}
+{% endfor -%}
+{% endif -%}
+{% when TakeCanisterSnapshot with (a) -%}
+Take canister snapshot{% if let Some(canister_id) = a.canister_id %} of canister {{canister_id}}{% endif %}
+{#- +#}{% if let Some(replace) = a.replace_snapshot %} (replacing snapshot {{replace|hex}}){% endif %}
+{% when LoadCanisterSnapshot with (a) -%}
+Load canister snapshot{% if !a.snapshot_id.is_empty() %} {{a.snapshot_id|hex}}{% endif %}
+{#- +#}{% if let Some(canister_id) = a.canister_id %} into canister {{canister_id}}{% endif %}
 {% when CreateServiceNervousSystem with (o) -%}{{self::sns_unsupported()?}}
 {% when OpenSnsTokenSwap with (o) -%}{{self::sns_unsupported()?}}
 {% when SetSnsTokenSwapOpenTimeWindow with (o) -%}{{self::sns_unsupported()?}}

@@ -5,7 +5,7 @@ use crate::lib::{
     AnyhowResult, AuthInfo, ParsedNnsAccount, ROLE_NNS_GOVERNANCE,
 };
 use anyhow::{anyhow, bail, ensure, Context};
-use candid::{CandidType, Encode, Principal};
+use candid::{Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
@@ -29,11 +29,6 @@ mod pb {
 pub const ONE_DAY_SECONDS: u32 = 24 * 60 * 60;
 pub const ONE_YEAR_SECONDS: u32 = (4 * 365 + 1) * ONE_DAY_SECONDS / 4;
 pub const ONE_MONTH_SECONDS: u32 = ONE_YEAR_SECONDS / 12;
-
-#[derive(CandidType)]
-pub struct AccountIdentifier {
-    hash: Vec<u8>,
-}
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum EnableState {
@@ -302,7 +297,8 @@ or --disburse-maturity-percentage flags with a Ledger device"
         let args = Encode!(&ManageNeuron {
             id: None,
             command: Some(Command::Split(Split {
-                amount_e8s: amount * 100_000_000
+                amount_e8s: amount * 100_000_000,
+                memo: Some(0),
             })),
             neuron_id_or_subaccount: id.clone(),
         })?;
@@ -447,11 +443,11 @@ or --disburse-maturity-percentage flags with a Ledger device"
     {
         let percentage_to_disburse = opts.disburse_maturity_percentage.unwrap_or(100) as u32;
         let disburse = match opts.disburse_maturity_to {
-            Some(ParsedNnsAccount::Original(ident)) => DisburseMaturity {
-                percentage_to_disburse,
-                to_account: None,
-                to_account_identifier: Some(ident.into()),
-            },
+            Some(ParsedNnsAccount::Original(_)) => {
+                return Err(anyhow!("Disburse maturity is temporarily disabled for arbitrary accounts.\
+                Use an ICRC-1 account, or if --disburse-maturity-to is not specified, the controller of \
+                the neuron will be used."));
+            }
             Some(ParsedNnsAccount::Icrc1(account)) => DisburseMaturity {
                 percentage_to_disburse,
                 to_account: Some(account.into()),

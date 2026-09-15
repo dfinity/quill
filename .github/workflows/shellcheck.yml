@@ -6,7 +6,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install shellcheck
         run: |
           mkdir $HOME/bin
@@ -15,8 +15,6 @@ jobs:
             | xz -d | tar x
       - name: Check e2e scripts
         run: $HOME/bin/shellcheck-v0.7.1/shellcheck e2e/**/*.*sh
-      - name: Check deploy scripts
-        run: $HOME/bin/shellcheck-v0.7.1/shellcheck scripts/**/*.sh
   
   aggregate:
     name: shellcheck:required

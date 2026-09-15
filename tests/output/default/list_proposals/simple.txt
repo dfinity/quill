@@ -6,6 +6,7 @@ Sending message with
   Method name: list_proposals
   Arguments:   (
   record {
+    return_self_describing_action = null;
     include_reward_status = vec {};
     omit_large_fields = opt false;
     before_proposal = null;
