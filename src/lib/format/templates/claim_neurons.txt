@@ -1,0 +1,1 @@
+Claimed neurons {{ ids|join(", ") }}

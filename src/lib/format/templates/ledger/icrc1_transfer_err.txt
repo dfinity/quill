@@ -1,0 +1,18 @@
+{% match error %}
+{% when Icrc1TransferError::BadFee with {expected_fee} -%}
+Transfer error: wrong transfer fee specified, should be {{expected_fee|tokens_e8s_guess(canister)}}
+{% when Icrc1TransferError::BadBurn with {min_burn_amount} -%}
+Transfer error: the burn amount is below the minimum of {{min_burn_amount|tokens_e8s_guess(canister)}}
+{% when Icrc1TransferError::InsufficientFunds with {balance} -%}
+Transfer error: the transferred-from account has an insufficient balance ({{balance|tokens_e8s_guess(canister)}})
+{% when Icrc1TransferError::TooOld -%}
+Transfer error: the transaction is too old
+{% when Icrc1TransferError::CreatedInFuture with {ledger_time} -%}
+Transfer error: the transaction is timestamped as being created in the future (the ledger's time is {{ledger_time|ts_nanos}})
+{% when Icrc1TransferError::TemporarilyUnavailable -%}
+Transfer error: the ledger is temporarily unavailable
+{% when Icrc1TransferError::Duplicate with {duplicate_of} -%}
+Transfer error: the transaction is a duplicate of transaction #{{duplicate_of}}
+{% when Icrc1TransferError::GenericError with {error_code, message} -%}
+Transfer error: {{message}} (error code {{error_code}})
+{% endmatch -%}

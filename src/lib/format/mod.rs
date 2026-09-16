@@ -9,14 +9,15 @@ use super::ParsedAccount;
 
 pub mod ckbtc;
 pub mod gtc;
-pub mod icp_ledger;
-pub mod icrc1;
+pub mod ledger;
 pub mod nns_governance;
 pub mod registry;
 pub mod sns_governance;
 pub mod sns_root;
 pub mod sns_swap;
 pub mod sns_wasm;
+#[cfg(test)]
+mod tests;
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
     format!("{} UTC", datetime.format("%b %d %Y %X"))
@@ -31,6 +32,10 @@ pub fn format_timestamp_nanoseconds(nanoseconds: u64) -> String {
 }
 
 pub fn format_duration_seconds(mut seconds: u64) -> String {
+    if seconds == 0 {
+        // Every component would be filtered out below, leaving an empty string.
+        return "0 seconds".to_string();
+    }
     // Required for magic numbers like '8 years' to show up as such instead of '8 years 2 days'.
     const SECONDS_PER_YEAR: u64 = 31557600; // 365.25 * 24 * 60 * 60
     const SECONDS_PER_MONTH: u64 = SECONDS_PER_YEAR / 12;
@@ -93,6 +98,217 @@ pub fn format_n_cycles(cycles: Nat) -> String {
         format!("{printable:.1}{letter}")
     } else {
         format!("{printable:.0}{letter}")
+    }
+}
+
+pub mod filters {
+    use askama::Values;
+    use bigdecimal::BigDecimal;
+    use candid::{Nat, Principal};
+    use ic_base_types::{CanisterId, PrincipalId};
+    use ic_nns_constants::canister_id_to_nns_canister_name;
+    use indicatif::HumanBytes;
+
+    use crate::lib::{
+        ckbtc_canister_id, e8s_to_tokens,
+        format::{format_n_cycles, format_t_cycles},
+        get_default_role, get_idl_string, ledger_canister_id,
+    };
+
+    use super::{format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds};
+
+    pub fn tokens_e8s(
+        e8s: impl IntoNat,
+        _values: &dyn Values,
+        units: &str,
+    ) -> askama::Result<String> {
+        if units == "." {
+            Ok(format!("{}", e8s_to_tokens(e8s.into_nat())))
+        } else {
+            Ok(format!("{} {units}", e8s_to_tokens(e8s.into_nat())))
+        }
+    }
+
+    pub fn tokens_e8s_guess(
+        e8s: impl IntoNat,
+        _values: &dyn Values,
+        canister: impl ToPrincipal,
+    ) -> askama::Result<String> {
+        let canister = canister.to_principal();
+        if canister == ledger_canister_id() {
+            tokens_e8s(e8s, _values, "ICP")
+        } else if canister == ckbtc_canister_id(false) {
+            tokens_e8s(e8s, _values, "ckBTC")
+        } else if canister == ckbtc_canister_id(true) {
+            tokens_e8s(e8s, _values, "ckTESTBTC")
+        } else {
+            tokens_e8s(e8s, _values, "tokens")
+        }
+    }
+
+    pub fn dur_seconds(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_duration_seconds(seconds.to_u64()))
+    }
+
+    pub fn dur_nanos(nanoseconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_duration_seconds(
+            nanoseconds.to_u64() / 1_000_000_000,
+        ))
+    }
+
+    pub fn ts_seconds(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_timestamp_seconds(seconds.to_u64()))
+    }
+
+    pub fn ts_nanos(seconds: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_timestamp_nanoseconds(seconds.to_u64()))
+    }
+
+    pub fn hex(bytes: impl AsRef<[u8]>, _values: &dyn Values) -> askama::Result<String> {
+        Ok(hex::encode(bytes))
+    }
+
+    pub fn cycles_t(cycles: impl IntoNat, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_t_cycles(cycles.into_nat()))
+    }
+
+    pub fn cycles_n(cycles: impl IntoNat, _values: &dyn Values) -> askama::Result<String> {
+        Ok(format_n_cycles(cycles.into_nat()))
+    }
+
+    pub fn candid_payload(
+        bytes: impl AsRef<[u8]>,
+        _values: &dyn Values,
+        canister: impl ToPrincipal,
+        function: &str,
+    ) -> askama::Result<String> {
+        let canister = canister.to_principal();
+        let bytes = bytes.as_ref();
+        let msg = if bytes.starts_with(b"DIDL") {
+            if let Ok(idl) = get_idl_string(
+                bytes,
+                canister,
+                get_default_role(canister).unwrap_or_default(),
+                function,
+                "args",
+            ) {
+                idl
+            } else {
+                hex::encode(bytes)
+            }
+        } else {
+            hex::encode(bytes)
+        };
+        Ok(msg)
+    }
+
+    pub fn num_ufixed(
+        n: impl IntoNat,
+        _values: &dyn Values,
+        digits: i64,
+    ) -> askama::Result<BigDecimal> {
+        let nat = n.into_nat();
+        let bigint = nat.0;
+        Ok(BigDecimal::new(bigint.into(), digits))
+    }
+
+    pub fn nns_canister_name(
+        canister: impl ToPrincipal,
+        _values: &dyn Values,
+    ) -> askama::Result<String> {
+        Ok(canister_id_to_nns_canister_name(
+            CanisterId::unchecked_from_principal(canister.to_principal().into()),
+        ))
+    }
+
+    pub fn bytes(n: impl ToU64, _values: &dyn Values) -> askama::Result<String> {
+        let n = n.to_u64();
+        Ok(HumanBytes(n).to_string())
+    }
+
+    pub trait IntoNat {
+        fn into_nat(self) -> Nat;
+    }
+
+    impl IntoNat for u64 {
+        fn into_nat(self) -> Nat {
+            Nat::from(self)
+        }
+    }
+
+    impl IntoNat for Nat {
+        fn into_nat(self) -> Nat {
+            self
+        }
+    }
+
+    impl<T> IntoNat for &T
+    where
+        T: IntoNat + Clone,
+    {
+        fn into_nat(self) -> Nat {
+            T::into_nat(self.clone())
+        }
+    }
+
+    pub trait ToU64 {
+        fn to_u64(&self) -> u64;
+    }
+
+    impl ToU64 for u64 {
+        fn to_u64(&self) -> u64 {
+            *self
+        }
+    }
+
+    impl ToU64 for u32 {
+        fn to_u64(&self) -> u64 {
+            *self as u64
+        }
+    }
+
+    impl ToU64 for Nat {
+        /// Saturates rather than panicking: these values come off the wire, and a
+        /// nonsensically large one should not take down a display command.
+        fn to_u64(&self) -> u64 {
+            u64::try_from(&self.0).unwrap_or(u64::MAX)
+        }
+    }
+
+    impl<T> ToU64 for &T
+    where
+        T: ToU64,
+    {
+        fn to_u64(&self) -> u64 {
+            T::to_u64(self)
+        }
+    }
+
+    pub trait ToPrincipal {
+        fn to_principal(&self) -> Principal;
+    }
+    impl ToPrincipal for Principal {
+        fn to_principal(&self) -> Principal {
+            *self
+        }
+    }
+    impl ToPrincipal for CanisterId {
+        fn to_principal(&self) -> Principal {
+            self.get().0
+        }
+    }
+    impl ToPrincipal for PrincipalId {
+        fn to_principal(&self) -> Principal {
+            self.0
+        }
+    }
+    impl<T> ToPrincipal for &T
+    where
+        T: ToPrincipal,
+    {
+        fn to_principal(&self) -> Principal {
+            T::to_principal(self)
+        }
     }
 }
 

@@ -1,0 +1,16 @@
+{%- macro canistername(id) -%}
+  {%- if id.0 == self::NNS_ROOT -%}NNS root
+  {%- else if id.0 == governance -%}SNS governance
+  {%- else if id.0 == root -%}SNS root
+  {%- else if id.0 == canister_id -%}self
+  {%- else -%}{{id}}
+  {%- endif -%}
+{%- endmacro -%}
+Canister ID: {{canister_id}}, status: {{status.status()|fmt("{:?}")}}
+Cycles: {{status.cycles|cycles_t}}, memory usage: {{status.memory_size().get()|bytes}}
+{% if let Some(hash) = status.module_hash -%}
+Installed module: hash {{hash|hex}}
+{% endif -%}
+Freezing threshold: {{status.settings.freezing_threshold|dur_seconds}} of idle operation ({{self::freezing_threshold_cycles(status)|cycles_t}} cycles at the current idle usage of {{status.idle_cycles_burned_per_day|cycles_n}} cycles/day)
+Memory allocation: {% if let Some(memory) = self::memory_allocation(status) %}{{memory|bytes}}{% else %}none (best-effort){% endif %}, compute allocation: {{status.settings.compute_allocation}}%
+Controllers: {% for controller in status.settings.controllers -%}{% call canistername(controller) %}{% if !loop.last %}, {% endif %}{% endfor %}

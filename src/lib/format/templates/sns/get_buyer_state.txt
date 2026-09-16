@@ -1,0 +1,1 @@
+Total participation: {{state.amount_icp_e8s()|tokens_e8s("ICP")}}

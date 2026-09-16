@@ -3,7 +3,7 @@ name = "quill"
 version = "0.5.4"
 authors = ["DFINITY Team"]
 edition = "2021"
-rust-version = "1.75.0"
+rust-version = "1.82.0"
 description = "Minimalistic ledger and governance toolkit for cold wallets."
 repository = "https://github.com/dfinity/quill"
 license = "Apache-2.0"
@@ -15,6 +15,7 @@ license = "Apache-2.0"
 # lived in the ic repo.)
 ic-base-types = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
 ic-ckbtc-minter = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
+ic-nervous-system-clients = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
 ic-nervous-system-common = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
 ic-nns-common = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
 ic-nns-constants = { git = "https://github.com/dfinity/ic", rev = "b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4" }
@@ -34,6 +35,7 @@ ic-agent = { git = "https://github.com/dfinity/agent-rs", rev = "6e11a350112f9b9
 ic-identity-hsm = { git = "https://github.com/dfinity/agent-rs", rev = "6e11a350112f9b907c4d590d8217f340e153d898", optional = true }
 
 anyhow = "1.0.34"
+askama = "0.14"
 base64 = "0.13.0"
 bigdecimal = "0.4"
 bip32 = "0.5.0"
