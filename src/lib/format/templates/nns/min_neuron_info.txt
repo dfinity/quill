@@ -11,7 +11,7 @@ Member of the community fund since {{cf|ts_seconds}}
 {% if let Some(known) = known_neuron_data -%}
 Known neuron: "{{known.name|flat}}"
 {% if let Some(desc) = known.description -%}
-Description: "{{desc|indent(4)}}"
+Description: "{{desc|indentf(4)}}"
 {% endif -%}
 {% endif -%}
 {% if let Some(vis) = visibility -%}

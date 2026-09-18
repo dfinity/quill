@@ -1,6 +1,6 @@
 {% match command -%}
 {% when Error with (error) -%}
-SNS governance error: {{error.error_message|indent(4)}}
+SNS governance error: {{error.error_message|indentf(4)}}
 {% when Configure with (_) -%}
 Neuron successfully configured
 {% when RegisterVote with (_) -%}

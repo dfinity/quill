@@ -239,6 +239,31 @@ pub mod filters {
         Ok(hex::encode(bytes))
     }
 
+    /// Indents every line but the first by `width` spaces, leaving blank lines
+    /// alone.
+    ///
+    /// Adapted from askama's `indent` (Apache-2.0/MIT), which stops indenting
+    /// altogether once the value reaches 10,000 characters. A proposal summary
+    /// may be 30,000 bytes, so a proposer could otherwise pad past that limit to
+    /// put a line back at column 0. The name cannot be `indent`: askama resolves
+    /// its own filter first, so a local one is never reached.
+    pub fn indentf(
+        value: impl Display,
+        _values: &dyn Values,
+        width: usize,
+    ) -> askama::Result<String> {
+        let value = value.to_string();
+        let prefix = " ".repeat(width);
+        let mut indented = String::with_capacity(value.len());
+        for (idx, line) in value.split_inclusive('\n').enumerate() {
+            if idx > 0 && !matches!(line, "\n" | "\r\n") {
+                indented.push_str(&prefix);
+            }
+            indented.push_str(line);
+        }
+        Ok(indented)
+    }
+
     /// Replaces ascii formatting marks with their Control Pictures.
     pub fn flat(value: impl Display, _values: &dyn Values) -> askama::Result<String> {
         let value = value.to_string();

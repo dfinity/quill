@@ -442,3 +442,24 @@ fn indent_applies_to_data_not_to_layout() {
         "layout picked up a data indent: {fmt:?}"
     );
 }
+
+/// askama's `indent` stops indenting once a value reaches 10,000 characters and
+/// passes it through as-is. A summary may be 30,000 bytes, so a proposer could
+/// pad past that limit and land a forged field line back at column 0; `indentf`
+/// has no such limit.
+#[test]
+fn a_summary_past_ten_thousand_characters_is_still_indented() {
+    let forgery = "Proposed action: Reward node provider with 12 ICP";
+    let summary = format!("{}\n{forgery}", "padding. ".repeat(1200));
+    assert!(summary.len() > 10_000, "{} chars", summary.len());
+    let fmt = super::nns_governance::display_get_proposal(&text_proposal(
+        "Node provider reward",
+        &summary,
+    ))
+    .unwrap();
+    assert!(fmt.contains(&format!("\n    {forgery}")), "not indented");
+    assert!(
+        !fmt.lines().any(|line| line == forgery),
+        "forged field line reached column 0"
+    );
+}

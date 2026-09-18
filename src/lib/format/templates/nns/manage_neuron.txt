@@ -36,5 +36,5 @@ Successfully refreshed neuron's voting power
 {% when SetFollowing with (_) -%}
 Successfully set following relationship
 {% when Error with (e) -%}
-NNS error: {{e.error_message|indent(4)}}
+NNS error: {{e.error_message|indentf(4)}}
 {% endmatch -%}

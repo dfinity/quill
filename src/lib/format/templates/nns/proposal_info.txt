@@ -47,7 +47,7 @@ No changes to canister settings
 {% if let Some(proposal) = proposal_info.proposal -%}
 {% if let Some(title) = proposal.title %}"{{title|flat}}"{% else %}Untitled proposal{% endif %} ({{self::topic(proposal_info.topic)}})
 {% if !proposal.summary.is_empty() -%}
-Summary: "{{proposal.summary|indent(4)}}"
+Summary: "{{proposal.summary|indentf(4)}}"
 {% endif -%}
 {% if !proposal.url.is_empty() -%}
 URL: {{proposal.url|flat}}
@@ -58,7 +58,7 @@ Proposed action: {#+ -#}
 {% when RegisterKnownNeuron with (a) -%}
 Register known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
   {%- if let Some(data) = a.known_neuron_data %} as {{data.name|flat}}.
-  {%- if let Some(desc) = data.description %} "{{desc|indent(4)}}"{% endif %}{% endif %}
+  {%- if let Some(desc) = data.description %} "{{desc|indentf(4)}}"{% endif %}{% endif %}
 {% when DeregisterKnownNeuron with (a) -%}
 Deregister known neuron{% if let Some(id) = a.id %} {{id.id}}{% endif %}
 {% when ApproveGenesisKyc with (a) -%}
@@ -77,7 +77,7 @@ Remove node provider{% if let Some(id) = provider.id %} {{id}}{% endif %}
 Execute NNS function {{nns_function|fmt("{:?}")}}
 Payload: {% if let Some((canister_id, function)) = self::nns_function_target(nns_function, a.payload)? %}{{a.payload|candid_payload(canister_id, function)}}{% else %}{{a.payload|hex}}{% endif %}
 {% when Motion with (a) -%}
-"{{a.motion_text|indent(4)}}" (motion)
+"{{a.motion_text|indentf(4)}}" (motion)
 {% when ManageNetworkEconomics with (a) -%}
 Update network economics
   {% if a.max_proposals_to_keep_per_topic != 0 -%}
@@ -275,7 +275,7 @@ Proposal ID: {{id.id}}
 Created at {{proposal_info.proposal_timestamp_seconds|ts_seconds}}{% if let Some(proposer) = proposal_info.proposer %} by neuron {{proposer.id}}{% endif %}
 Status: {{self::get_status(proposal_info.status)?|fmt("{:?}")}}, reward status: {{self::get_reward_status(proposal_info.reward_status)?|fmt("{:?}")}}
 {% if let Some(reason) = proposal_info.failure_reason -%}
-Failure reason: {{reason.error_message|indent(4)}}
+Failure reason: {{reason.error_message|indentf(4)}}
 {% endif -%}
 {% if proposal_info.decided_timestamp_seconds != 0 -%}
 Decided at {{proposal_info.decided_timestamp_seconds|ts_seconds}}

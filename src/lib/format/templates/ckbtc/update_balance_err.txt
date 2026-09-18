@@ -1,6 +1,6 @@
 {% match error %}
 {% when GenericError with {error_message} -%}
-ckBTC error: {{error_message|indent(4)}}
+ckBTC error: {{error_message|indentf(4)}}
 {% when AlreadyProcessing -%}
 ckBTC error: already processing another update_balance call for the same account
 {% when NoNewUtxos with {current, required, pending, suspended} -%}
