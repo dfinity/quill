@@ -97,7 +97,7 @@ async fn submit_ingress_and_check_status(
     .await
     {
         Ok(result) => println!("{}", result.trim()),
-        Err(err) => println!("{err}"),
+        Err(err) => println!("Error: {err}"),
     };
     Ok(())
 }
