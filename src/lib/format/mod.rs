@@ -1,5 +1,6 @@
 use std::fmt;
 
+use askama::filters::Escaper;
 use bigdecimal::BigDecimal;
 use candid::{Nat, Principal};
 use chrono::{DateTime, TimeZone, Utc};
@@ -26,7 +27,7 @@ mod tests;
 #[derive(Clone, Copy)]
 pub struct TerminalSafe;
 
-impl askama::filters::Escaper for TerminalSafe {
+impl Escaper for TerminalSafe {
     fn write_escaped_str<W: fmt::Write>(&self, mut dest: W, string: &str) -> fmt::Result {
         let mut rest = string;
         while let Some(at) = rest.find(|c| depicted(c).is_some()) {
@@ -53,6 +54,14 @@ impl askama::filters::Escaper for TerminalSafe {
         // There is nothing to look ahead at, so a `CR` here is always depicted.
         dest.write_char(depicted(c).unwrap_or(c))
     }
+}
+
+pub fn escape(string: &str) -> String {
+    let mut escaped = String::new();
+    TerminalSafe
+        .write_escaped_str(&mut escaped, string)
+        .unwrap();
+    escaped
 }
 
 /// Newlines are structural in a rendered response, so they are left alone. Every

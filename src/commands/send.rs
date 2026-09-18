@@ -1,4 +1,5 @@
 use crate::commands::request_status;
+use crate::lib::format::escape;
 use crate::lib::get_idl_string;
 use crate::lib::{
     get_ic_url, read_from_file,
@@ -97,7 +98,7 @@ async fn submit_ingress_and_check_status(
     .await
     {
         Ok(result) => println!("{}", result.trim()),
-        Err(err) => println!("Error: {err}"),
+        Err(err) => println!("Error: {}", escape(&err.to_string())),
     };
     Ok(())
 }
