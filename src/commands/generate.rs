@@ -1,6 +1,7 @@
 use crate::{
+    check_secret_path,
     lib::{get_account_id, key_encryption_params, mnemonic_to_key, AnyhowResult},
-    read_file,
+    read_file, write_secret_file,
 };
 use anyhow::{anyhow, bail, ensure, Context};
 use bip39::{Language, Mnemonic};
@@ -60,20 +61,11 @@ enum StorageMode {
 
 /// Generate or recover mnemonic seed phrase and/or PEM file.
 pub fn exec(opts: GenerateOpts) -> AnyhowResult {
+    // Validate every destination before writing anything or prompting for a password.
     if let Some(seed_file) = &opts.seed_file {
-        if !opts.overwrite_seed_file && seed_file.exists() {
-            bail!(
-                "Seed file {} exists and overwrite is not set.",
-                seed_file.display()
-            );
-        }
+        check_secret_path(seed_file, "Seed", opts.overwrite_seed_file)?;
     }
-    if !opts.overwrite_pem_file && opts.pem_file.exists() {
-        bail!(
-            "PEM file {} exists and overwrite is not set.",
-            opts.pem_file.display()
-        );
-    }
+    check_secret_path(&opts.pem_file, "PEM", opts.overwrite_pem_file)?;
     if opts.storage_mode == StorageMode::PasswordProtected
         && opts.password_file.is_none()
         && !stdin().is_terminal()
@@ -98,7 +90,12 @@ pub fn exec(opts: GenerateOpts) -> AnyhowResult {
     let key = mnemonic_to_key(&mnemonic).context("Failed to convert mnemonic to PEM")?;
     let phrase = mnemonic.into_phrase();
     if let Some(seed_file) = opts.seed_file {
-        std::fs::write(&seed_file, phrase)?;
+        write_secret_file(
+            &seed_file,
+            "Seed",
+            phrase.as_bytes(),
+            opts.overwrite_seed_file,
+        )?;
         println!("Written seed file to {}.", seed_file.display());
         println!("Copy the contents of this file to external media or a piece of paper and store it in a safe place.");
         if opts.storage_mode != StorageMode::Plaintext {
@@ -136,7 +133,12 @@ Copy this onto a piece of paper or external media and store it in a safe place."
             doc.to_pem(EncryptedPrivateKeyInfo::PEM_LABEL, LineEnding::default())?
         }
     };
-    std::fs::write(&opts.pem_file, &pem)?;
+    write_secret_file(
+        &opts.pem_file,
+        "PEM",
+        pem.as_bytes(),
+        opts.overwrite_pem_file,
+    )?;
     println!("Written PEM file to {}.", opts.pem_file.display());
     let principal_id = Secp256k1Identity::from_private_key(key)
         .sender()

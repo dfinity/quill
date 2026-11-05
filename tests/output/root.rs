@@ -122,6 +122,50 @@ Legacy account id: ffc463646a2c92dce58d1179d26c64d4ccbaf1079a6edc5628cedc0d4b3b1
     .assert_success();
 }
 
+#[cfg(unix)]
+#[test]
+fn generate_secret_files() {
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    let dir = tempfile::tempdir().unwrap();
+    let pem = dir.path().join("identity.pem");
+    let seed = dir.path().join("seed.txt");
+    let generate = format!(
+        "generate --storage-mode plaintext --pem-file {pem} --seed-file {seed}",
+        pem = escape_p(&pem),
+        seed = escape_p(&seed),
+    );
+    quill(&generate).assert_success();
+    for file in [&pem, &seed] {
+        let mode = std::fs::metadata(file).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o600, "{}", file.display());
+    }
+    // Overwriting keeps owner-only permissions.
+    quill(&format!(
+        "{generate} --overwrite-pem-file --overwrite-seed-file"
+    ))
+    .assert_success();
+    assert_eq!(
+        std::fs::metadata(&pem).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    // A dangling symlink at the output path is not followed, with or without overwrite.
+    std::fs::remove_file(&pem).unwrap();
+    std::fs::remove_file(&seed).unwrap();
+    let target = dir.path().join("target.pem");
+    symlink(&target, &pem).unwrap();
+    quill(&generate).assert_err();
+    quill(&format!("{generate} --overwrite-pem-file")).assert_err();
+    assert!(!target.exists());
+    // A rejected PEM path must not clobber an existing seed file, even with overwrite flags.
+    std::fs::write(&seed, "original seed").unwrap();
+    quill(&format!(
+        "{generate} --overwrite-pem-file --overwrite-seed-file"
+    ))
+    .assert_err();
+    assert_eq!(std::fs::read_to_string(&seed).unwrap(), "original seed");
+    assert!(!target.exists());
+}
+
 #[test]
 fn public_ids() {
     quill_authed("public-ids").diff("public_ids/basic.txt");

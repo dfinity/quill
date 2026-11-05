@@ -235,8 +235,81 @@ fn write_file(path: impl AsRef<Path>, name: &str, content: &[u8]) -> AnyhowResul
             .write_all(content)
             .context("Couldn't write {name} to STDOUT")
     } else {
-        std::fs::write(path, content).with_context(|| format!("Couldn't write {name} file"))
+        write_secret_file(path, name, content, true)
     }
+}
+
+/// Checks that `path` is a valid destination for [`write_secret_file`], without touching it.
+///
+/// Symbolic links are always rejected, whether or not their target exists. If `overwrite` is
+/// not set, any existing entry is rejected; otherwise only a regular file may be replaced.
+fn check_secret_path(path: &Path, name: &str, overwrite: bool) -> AnyhowResult {
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_symlink() => bail!(
+            "{name} file {} is a symbolic link; refusing to write through it.",
+            path.display()
+        ),
+        Ok(_) if !overwrite => bail!(
+            "{name} file {} exists and overwrite is not set.",
+            path.display()
+        ),
+        Ok(meta) if !meta.is_file() => {
+            bail!("{name} file {} is not a regular file.", path.display())
+        }
+        Ok(_) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e).with_context(|| format!("Couldn't access {name} file")),
+    }
+}
+
+/// Exclusively creates `path` (`O_EXCL`, so symlinks are never followed) with owner-only
+/// permissions on Unix, and writes `content` to it. On a write failure the file is removed.
+fn create_secret_file(path: &Path, name: &str, content: &[u8]) -> AnyhowResult {
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options
+        .open(path)
+        .with_context(|| format!("Couldn't create {name} file"))?;
+    if let Err(e) = file.write_all(content).and_then(|_| file.sync_all()) {
+        drop(file);
+        let _ = std::fs::remove_file(path);
+        return Err(e).with_context(|| format!("Couldn't write {name} file"));
+    }
+    Ok(())
+}
+
+/// Writes a file holding secret material (private keys, seed phrases).
+///
+/// See [`check_secret_path`] for which destinations are accepted. A new file is created
+/// exclusively with mode `0o600` on Unix. When replacing an existing file, the content is first
+/// written to a temporary file in the same directory, which is then renamed over the
+/// destination, so the old file is kept if anything fails before the rename.
+fn write_secret_file(path: &Path, name: &str, content: &[u8], overwrite: bool) -> AnyhowResult {
+    check_secret_path(path, name, overwrite)?;
+    // Nothing to preserve if the destination does not exist: create it directly.
+    if !overwrite || std::fs::symlink_metadata(path).is_err() {
+        return create_secret_file(path, name, content);
+    }
+    if path.file_name().is_none() {
+        bail!("Invalid {name} file path {}", path.display());
+    }
+    // Short, destination-independent name, so it stays within file name length limits.
+    let tmp_path = path.with_file_name(format!(".quill-{:016x}.tmp", rand::random::<u64>()));
+    create_secret_file(&tmp_path, name, content)?;
+    // Re-check right before replacing, to narrow the window for a swapped-in symlink. Note
+    // that rename never follows a symlink at the destination; it replaces the link itself.
+    if let Err(e) = check_secret_path(path, name, overwrite).and_then(|_| {
+        std::fs::rename(&tmp_path, path).context(format!("Couldn't replace {name} file"))
+    }) {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(e);
+    }
+    Ok(())
 }
 
 #[cfg(test)]
