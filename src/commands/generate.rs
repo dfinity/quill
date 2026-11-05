@@ -1,4 +1,5 @@
 use crate::{
+    check_secret_path,
     lib::{get_account_id, key_encryption_params, mnemonic_to_key, AnyhowResult},
     read_file, write_secret_file,
 };
@@ -60,20 +61,11 @@ enum StorageMode {
 
 /// Generate or recover mnemonic seed phrase and/or PEM file.
 pub fn exec(opts: GenerateOpts) -> AnyhowResult {
+    // Validate every destination before writing anything or prompting for a password.
     if let Some(seed_file) = &opts.seed_file {
-        if !opts.overwrite_seed_file && seed_file.symlink_metadata().is_ok() {
-            bail!(
-                "Seed file {} exists and overwrite is not set.",
-                seed_file.display()
-            );
-        }
+        check_secret_path(seed_file, "Seed", opts.overwrite_seed_file)?;
     }
-    if !opts.overwrite_pem_file && opts.pem_file.symlink_metadata().is_ok() {
-        bail!(
-            "PEM file {} exists and overwrite is not set.",
-            opts.pem_file.display()
-        );
-    }
+    check_secret_path(&opts.pem_file, "PEM", opts.overwrite_pem_file)?;
     if opts.storage_mode == StorageMode::PasswordProtected
         && opts.password_file.is_none()
         && !stdin().is_terminal()

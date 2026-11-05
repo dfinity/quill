@@ -156,6 +156,14 @@ fn generate_secret_files() {
     quill(&generate).assert_err();
     quill(&format!("{generate} --overwrite-pem-file")).assert_err();
     assert!(!target.exists());
+    // A rejected PEM path must not clobber an existing seed file, even with overwrite flags.
+    std::fs::write(&seed, "original seed").unwrap();
+    quill(&format!(
+        "{generate} --overwrite-pem-file --overwrite-seed-file"
+    ))
+    .assert_err();
+    assert_eq!(std::fs::read_to_string(&seed).unwrap(), "original seed");
+    assert!(!target.exists());
 }
 
 #[test]
