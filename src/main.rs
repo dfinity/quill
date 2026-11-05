@@ -291,16 +291,15 @@ fn create_secret_file(path: &Path, name: &str, content: &[u8]) -> AnyhowResult {
 /// destination, so the old file is kept if anything fails before the rename.
 fn write_secret_file(path: &Path, name: &str, content: &[u8], overwrite: bool) -> AnyhowResult {
     check_secret_path(path, name, overwrite)?;
-    if !overwrite {
+    // Nothing to preserve if the destination does not exist: create it directly.
+    if !overwrite || std::fs::symlink_metadata(path).is_err() {
         return create_secret_file(path, name, content);
     }
-    let file_name = path
-        .file_name()
-        .with_context(|| format!("Invalid {name} file path {}", path.display()))?;
-    let mut tmp_name = std::ffi::OsString::from(".");
-    tmp_name.push(file_name);
-    tmp_name.push(format!(".{:016x}.tmp", rand::random::<u64>()));
-    let tmp_path = path.with_file_name(tmp_name);
+    if path.file_name().is_none() {
+        bail!("Invalid {name} file path {}", path.display());
+    }
+    // Short, destination-independent name, so it stays within file name length limits.
+    let tmp_path = path.with_file_name(format!(".quill-{:016x}.tmp", rand::random::<u64>()));
     create_secret_file(&tmp_path, name, content)?;
     // Re-check right before replacing, to narrow the window for a swapped-in symlink. Note
     // that rename never follows a symlink at the destination; it replaces the link itself.
