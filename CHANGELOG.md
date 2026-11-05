@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Disbursing maturity to non-icrc1 addresses is disabled as some CEX does not support minting
   transactions well.
+- Releases now include a Linux arm64 binary, `quill-linux-arm64`.
 
 ## [0.5.4] - 2025-08-11
 

@@ -85,8 +85,9 @@ quill -h
 
 1. Download the file specific to your system architecture
     1. for x86 download `quill-linux-x86_64`
-    2. for arm32 download `quill-arm_32`
-    3. for Alpine download `quill-linux-x86_64-musl`
+    2. for arm64 download `quill-linux-arm64`
+    3. for arm32 download `quill-linux-arm32`
+    4. for Alpine download `quill-linux-x86_64-musl`
 
 2. Move the file to your `/usr/local/bin` directory to make it available system-wide
 
