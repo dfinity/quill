@@ -235,8 +235,46 @@ fn write_file(path: impl AsRef<Path>, name: &str, content: &[u8]) -> AnyhowResul
             .write_all(content)
             .context("Couldn't write {name} to STDOUT")
     } else {
-        std::fs::write(path, content).with_context(|| format!("Couldn't write {name} file"))
+        write_secret_file(path, name, content, true)
     }
+}
+
+/// Writes a file holding secret material (private keys, seed phrases).
+///
+/// The file is created exclusively (`O_EXCL`) and, on Unix, with mode `0o600`, so that the
+/// result does not depend on the umask. Symbolic links at `path` are never followed, whether
+/// or not their target exists. If `overwrite` is set, an existing regular file is replaced;
+/// otherwise any existing entry at `path` is an error.
+fn write_secret_file(path: &Path, name: &str, content: &[u8], overwrite: bool) -> AnyhowResult {
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_symlink() => bail!(
+            "{name} file {} is a symbolic link; refusing to write through it.",
+            path.display()
+        ),
+        Ok(_) if !overwrite => bail!(
+            "{name} file {} exists and overwrite is not set.",
+            path.display()
+        ),
+        Ok(meta) if meta.is_file() => std::fs::remove_file(path)
+            .with_context(|| format!("Couldn't remove existing {name} file"))?,
+        Ok(_) => bail!("{name} file {} is not a regular file.", path.display()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => {
+            return Err(e).with_context(|| format!("Couldn't access {name} file"));
+        }
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options
+        .open(path)
+        .with_context(|| format!("Couldn't create {name} file"))?;
+    file.write_all(content)
+        .with_context(|| format!("Couldn't write {name} file"))
 }
 
 #[cfg(test)]

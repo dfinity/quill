@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- `quill generate` and `quill decrypt-pem` now create key and seed files with owner-only permissions (`0600` on Unix), and refuse to write through symbolic links.
 - Disbursing maturity to non-icrc1 addresses is disabled as some CEX does not support minting
   transactions well.
 
