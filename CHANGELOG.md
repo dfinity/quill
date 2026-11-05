@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.5] - 2026-11-05
+
 - `quill generate` and `quill decrypt-pem` now create key and seed files with owner-only permissions (`0600` on Unix), and refuse to write through symbolic links.
 - Disbursing maturity to non-icrc1 addresses is disabled as some CEX does not support minting
   transactions well.
 - Releases now include a Linux arm64 binary, `quill-linux-arm64`.
+- Updated to rev b4b0230aa1ed1c94d3674a9a27d60b724edb5cd4.
 
 ## [0.5.4] - 2025-08-11
 
