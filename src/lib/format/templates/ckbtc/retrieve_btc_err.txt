@@ -1,6 +1,6 @@
 {% match error %}
 {% when GenericError with {error_message, error_code} -%}
-ckBTC error: {{error_message}}
+ckBTC error: {{error_message|indentf(4)}}
 {% when AmountTooLow with (min) -%}
 ckBTC error: amount too low to withdraw (min: {{min|tokens_e8s("ckBTC")}})
 {% when InsufficientFunds with {balance} -%}

@@ -14,5 +14,5 @@ Transfer error: the ledger is temporarily unavailable
 {% when Icrc1TransferError::Duplicate with {duplicate_of} -%}
 Transfer error: the transaction is a duplicate of transaction #{{duplicate_of}}
 {% when Icrc1TransferError::GenericError with {error_code, message} -%}
-Transfer error: {{message}} (error code {{error_code}})
+Transfer error: {{message|indentf(4)}} (error code {{error_code}})
 {% endmatch -%}
