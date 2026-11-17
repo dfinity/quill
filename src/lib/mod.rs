@@ -180,6 +180,44 @@ pub fn get_default_role(canister_id: Principal) -> Option<&'static str> {
     }
 }
 
+/// Returns the role to use for displaying a message to `canister_id`, given the role
+/// recorded in the (unsigned) message JSON.
+///
+/// The role selects the candid interface used to decode the signed argument for review.
+/// Since it is not covered by the signature, it must not be able to select an interface
+/// that does not belong to the canister: decoding against a similar but different type
+/// (e.g. NNS vs. SNS `manage_neuron`) can silently turn fields into `null`, hiding what
+/// was actually signed.
+pub fn resolve_role(canister_id: Principal, role: Option<&str>) -> AnyhowResult<&str> {
+    // Roles whose interface belongs only to well-known canisters.
+    const FIXED_CANISTER_ROLES: &[&str] = &[
+        ROLE_NNS_GOVERNANCE,
+        ROLE_NNS_LEDGER,
+        ROLE_NNS_GTC,
+        ROLE_NNS_REGISTRY,
+        ROLE_SNS_WASM,
+        ROLE_CKBTC_MINTER,
+    ];
+    let allowed: Option<Vec<&str>> = if canister_id == ledger_canister_id() {
+        // The ICP ledger also implements ICRC-1.
+        Some(vec![ROLE_NNS_LEDGER, ROLE_ICRC1_LEDGER])
+    } else if canister_id == sns_wasm_canister_id() {
+        Some(vec![ROLE_SNS_WASM])
+    } else {
+        get_default_role(canister_id).map(|role| vec![role])
+    };
+    match (role, allowed) {
+        (None, Some(allowed)) => Ok(allowed[0]),
+        (None, None) => Ok("<none>"),
+        (Some(role), Some(allowed)) if allowed.contains(&role) => Ok(role),
+        (Some(role), None) if !FIXED_CANISTER_ROLES.contains(&role) => Ok(role),
+        (Some(role), _) => bail!(
+            "Message for canister {canister_id} is labeled with role '{role}', which does not \
+             belong to that canister. The message file may have been tampered with."
+        ),
+    }
+}
+
 pub fn get_local_candid(canister_id: Principal, role: &str) -> AnyhowResult<&'static str> {
     Ok(match role {
         ROLE_NNS_GOVERNANCE => include_str!("../../candid/governance.did"),

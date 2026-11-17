@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- `quill send` now rejects messages whose `role` or `call_type` fields do not match the signed content. Previously an edited `role` could make the review display decode the signed arguments with the wrong interface, showing some fields as `null`.
+
 ## [0.5.5] - 2026-11-05
 
 - `quill generate` and `quill decrypt-pem` now create key and seed files with owner-only permissions (`0600` on Unix), and refuse to write through symbolic links.
