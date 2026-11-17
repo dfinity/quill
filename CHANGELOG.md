@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Human-readable output now escapes control characters (and Unicode bidi overrides) in displayed values, such as proposal titles and summaries, so they cannot drive the terminal.
+
 ## [0.5.5] - 2026-11-05
 
 - `quill generate` and `quill decrypt-pem` now create key and seed files with owner-only permissions (`0600` on Unix), and refuse to write through symbolic links.
