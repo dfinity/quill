@@ -1,6 +1,6 @@
 use crate::lib::get_idl_string;
 use crate::lib::{AnyhowResult, AuthInfo};
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use ic_agent::agent::UpdateBuilder;
 use ic_agent::RequestId;
@@ -11,7 +11,7 @@ use std::time::Duration;
 
 #[cfg(feature = "ledger")]
 use super::ledger::LedgerIdentity;
-use super::{get_agent, get_default_role};
+use super::{get_agent, resolve_role};
 
 /// Represents a signed message with the corresponding request id.
 #[derive(Clone)]
@@ -63,11 +63,25 @@ impl Ingress {
                 ) {
                     let sender = Principal::try_from(sender)?;
                     let canister_id = Principal::try_from(canister_id)?;
-                    let role = if let Some(role) = &self.role {
-                        role
-                    } else {
-                        get_default_role(sender).unwrap_or("<none>")
+                    // `call_type` is not covered by the signature; it decides whether
+                    // `send` asks for confirmation, so it must match the signed envelope.
+                    let request_type = match m.get(&Value::Text("request_type".to_string())) {
+                        Some(Value::Text(t)) => t.as_str(),
+                        _ => bail!("Invalid cbor content: missing request_type"),
                     };
+                    let expected_request_type = match self.call_type.as_str() {
+                        "update" => "call",
+                        "query" => "query",
+                        other => bail!("Unknown call type '{other}' in message"),
+                    };
+                    if request_type != expected_request_type {
+                        bail!(
+                            "Message is labeled as call type '{}' but the signed content is a \
+                             '{request_type}' request. The message file may have been tampered with.",
+                            self.call_type
+                        );
+                    }
+                    let role = resolve_role(canister_id, self.role.as_deref())?;
                     return Ok((
                         sender,
                         canister_id,
@@ -201,4 +215,169 @@ fn sign_ingress_with_request_status_query_internal(
         request_status,
     };
     Ok(message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lib::{ROLE_NNS_GOVERNANCE, ROLE_SNS_GOVERNANCE};
+    use candid::Encode;
+    use ic_sns_governance::pb::v1::{
+        manage_neuron::{disburse::Amount, Command, Disburse},
+        Account, ManageNeuron,
+    };
+    use std::collections::BTreeMap;
+
+    const SNS_GOVERNANCE: &str = "zqfso-syaaa-aaaaq-aaafq-cai";
+    const PAYEE: &str = "jndu2-vwnnt-bpu6t-2jrke-fg3kj-vbrgf-ajecf-gv6ju-onyol-wc3e5-kqe";
+
+    fn ingress(
+        canister_id: Principal,
+        request_type: &str,
+        arg: Vec<u8>,
+        call_type: &str,
+        role: Option<&str>,
+    ) -> Ingress {
+        let text = |s: &str| Value::Text(s.to_string());
+        let content = BTreeMap::from([
+            (text("request_type"), text(request_type)),
+            (
+                text("sender"),
+                Value::Bytes(Principal::anonymous().as_slice().to_vec()),
+            ),
+            (
+                text("canister_id"),
+                Value::Bytes(canister_id.as_slice().to_vec()),
+            ),
+            (text("method_name"), text("manage_neuron")),
+            (text("arg"), Value::Bytes(arg)),
+        ]);
+        let envelope = Value::Map(BTreeMap::from([(text("content"), Value::Map(content))]));
+        Ingress {
+            call_type: call_type.to_string(),
+            request_id: None,
+            content: hex::encode(serde_cbor::to_vec(&envelope).unwrap()),
+            role: role.map(str::to_string),
+        }
+    }
+
+    fn sns_disburse() -> Vec<u8> {
+        let payee = Principal::from_text(PAYEE).unwrap();
+        Encode!(&ManageNeuron {
+            subaccount: vec![1; 32],
+            command: Some(Command::Disburse(Disburse {
+                amount: Some(Amount { e8s: 9_999_000_000 }),
+                to_account: Some(Account {
+                    owner: Some(payee.into()),
+                    subaccount: None,
+                }),
+            })),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn honest_role_shows_disburse_destination() {
+        let canister = Principal::from_text(SNS_GOVERNANCE).unwrap();
+        let msg = ingress(
+            canister,
+            "call",
+            sns_disburse(),
+            "update",
+            Some(ROLE_SNS_GOVERNANCE),
+        );
+        let (_, _, _, args, _) = msg.parse().unwrap();
+        assert!(args.contains(PAYEE), "{args}");
+    }
+
+    /// `role` is not covered by the signature, so it must not be able to pick a
+    /// candid interface that silently drops fields of the signed argument.
+    #[test]
+    fn nns_role_on_sns_canister_is_rejected() {
+        let canister = Principal::from_text(SNS_GOVERNANCE).unwrap();
+        let msg = ingress(
+            canister,
+            "call",
+            sns_disburse(),
+            "update",
+            Some(ROLE_NNS_GOVERNANCE),
+        );
+        match msg.parse() {
+            Ok((_, _, _, args, _)) => panic!("tampered role accepted, displayed: {args}"),
+            Err(e) => assert!(e.to_string().contains(ROLE_NNS_GOVERNANCE), "{e}"),
+        }
+    }
+
+    /// NNS manage_neuron decodes with the NNS interface whether or not the role is given.
+    #[test]
+    fn nns_governance_role_defaults_from_canister() {
+        let arg = Encode!(&ic_nns_governance_api::ManageNeuronRequest::default()).unwrap();
+        for role in [None, Some(ROLE_NNS_GOVERNANCE)] {
+            let msg = ingress(
+                crate::lib::governance_canister_id(),
+                "call",
+                arg.clone(),
+                "update",
+                role,
+            );
+            let (_, _, _, _, resolved) = msg.parse().unwrap();
+            assert_eq!(resolved, ROLE_NNS_GOVERNANCE);
+        }
+        let msg = ingress(
+            crate::lib::governance_canister_id(),
+            "call",
+            arg,
+            "update",
+            Some(ROLE_SNS_GOVERNANCE),
+        );
+        assert!(msg.parse().is_err());
+    }
+
+    /// The ICP ledger is legitimately addressed with both its own and the ICRC-1 interface.
+    #[test]
+    fn icp_ledger_accepts_icrc1_role() {
+        use crate::lib::{ledger_canister_id, resolve_role, ROLE_ICRC1_LEDGER, ROLE_NNS_LEDGER};
+        for role in [ROLE_NNS_LEDGER, ROLE_ICRC1_LEDGER] {
+            assert_eq!(
+                resolve_role(ledger_canister_id(), Some(role)).unwrap(),
+                role
+            );
+        }
+        let sns = Principal::from_text(SNS_GOVERNANCE).unwrap();
+        assert!(resolve_role(sns, Some(ROLE_NNS_LEDGER)).is_err());
+        assert_eq!(
+            resolve_role(sns, Some(ROLE_ICRC1_LEDGER)).unwrap(),
+            ROLE_ICRC1_LEDGER
+        );
+    }
+
+    /// `call_type` decides whether `send` asks for confirmation, so it must match the envelope.
+    #[test]
+    fn call_type_must_match_signed_request_type() {
+        let canister = Principal::from_text(SNS_GOVERNANCE).unwrap();
+        let msg = ingress(
+            canister,
+            "call",
+            sns_disburse(),
+            "query",
+            Some(ROLE_SNS_GOVERNANCE),
+        );
+        assert!(msg.parse().is_err());
+        let msg = ingress(
+            canister,
+            "query",
+            sns_disburse(),
+            "update",
+            Some(ROLE_SNS_GOVERNANCE),
+        );
+        assert!(msg.parse().is_err());
+        let msg = ingress(
+            canister,
+            "query",
+            sns_disburse(),
+            "query",
+            Some(ROLE_SNS_GOVERNANCE),
+        );
+        assert!(msg.parse().is_ok());
+    }
 }
