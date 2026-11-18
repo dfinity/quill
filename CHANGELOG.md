@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.6] - 2026-11-18
+
 - `quill send` now rejects messages whose `role` or `call_type` fields do not match the signed content. Previously an edited `role` could make the review display decode the signed arguments with the wrong interface, showing some fields as `null`.
 - Human-readable output now escapes control characters (and Unicode bidi overrides) in displayed values, such as proposal titles and summaries, so they cannot drive the terminal.
 
