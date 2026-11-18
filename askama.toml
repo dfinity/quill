@@ -1,3 +1,9 @@
 [general]
 dirs = ["src/lib/format/templates"]
 whitespace = "minimize"
+
+# Plain-text output goes to a terminal; neutralize control characters in
+# interpolated values. See `TerminalText` in src/lib/format/mod.rs.
+[[escaper]]
+path = "crate::lib::format::TerminalText"
+extensions = ["txt"]

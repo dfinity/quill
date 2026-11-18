@@ -19,6 +19,42 @@ pub mod sns_wasm;
 #[cfg(test)]
 mod tests;
 
+/// Askama escaper for the plain-text templates (configured in `askama.toml`).
+///
+/// Templates interpolate strings chosen by third parties, such as proposal titles,
+/// summaries and known neuron names, and the output is printed straight to a terminal.
+/// Control characters (ESC, CSI, OSC, BEL, CR, ...) would let those parties drive the
+/// terminal: redraw the screen, hide quill's own output, or write to the clipboard.
+/// They are rendered as visible `\u{..}` escapes instead. Newlines and tabs are kept
+/// so that multi-line summaries and payloads stay readable, and Unicode bidi
+/// overrides are escaped too since they can visually reorder the surrounding text.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TerminalText;
+
+impl TerminalText {
+    fn needs_escape(c: char) -> bool {
+        (c.is_control() && c != '\n' && c != '\t')
+            || matches!(
+                c,
+                '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+            )
+    }
+}
+
+impl askama::filters::Escaper for TerminalText {
+    fn write_escaped_str<W: std::fmt::Write>(&self, mut dest: W, string: &str) -> std::fmt::Result {
+        let mut last = 0;
+        for (i, c) in string.char_indices() {
+            if Self::needs_escape(c) {
+                dest.write_str(&string[last..i])?;
+                write!(dest, "{}", c.escape_unicode())?;
+                last = i + c.len_utf8();
+            }
+        }
+        dest.write_str(&string[last..])
+    }
+}
+
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
     format!("{} UTC", datetime.format("%b %d %Y %X"))
 }

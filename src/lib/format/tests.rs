@@ -217,6 +217,46 @@ fn unknown_topic_still_displays() {
     assert!(fmt.contains("\"test\" (unknown topic 999)"), "{fmt}");
 }
 
+/// Proposer-controlled text must not be able to emit terminal control sequences,
+/// e.g. to clear the screen and hide the real proposed action.
+#[test]
+fn proposal_text_cannot_drive_the_terminal() {
+    let info = ProposalInfo {
+        id: Some(ProposalId { id: 7 }),
+        topic: 1,
+        proposal: Some(Proposal {
+            title: Some("title\x1b[2J\x07".into()),
+            summary: "line one\nline two\x1b]52;c;AAAA\x07\r\u{9b}\u{202e}".into(),
+            url: String::new(),
+            action: Some(Action::Motion(ic_nns_governance_api::Motion {
+                motion_text: "motion\x1b[8m".into(),
+            })),
+            self_describing_action: None,
+        }),
+        ..Default::default()
+    };
+    let fmt = super::nns_governance::display_get_proposal(&Encode!(&Some(info)).unwrap()).unwrap();
+    assert!(
+        !fmt.chars()
+            .any(|c| c.is_control() && c != '\n' && c != '\t'),
+        "{fmt:?}"
+    );
+    assert!(!fmt.contains('\u{202e}'), "{fmt:?}");
+    assert!(fmt.contains(r#""title\u{1b}[2J\u{7}""#), "{fmt}");
+    assert!(fmt.contains("line one\nline two\\u{1b}]52;c;AAAA"), "{fmt}");
+    assert!(fmt.contains(r#""motion\u{1b}[8m" (motion)"#), "{fmt}");
+}
+
+#[test]
+fn terminal_escaper_keeps_ordinary_text() {
+    use askama::filters::Escaper;
+    let mut out = String::new();
+    super::TerminalText
+        .write_escaped_str(&mut out, "Grüße, 世界\n\tdone")
+        .unwrap();
+    assert_eq!(out, "Grüße, 世界\n\tdone");
+}
+
 /// Distinct unrecognized topics used to collapse onto each other, losing followees.
 #[test]
 fn unknown_topics_do_not_collapse() {
