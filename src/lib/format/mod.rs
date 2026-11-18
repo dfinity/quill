@@ -1,3 +1,6 @@
+use std::fmt;
+
+use askama::filters::Escaper;
 use bigdecimal::BigDecimal;
 use candid::{Nat, Principal};
 use chrono::{DateTime, TimeZone, Utc};
@@ -18,6 +21,77 @@ pub mod sns_swap;
 pub mod sns_wasm;
 #[cfg(test)]
 mod tests;
+
+/// Makes strings terminal-safe by replacing control codes with
+/// characters from the 'Control Pictures' block.
+#[derive(Clone, Copy)]
+pub struct TerminalSafe;
+
+impl Escaper for TerminalSafe {
+    fn write_escaped_str<W: fmt::Write>(&self, mut dest: W, string: &str) -> fmt::Result {
+        let mut rest = string;
+        while let Some(at) = rest.find(|c| depicted(c).is_some()) {
+            dest.write_str(&rest[..at])?;
+            // `find` reports a char boundary, so the character it found is the
+            // first one of the remainder.
+            let mut tail = rest[at..].chars();
+            let found = tail.next().expect("find reported a character");
+            rest = tail.as_str();
+            // The `LF` of a `CRLF` ends the line by itself, so the `CR` goes
+            // rather than being depicted in front of it. A value is handed to an
+            // escaper in whatever chunks its `Display` writes, so a pair split
+            // across two of those would still be depicted; only quill's own
+            // template text is written piecewise, and none of it contains a `CR`.
+            if found == '\r' && rest.starts_with('\n') {
+                continue;
+            }
+            dest.write_char(depicted(found).expect("find matched on a depicted character"))?;
+        }
+        dest.write_str(rest)
+    }
+
+    fn write_escaped_char<W: fmt::Write>(&self, mut dest: W, c: char) -> fmt::Result {
+        // There is nothing to look ahead at, so a `CR` here is always depicted.
+        dest.write_char(depicted(c).unwrap_or(c))
+    }
+}
+
+pub fn escape(string: &str) -> String {
+    let mut escaped = String::new();
+    TerminalSafe
+        .write_escaped_str(&mut escaped, string)
+        .unwrap();
+    escaped
+}
+
+/// Newlines are structural in a rendered response, so they are left alone. Every
+/// other control code has no legitimate place in one, and is shown rather than
+/// obeyed.
+fn depicted(c: char) -> Option<char> {
+    (c != '\n').then(|| control_picture(c)).flatten()
+}
+
+/// The first character of the Control Pictures block, U+2400 SYMBOL FOR NULL.
+/// The block is laid out in step with the C0 controls it depicts.
+const CONTROL_PICTURES: u32 = 0x2400;
+
+/// U+2424, which the Control Pictures block offers alongside the per-character
+/// pictures for naming a line ending as such.
+const SYMBOL_FOR_NEWLINE: char = '␤';
+
+/// The Control Pictures character depicting `c`, or `None` if `c` is not a
+/// control code and depicts itself.
+fn control_picture(c: char) -> Option<char> {
+    match c {
+        '\0'..='\u{1f}' => char::from_u32(CONTROL_PICTURES + c as u32),
+        '\u{7f}' => Some('␡'), // U+2421 SYMBOL FOR DELETE
+        // The C1 range has no pictures. These reach a terminal as two UTF-8
+        // bytes rather than as the control codes they name, so little is likely
+        // to act on them, but there is no reason to pass them through either.
+        '\u{80}'..='\u{9f}' => Some(char::REPLACEMENT_CHARACTER),
+        _ => None,
+    }
+}
 
 pub fn format_datetime(datetime: DateTime<Utc>) -> String {
     format!("{} UTC", datetime.format("%b %d %Y %X"))
@@ -101,7 +175,10 @@ pub fn format_n_cycles(cycles: Nat) -> String {
     }
 }
 
+/// All askama filters go in this module.
 pub mod filters {
+    use std::fmt::Display;
+
     use askama::Values;
     use bigdecimal::BigDecimal;
     use candid::{Nat, Principal};
@@ -115,7 +192,10 @@ pub mod filters {
         get_default_role, get_idl_string, ledger_canister_id,
     };
 
-    use super::{format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds};
+    use super::{
+        format_duration_seconds, format_timestamp_nanoseconds, format_timestamp_seconds,
+        SYMBOL_FOR_NEWLINE,
+    };
 
     pub fn tokens_e8s(
         e8s: impl IntoNat,
@@ -166,6 +246,51 @@ pub mod filters {
 
     pub fn hex(bytes: impl AsRef<[u8]>, _values: &dyn Values) -> askama::Result<String> {
         Ok(hex::encode(bytes))
+    }
+
+    /// Indents every line but the first by `width` spaces, leaving blank lines
+    /// alone.
+    ///
+    /// Adapted from askama's `indent` (Apache-2.0/MIT), which stops indenting
+    /// altogether once the value reaches 10,000 characters. A proposal summary
+    /// may be 30,000 bytes, so a proposer could otherwise pad past that limit to
+    /// put a line back at column 0. The name cannot be `indent`: askama resolves
+    /// its own filter first, so a local one is never reached.
+    pub fn indentf(
+        value: impl Display,
+        _values: &dyn Values,
+        width: usize,
+    ) -> askama::Result<String> {
+        let value = value.to_string();
+        let prefix = " ".repeat(width);
+        let mut indented = String::with_capacity(value.len());
+        for (idx, line) in value.split_inclusive('\n').enumerate() {
+            if idx > 0 && !matches!(line, "\n" | "\r\n") {
+                indented.push_str(&prefix);
+            }
+            indented.push_str(line);
+        }
+        Ok(indented)
+    }
+
+    /// Replaces ascii formatting marks with their Control Pictures.
+    pub fn flat(value: impl Display, _values: &dyn Values) -> askama::Result<String> {
+        let value = value.to_string();
+        let mut flattened = String::with_capacity(value.len());
+        let mut chars = value.chars().peekable();
+        while let Some(c) = chars.next() {
+            match c {
+                '\r' if chars.peek() == Some(&'\n') => {
+                    chars.next();
+                    flattened.push(SYMBOL_FOR_NEWLINE);
+                }
+                '\n' => flattened.push(SYMBOL_FOR_NEWLINE),
+                '\t' | '\u{b}' | '\u{c}' => flattened
+                    .push(super::control_picture(c).expect("an ASCII formatting mark is depicted")),
+                _ => flattened.push(c),
+            }
+        }
+        Ok(flattened)
     }
 
     pub fn cycles_t(cycles: impl IntoNat, _values: &dyn Values) -> askama::Result<String> {

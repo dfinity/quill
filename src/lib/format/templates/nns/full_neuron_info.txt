@@ -31,9 +31,9 @@ Created {{created_seconds|ts_seconds}}
 Member of the community fund since {{cf|ts_seconds}}
 {% endif -%}
 {% if let Some(known) = known_neuron_data -%}
-Known neuron: "{{known.name}}"
+Known neuron: "{{known.name|flat}}"
 {% if let Some(desc) = known.description -%}
-Description: "{{desc}}"
+Description: "{{desc|indentf(4)}}"
 {% endif -%}
 {% endif -%}
 {% if let Some(controller) = controller -%}

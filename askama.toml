@@ -1,3 +1,9 @@
 [general]
 dirs = ["src/lib/format/templates"]
 whitespace = "minimize"
+
+# Response text is partly chosen by third parties, and askama's built-in escaper
+# for `.txt` is a no-op. See `format::TerminalSafe`.
+[[escaper]]
+path = "crate::lib::format::TerminalSafe"
+extensions = ["txt"]
