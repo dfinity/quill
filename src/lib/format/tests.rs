@@ -12,8 +12,8 @@ use ic_nns_governance_api::{
     manage_neuron::{DisburseMaturity, ManageNeuronProposalCommand, NeuronIdOrSubaccount},
     neuron::Followees,
     proposal::Action,
-    Account, CanisterSettings, ListNeuronsResponse, ManageNeuronProposal, Neuron, Proposal,
-    ProposalInfo, UpdateCanisterSettings,
+    Account, CanisterSettings, InstallCode, ListNeuronsResponse, ManageNeuronProposal, Neuron,
+    Proposal, ProposalInfo, UpdateCanisterSettings, UpdateStandardEngineReplicaVersion,
 };
 use ic_sns_root::{CanisterSummary, GetSnsCanistersSummaryResponse};
 use icp_ledger::TransferError;
@@ -284,4 +284,108 @@ fn unknown_topics_do_not_collapse() {
         ),
         "{fmt}"
     );
+}
+
+/// A proposal whose action is a variant this build of quill does not know about
+/// (e.g. added to governance after quill's pinned API) decodes with `action: None`
+/// under Candid's `opt` rule. It must be flagged, not silently omitted.
+#[test]
+fn unknown_action_is_flagged() {
+    use candid::CandidType;
+    use std::collections::HashMap;
+
+    #[derive(CandidType)]
+    enum FutureAction {
+        SomeActionFromTheFuture { new_version: String },
+    }
+    #[derive(CandidType)]
+    struct FutureProposal {
+        title: Option<String>,
+        summary: String,
+        url: String,
+        action: Option<FutureAction>,
+    }
+    #[derive(CandidType)]
+    struct FutureProposalInfo {
+        id: Option<ProposalId>,
+        reject_cost_e8s: u64,
+        proposal: Option<FutureProposal>,
+        proposal_timestamp_seconds: u64,
+        ballots: HashMap<u64, ic_nns_governance_api::Ballot>,
+        decided_timestamp_seconds: u64,
+        executed_timestamp_seconds: u64,
+        failed_timestamp_seconds: u64,
+        reward_event_round: u64,
+        topic: i32,
+        status: i32,
+        reward_status: i32,
+    }
+    let info = FutureProposalInfo {
+        id: Some(ProposalId { id: 7 }),
+        reject_cost_e8s: 0,
+        proposal: Some(FutureProposal {
+            title: Some("harmless".into()),
+            summary: "nothing to see here".into(),
+            url: String::new(),
+            action: Some(FutureAction::SomeActionFromTheFuture {
+                new_version: "deadbeef".into(),
+            }),
+        }),
+        proposal_timestamp_seconds: 0,
+        ballots: HashMap::new(),
+        decided_timestamp_seconds: 0,
+        executed_timestamp_seconds: 0,
+        failed_timestamp_seconds: 0,
+        reward_event_round: 0,
+        topic: 1,
+        status: 1,
+        reward_status: 1,
+    };
+    let blob = Encode!(&Some(info)).unwrap();
+    let fmt = super::nns_governance::display_get_proposal(&blob).unwrap();
+    assert!(fmt.contains("\"harmless\""), "{fmt}");
+    assert!(fmt.contains("Proposed action: UNKNOWN"), "{fmt}");
+    assert!(
+        fmt.contains("does not recognize this proposal's action"),
+        "{fmt}"
+    );
+}
+
+#[test]
+fn update_standard_engine_replica_version_is_displayed() {
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::UpdateStandardEngineReplicaVersion(UpdateStandardEngineReplicaVersion {
+            old_replica_version_id: Some("aaaa".into()),
+            new_replica_version_id: Some("bbbb".into()),
+            deployment_progress: Some(0.25),
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(
+        fmt.contains(
+            "Proposed action: Update standard engine replica version\n\
+             Old replica version: aaaa\n\
+             New replica version: bbbb\n\
+             Deployment progress: 0.25"
+        ),
+        "{fmt}"
+    );
+}
+
+/// Canister-management proposals must name the canister being acted on, not root
+/// (which is merely the canister governance calls to carry the proposal out).
+#[test]
+fn install_code_names_the_target_canister() {
+    let governance = Principal::from_slice(&[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::InstallCode(InstallCode {
+            canister_id: Some(PrincipalId(governance)),
+            install_mode: Some(3),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(fmt.contains("Upgrade canister governance"), "{fmt}");
 }

@@ -37,6 +37,9 @@ WASM memory limit: {{limit|bytes}}
 {% if let Some(threshold) = settings.wasm_memory_threshold -%}
 WASM memory threshold: {{threshold|bytes}}
 {% endif -%}
+{% if let Some(limit) = settings.reserved_cycles_limit -%}
+Reserved cycles limit: {{limit}}
+{% endif -%}
 {% if self::no_canister_settings(settings) -%}
 No changes to canister settings
 {% endif -%}
@@ -142,7 +145,7 @@ Set default followees
 {% for (topic, followees) in a.default_followees -%}
 For {{self::topic(topic)}}: {% for followee in followees.followees %}{{followee.id}}{% if !loop.last %}, {% endif %}{% endfor %}
 {% endfor -%}
-{% when InstallCode with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.install_mode() -%}
+{% when InstallCode with (a) -%}{% let canister_id = self::target_canister(a.canister_id)? -%}{% match a.install_mode() -%}
   {% when CanisterInstallMode::Unspecified %}Install (unspecified mode) {% when CanisterInstallMode::Install %}Install {% when CanisterInstallMode::Reinstall %}Reinstall {% when CanisterInstallMode::Upgrade %}Upgrade {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
 WASM blob hash: {{a.wasm_module_hash()|hex}}
@@ -152,10 +155,10 @@ Canister will NOT be stopped before installing new WASM
 {% if let Some(arg) = a.arg_hash -%}
 Init args hash: {{arg|hex}}
 {% endif -%}
-{% when StopOrStartCanister with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% match a.action() -%}
+{% when StopOrStartCanister with (a) -%}{% let canister_id = self::target_canister(a.canister_id)? -%}{% match a.action() -%}
   {% when CanisterAction::Start %}Start {% when CanisterAction::Stop %}Stop {% when CanisterAction::Unspecified %}Start/stop (unspecified) {% endmatch -%}
 canister {{canister_id|nns_canister_name}}
-{% when UpdateCanisterSettings with (a) -%}{% let canister_id = self::map_governance_error(a.canister_and_function())?.0 -%}{% let settings = a.settings.as_ref().unwrap() -%}
+{% when UpdateCanisterSettings with (a) -%}{% let canister_id = self::target_canister(a.canister_id)? -%}{% let settings = a.settings.as_ref().unwrap() -%}
 Update settings of canister {{canister_id|nns_canister_name}}
 {% call canistersettings(settings) -%}
 {% when CreateCanisterAndInstallCode with (a) -%}
@@ -189,6 +192,11 @@ Chip ID: {{chip_id|hex}}
 Launch measurement: {{m.measurement|hex}}
 {% endfor -%}
 {% endif -%}
+{% when UpdateStandardEngineReplicaVersion with (a) -%}
+Update standard engine replica version
+Old replica version: {{a.old_replica_version_id}}
+New replica version: {{a.new_replica_version_id}}
+Deployment progress: {{a.deployment_progress}}
 {% when TakeCanisterSnapshot with (a) -%}
 Take canister snapshot{% if let Some(canister_id) = a.canister_id %} of canister {{canister_id}}{% endif %}
 {#- +#}{% if let Some(replace) = a.replace_snapshot %} (replacing snapshot {{replace|hex}}){% endif %}
@@ -265,6 +273,11 @@ Set visibility of neuron {% call neuron %} to {{o.visibility()|fmt("{:?}")}}
     {% endmatch -%}
   {% endmatch -%}
 {% endmatch -%}
+{% else -%}
+Proposed action: UNKNOWN
+WARNING: This version of quill does not recognize this proposal's action, so it
+cannot be displayed. Do not vote on this proposal based on the information above
+alone. Upgrade quill, or inspect the proposal by other means.
 {% endif -%}
 {% else -%}
 Unknown proposal ({{self::topic(proposal_info.topic)}})

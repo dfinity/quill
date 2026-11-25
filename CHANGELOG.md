@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Proposal display (`get-proposal-info`, `list-proposals`) now prints a prominent warning when a proposal's action is of a type this version of quill does not recognize. Previously the action was silently omitted.
+- Added display of `UpdateStandardEngineReplicaVersion` proposals.
+- `InstallCode`, `StopOrStartCanister` and `UpdateCanisterSettings` proposals now name the canister being acted on. Previously they named the canister that executes the proposal (root, or lifeline when root is the target).
+- Updated to IC commit 00e4d8e3ee6081c1862e6119d63cffa76bd4af3d and Rust 1.99.1.
+
 ## [0.5.6] - 2026-11-18
 
 - `quill send` now rejects messages whose `role` or `call_type` fields do not match the signed content. Previously an edited `role` could make the review display decode the signed arguments with the wrong interface, showing some fields as `null`.

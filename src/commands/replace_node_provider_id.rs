@@ -38,7 +38,7 @@ pub fn exec(
         .with_context(|| {
             format!(
                 "node_operator_id {} is not valid Principal",
-                &opts.node_operator_id
+                opts.node_operator_id
             )
         })?;
     let node_provider_id = PrincipalId::from_str(&opts.node_provider_id)
@@ -46,7 +46,7 @@ pub fn exec(
         .with_context(|| {
             format!(
                 "node_provider_id {} is not valid Principal",
-                &opts.node_provider_id
+                opts.node_provider_id
             )
         })?;
     let args = Encode!(&UpdateNodeOperatorConfigDirectlyPayload {

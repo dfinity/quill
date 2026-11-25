@@ -136,6 +136,7 @@ pub fn exec(
                 chunked_canister_wasm: None,
                 canister_upgrade_arg,
                 mode: Some(mode as i32),
+                canister_upgrade_options: None,
             },
         )),
     };

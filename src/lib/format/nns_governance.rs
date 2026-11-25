@@ -10,18 +10,15 @@ use ic_nns_constants::{
     CYCLES_MINTING_CANISTER_ID, LIFELINE_CANISTER_ID, MIGRATION_CANISTER_ID, REGISTRY_CANISTER_ID,
     ROOT_CANISTER_ID, SNS_WASM_CANISTER_ID, SUBNET_RENTAL_CANISTER_ID,
 };
-use ic_nns_governance::{
-    pb::v1::{
-        add_or_remove_node_provider::Change,
-        install_code::CanisterInstallMode,
-        manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
-        proposal::Action,
-        reward_node_provider::RewardMode,
-        stop_or_start_canister::CanisterAction,
-        Account, CanisterSettings, GovernanceError, KnownNeuronData, NeuronState, NeuronType,
-        NnsFunction, ProposalRewardStatus, RewardNodeProviders, Topic, Visibility,
-    },
-    proposals::call_canister::CallCanister,
+use ic_nns_governance::pb::v1::{
+    add_or_remove_node_provider::Change,
+    install_code::CanisterInstallMode,
+    manage_neuron::{configure::Operation, Command as ProposalCommand, NeuronIdOrSubaccount},
+    proposal::Action,
+    reward_node_provider::RewardMode,
+    stop_or_start_canister::CanisterAction,
+    Account, CanisterSettings, GovernanceError, KnownNeuronData, NeuronState, NeuronType,
+    NnsFunction, ProposalRewardStatus, RewardNodeProviders, Topic, Visibility,
 };
 use ic_nns_governance_api::{
     claim_or_refresh_neuron_from_account_response::Result as ClaimResult,
@@ -305,6 +302,7 @@ fn no_canister_settings(settings: &CanisterSettings) -> bool {
         snapshot_visibility,
         wasm_memory_limit,
         wasm_memory_threshold,
+        reserved_cycles_limit,
     } = settings;
     controllers.is_none()
         && compute_allocation.is_none()
@@ -314,6 +312,14 @@ fn no_canister_settings(settings: &CanisterSettings) -> bool {
         && snapshot_visibility.is_none()
         && wasm_memory_limit.is_none()
         && wasm_memory_threshold.is_none()
+        && reserved_cycles_limit.is_none()
+}
+
+/// The canister a canister-management proposal (install code, stop/start, update
+/// settings) acts on. This is the proposal's own `canister_id`, not the canister
+/// that governance calls to carry it out (root, or lifeline when root is the target).
+fn target_canister(canister_id: &Option<PrincipalId>) -> AnyhowResult<PrincipalId> {
+    (*canister_id).context("canister ID was null")
 }
 
 /// The hash of the WASM a `CreateCanisterAndInstallCode` proposal installs.
