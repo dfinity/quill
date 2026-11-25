@@ -183,6 +183,9 @@ Install arg hash: {{hash|hex}}
 {% when FulfillSubnetRentalRequest with (o) -%}
 Fulfill request to rent subnet by user {% if let Some(user) = o.user %}{{user}}{% else %}<unknown>{% endif %}
 Replica version: {{o.replica_version_id}}
+{% if let Some(subnet) = o.initial_dkg_subnet_id -%}
+Initial DKG handled by subnet: {{subnet}}
+{% endif -%}
 Nodes:
 {% for node in o.node_ids -%}
  - {{node}}

@@ -12,8 +12,9 @@ use ic_nns_governance_api::{
     manage_neuron::{DisburseMaturity, ManageNeuronProposalCommand, NeuronIdOrSubaccount},
     neuron::Followees,
     proposal::Action,
-    Account, CanisterSettings, InstallCode, ListNeuronsResponse, ManageNeuronProposal, Neuron,
-    Proposal, ProposalInfo, UpdateCanisterSettings, UpdateStandardEngineReplicaVersion,
+    Account, CanisterSettings, FulfillSubnetRentalRequest, InstallCode, ListNeuronsResponse,
+    ManageNeuronProposal, Neuron, Proposal, ProposalInfo, UpdateCanisterSettings,
+    UpdateStandardEngineReplicaVersion,
 };
 use ic_sns_root::{CanisterSummary, GetSnsCanistersSummaryResponse};
 use icp_ledger::TransferError;
@@ -413,4 +414,34 @@ fn install_code_shows_upgrade_options() {
     .unwrap();
     assert!(fmt.contains("Skip pre_upgrade hook: YES"), "{fmt}");
     assert!(fmt.contains("WASM main memory: replace"), "{fmt}");
+}
+
+/// The subnet that runs the initial DKG changes how the rented subnet is created.
+#[test]
+fn subnet_rental_shows_initial_dkg_subnet() {
+    let subnet = PrincipalId::new_user_test_id(42);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::FulfillSubnetRentalRequest(FulfillSubnetRentalRequest {
+            user: None,
+            node_ids: None,
+            replica_version_id: Some("cccc".into()),
+            initial_dkg_subnet_id: Some(subnet),
+        }),
+        1,
+    ))
+    .unwrap();
+    let expected = format!("Initial DKG handled by subnet: {subnet}");
+    assert!(fmt.lines().any(|l| l.trim_end() == expected), "{fmt}");
+
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::FulfillSubnetRentalRequest(FulfillSubnetRentalRequest {
+            user: None,
+            node_ids: None,
+            replica_version_id: Some("cccc".into()),
+            initial_dkg_subnet_id: None,
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(!fmt.contains("Initial DKG"), "{fmt}");
 }
