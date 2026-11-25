@@ -362,15 +362,15 @@ fn update_standard_engine_replica_version_is_displayed() {
         1,
     ))
     .unwrap();
-    assert!(
-        fmt.contains(
-            "Proposed action: Update standard engine replica version\n\
-             Old replica version: aaaa\n\
-             New replica version: bbbb\n\
-             Deployment progress: 0.25"
-        ),
-        "{fmt}"
-    );
+    // Checked line by line: templates have CRLF line endings on Windows checkouts.
+    for line in [
+        "Proposed action: Update standard engine replica version",
+        "Old replica version: aaaa",
+        "New replica version: bbbb",
+        "Deployment progress: 0.25",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim_end() == line), "{line}\n{fmt}");
+    }
 }
 
 /// Canister-management proposals must name the canister being acted on, not root
