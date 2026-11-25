@@ -129,6 +129,17 @@ Update network economics
       {% endif -%}
     {% endif -%}
   {% endif -%}
+  {% if let Some(vpe) = a.voting_power_economics -%}
+    {% if let Some(seconds) = vpe.start_reducing_voting_power_after_seconds -%}
+    New time without refreshing before a neuron's voting power starts decreasing: {{seconds|dur_seconds}}
+    {% endif -%}
+    {% if let Some(seconds) = vpe.clear_following_after_seconds -%}
+    New time over which a neuron's voting power decreases to zero, after which its following is cleared: {{seconds|dur_seconds}}
+    {% endif -%}
+    {% if let Some(seconds) = vpe.neuron_minimum_dissolve_delay_to_vote_seconds -%}
+    New minimum dissolve delay to vote: {{seconds|dur_seconds}}
+    {% endif -%}
+  {% endif -%}
 {% when RewardNodeProvider with (a) -%}
 Reward node provider {% if let Some(provider) = a.node_provider %}{% call nodeprovider(provider) %}{% endif %}{% call rewardmode(a) %}
 {% when RewardNodeProviders with (a) -%}
@@ -201,6 +212,14 @@ Chip ID: {{chip_id|hex}}
 {% if let Some(measurements) = a.base_guest_launch_measurements -%}
 {% for m in measurements.guest_launch_measurements -%}
 Launch measurement: {{m.measurement|hex}}
+{% if let Some(metadata) = m.metadata -%}
+{% if let Some(cmdline) = metadata.kernel_cmdline -%}
+  Kernel command line: "{{cmdline}}"
+{% endif -%}
+{% if let Some(vcpu) = metadata.vcpu_type -%}
+  vCPU type: {{vcpu}}
+{% endif -%}
+{% endif -%}
 {% endfor -%}
 {% endif -%}
 {% when UpdateStandardEngineReplicaVersion with (a) -%}

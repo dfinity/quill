@@ -12,9 +12,10 @@ use ic_nns_governance_api::{
     manage_neuron::{DisburseMaturity, ManageNeuronProposalCommand, NeuronIdOrSubaccount},
     neuron::Followees,
     proposal::Action,
-    Account, CanisterSettings, FulfillSubnetRentalRequest, InstallCode, ListNeuronsResponse,
-    ManageNeuronProposal, Neuron, Proposal, ProposalInfo, UpdateCanisterSettings,
-    UpdateStandardEngineReplicaVersion,
+    Account, BlessAlternativeGuestOsVersion, CanisterSettings, FulfillSubnetRentalRequest,
+    GuestLaunchMeasurement, GuestLaunchMeasurementMetadata, GuestLaunchMeasurements, InstallCode,
+    ListNeuronsResponse, ManageNeuronProposal, NetworkEconomics, Neuron, Proposal, ProposalInfo,
+    UpdateCanisterSettings, UpdateStandardEngineReplicaVersion, VotingPowerEconomics,
 };
 use ic_sns_root::{CanisterSummary, GetSnsCanistersSummaryResponse};
 use icp_ledger::TransferError;
@@ -444,4 +445,58 @@ fn subnet_rental_shows_initial_dkg_subnet() {
     ))
     .unwrap();
     assert!(!fmt.contains("Initial DKG"), "{fmt}");
+}
+
+/// A proposal that only changes voting power economics must not display as empty.
+#[test]
+fn voting_power_economics_is_displayed() {
+    const DAY: u64 = 24 * 60 * 60;
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::ManageNetworkEconomics(NetworkEconomics {
+            voting_power_economics: Some(VotingPowerEconomics {
+                start_reducing_voting_power_after_seconds: Some(20 * DAY),
+                clear_following_after_seconds: Some(30 * DAY),
+                neuron_minimum_dissolve_delay_to_vote_seconds: Some(14 * DAY),
+            }),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    for line in [
+        "New time without refreshing before a neuron's voting power starts decreasing: 20 days",
+        "New time over which a neuron's voting power decreases to zero, after which its following is cleared: 30 days",
+        "New minimum dissolve delay to vote: 14 days",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim() == line), "{line}\n{fmt}");
+    }
+}
+
+/// The launch measurement metadata is part of what a GuestOS blessing approves.
+#[test]
+fn guest_launch_measurement_metadata_is_displayed() {
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::BlessAlternativeGuestOsVersion(BlessAlternativeGuestOsVersion {
+            chip_ids: None,
+            rootfs_hash: Some("abcd".into()),
+            base_guest_launch_measurements: Some(GuestLaunchMeasurements {
+                guest_launch_measurements: Some(vec![GuestLaunchMeasurement {
+                    measurement: Some(vec![0x12, 0x34]),
+                    metadata: Some(GuestLaunchMeasurementMetadata {
+                        kernel_cmdline: Some("console=ttyS0 dfinity.system=A".into()),
+                        vcpu_type: Some("EPYC-v4".into()),
+                    }),
+                }]),
+            }),
+        }),
+        1,
+    ))
+    .unwrap();
+    for line in [
+        "Launch measurement: 1234",
+        "Kernel command line: \"console=ttyS0 dfinity.system=A\"",
+        "vCPU type: EPYC-v4",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim() == line), "{line}\n{fmt}");
+    }
 }

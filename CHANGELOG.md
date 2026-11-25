@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Proposal display (`get-proposal-info`, `list-proposals`) now prints a prominent warning when a proposal's action is of a type this version of quill does not recognize. Previously the action was silently omitted.
 - Added display of `UpdateStandardEngineReplicaVersion` proposals.
 - `FulfillSubnetRentalRequest` proposals now display the subnet that handles the initial DKG, when one is set.
+- `ManageNetworkEconomics` proposals now display changes to voting power economics (when voting power starts decreasing, when following is cleared, and the minimum dissolve delay to vote). Previously a proposal changing only these displayed no changes.
+- `BlessAlternativeGuestOsVersion` proposals now display the kernel command line and vCPU type of each launch measurement.
 - `InstallCode` proposals now display their upgrade options (skipping the `pre_upgrade` hook, and keeping or replacing WASM main memory).
 - `InstallCode`, `StopOrStartCanister` and `UpdateCanisterSettings` proposals now name the canister being acted on. Previously they named the canister that executes the proposal (root, or lifeline when root is the target).
 - Updated to IC commit 00e4d8e3ee6081c1862e6119d63cffa76bd4af3d and Rust 1.99.1.
