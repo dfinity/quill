@@ -315,6 +315,17 @@ fn no_canister_settings(settings: &CanisterSettings) -> bool {
         && reserved_cycles_limit.is_none()
 }
 
+/// Renders `ic_protobuf::types::v1::WasmMemoryPersistence`, keeping unrecognized
+/// codes visible rather than mapping them to a default.
+fn wasm_memory_persistence(code: &i32) -> String {
+    match code {
+        0 => "unspecified".to_string(),
+        1 => "keep".to_string(),
+        2 => "replace".to_string(),
+        n => format!("unknown ({n})"),
+    }
+}
+
 /// The canister a canister-management proposal (install code, stop/start, update
 /// settings) acts on. This is the proposal's own `canister_id`, not the canister
 /// that governance calls to carry it out (root, or lifeline when root is the target).

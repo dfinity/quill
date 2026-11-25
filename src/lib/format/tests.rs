@@ -388,4 +388,29 @@ fn install_code_names_the_target_canister() {
     ))
     .unwrap();
     assert!(fmt.contains("Upgrade canister governance"), "{fmt}");
+    assert!(!fmt.contains("pre_upgrade"), "{fmt}");
+    assert!(!fmt.contains("WASM main memory"), "{fmt}");
+}
+
+/// Upgrade options change how the upgrade executes and whether state survives it,
+/// so non-default values must be visible.
+#[test]
+fn install_code_shows_upgrade_options() {
+    use ic_nns_governance_api::install_code::CanisterUpgradeOptions;
+    let governance = Principal::from_slice(&[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::InstallCode(InstallCode {
+            canister_id: Some(PrincipalId(governance)),
+            install_mode: Some(3),
+            canister_upgrade_options: Some(CanisterUpgradeOptions {
+                skip_pre_upgrade: Some(true),
+                wasm_memory_persistence: Some(2),
+            }),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(fmt.contains("Skip pre_upgrade hook: YES"), "{fmt}");
+    assert!(fmt.contains("WASM main memory: replace"), "{fmt}");
 }

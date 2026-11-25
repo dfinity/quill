@@ -152,6 +152,14 @@ WASM blob hash: {{a.wasm_module_hash()|hex}}
 {% if a.skip_stopping_before_installing() -%}
 Canister will NOT be stopped before installing new WASM
 {% endif -%}
+{% if let Some(options) = a.canister_upgrade_options -%}
+{% if let Some(skip) = options.skip_pre_upgrade -%}
+Skip pre_upgrade hook: {% if skip %}YES{% else %}no{% endif %}
+{% endif -%}
+{% if let Some(persistence) = options.wasm_memory_persistence -%}
+WASM main memory: {{self::wasm_memory_persistence(persistence)}}
+{% endif -%}
+{% endif -%}
 {% if let Some(arg) = a.arg_hash -%}
 Init args hash: {{arg|hex}}
 {% endif -%}
