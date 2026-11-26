@@ -12,8 +12,10 @@ use ic_nns_governance_api::{
     manage_neuron::{DisburseMaturity, ManageNeuronProposalCommand, NeuronIdOrSubaccount},
     neuron::Followees,
     proposal::Action,
-    Account, CanisterSettings, ListNeuronsResponse, ManageNeuronProposal, Neuron, Proposal,
-    ProposalInfo, UpdateCanisterSettings,
+    Account, BlessAlternativeGuestOsVersion, CanisterSettings, FulfillSubnetRentalRequest,
+    GuestLaunchMeasurement, GuestLaunchMeasurementMetadata, GuestLaunchMeasurements, InstallCode,
+    ListNeuronsResponse, ManageNeuronProposal, NetworkEconomics, Neuron, Proposal, ProposalInfo,
+    UpdateCanisterSettings, UpdateStandardEngineReplicaVersion, VotingPowerEconomics,
 };
 use ic_sns_root::{CanisterSummary, GetSnsCanistersSummaryResponse};
 use icp_ledger::TransferError;
@@ -284,4 +286,217 @@ fn unknown_topics_do_not_collapse() {
         ),
         "{fmt}"
     );
+}
+
+/// A proposal whose action is a variant this build of quill does not know about
+/// (e.g. added to governance after quill's pinned API) decodes with `action: None`
+/// under Candid's `opt` rule. It must be flagged, not silently omitted.
+#[test]
+fn unknown_action_is_flagged() {
+    use candid::CandidType;
+    use std::collections::HashMap;
+
+    #[derive(CandidType)]
+    enum FutureAction {
+        SomeActionFromTheFuture { new_version: String },
+    }
+    #[derive(CandidType)]
+    struct FutureProposal {
+        title: Option<String>,
+        summary: String,
+        url: String,
+        action: Option<FutureAction>,
+    }
+    #[derive(CandidType)]
+    struct FutureProposalInfo {
+        id: Option<ProposalId>,
+        reject_cost_e8s: u64,
+        proposal: Option<FutureProposal>,
+        proposal_timestamp_seconds: u64,
+        ballots: HashMap<u64, ic_nns_governance_api::Ballot>,
+        decided_timestamp_seconds: u64,
+        executed_timestamp_seconds: u64,
+        failed_timestamp_seconds: u64,
+        reward_event_round: u64,
+        topic: i32,
+        status: i32,
+        reward_status: i32,
+    }
+    let info = FutureProposalInfo {
+        id: Some(ProposalId { id: 7 }),
+        reject_cost_e8s: 0,
+        proposal: Some(FutureProposal {
+            title: Some("harmless".into()),
+            summary: "nothing to see here".into(),
+            url: String::new(),
+            action: Some(FutureAction::SomeActionFromTheFuture {
+                new_version: "deadbeef".into(),
+            }),
+        }),
+        proposal_timestamp_seconds: 0,
+        ballots: HashMap::new(),
+        decided_timestamp_seconds: 0,
+        executed_timestamp_seconds: 0,
+        failed_timestamp_seconds: 0,
+        reward_event_round: 0,
+        topic: 1,
+        status: 1,
+        reward_status: 1,
+    };
+    let blob = Encode!(&Some(info)).unwrap();
+    let fmt = super::nns_governance::display_get_proposal(&blob).unwrap();
+    assert!(fmt.contains("\"harmless\""), "{fmt}");
+    assert!(fmt.contains("Proposed action: UNKNOWN"), "{fmt}");
+    assert!(
+        fmt.contains("does not recognize this proposal's action"),
+        "{fmt}"
+    );
+}
+
+#[test]
+fn update_standard_engine_replica_version_is_displayed() {
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::UpdateStandardEngineReplicaVersion(UpdateStandardEngineReplicaVersion {
+            old_replica_version_id: Some("aaaa".into()),
+            new_replica_version_id: Some("bbbb".into()),
+            deployment_progress: Some(0.25),
+        }),
+        1,
+    ))
+    .unwrap();
+    // Checked line by line: templates have CRLF line endings on Windows checkouts.
+    for line in [
+        "Proposed action: Update standard engine replica version",
+        "Old replica version: aaaa",
+        "New replica version: bbbb",
+        "Deployment progress: 0.25",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim_end() == line), "{line}\n{fmt}");
+    }
+}
+
+/// Canister-management proposals must name the canister being acted on, not root
+/// (which is merely the canister governance calls to carry the proposal out).
+#[test]
+fn install_code_names_the_target_canister() {
+    let governance = Principal::from_slice(&[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::InstallCode(InstallCode {
+            canister_id: Some(PrincipalId(governance)),
+            install_mode: Some(3),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(fmt.contains("Upgrade canister governance"), "{fmt}");
+    assert!(!fmt.contains("pre_upgrade"), "{fmt}");
+    assert!(!fmt.contains("WASM main memory"), "{fmt}");
+}
+
+/// Upgrade options change how the upgrade executes and whether state survives it,
+/// so non-default values must be visible.
+#[test]
+fn install_code_shows_upgrade_options() {
+    use ic_nns_governance_api::install_code::CanisterUpgradeOptions;
+    let governance = Principal::from_slice(&[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::InstallCode(InstallCode {
+            canister_id: Some(PrincipalId(governance)),
+            install_mode: Some(3),
+            canister_upgrade_options: Some(CanisterUpgradeOptions {
+                skip_pre_upgrade: Some(true),
+                wasm_memory_persistence: Some(2),
+            }),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(fmt.contains("Skip pre_upgrade hook: YES"), "{fmt}");
+    assert!(fmt.contains("WASM main memory: replace"), "{fmt}");
+}
+
+/// The subnet that runs the initial DKG changes how the rented subnet is created.
+#[test]
+fn subnet_rental_shows_initial_dkg_subnet() {
+    let subnet = PrincipalId::new_user_test_id(42);
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::FulfillSubnetRentalRequest(FulfillSubnetRentalRequest {
+            user: None,
+            node_ids: None,
+            replica_version_id: Some("cccc".into()),
+            initial_dkg_subnet_id: Some(subnet),
+        }),
+        1,
+    ))
+    .unwrap();
+    let expected = format!("Initial DKG handled by subnet: {subnet}");
+    assert!(fmt.lines().any(|l| l.trim_end() == expected), "{fmt}");
+
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::FulfillSubnetRentalRequest(FulfillSubnetRentalRequest {
+            user: None,
+            node_ids: None,
+            replica_version_id: Some("cccc".into()),
+            initial_dkg_subnet_id: None,
+        }),
+        1,
+    ))
+    .unwrap();
+    assert!(!fmt.contains("Initial DKG"), "{fmt}");
+}
+
+/// A proposal that only changes voting power economics must not display as empty.
+#[test]
+fn voting_power_economics_is_displayed() {
+    const DAY: u64 = 24 * 60 * 60;
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::ManageNetworkEconomics(NetworkEconomics {
+            voting_power_economics: Some(VotingPowerEconomics {
+                start_reducing_voting_power_after_seconds: Some(20 * DAY),
+                clear_following_after_seconds: Some(30 * DAY),
+                neuron_minimum_dissolve_delay_to_vote_seconds: Some(14 * DAY),
+            }),
+            ..Default::default()
+        }),
+        1,
+    ))
+    .unwrap();
+    for line in [
+        "New time without refreshing before a neuron's voting power starts decreasing: 20 days",
+        "New time over which a neuron's voting power decreases to zero, after which its following is cleared: 30 days",
+        "New minimum dissolve delay to vote: 14 days",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim() == line), "{line}\n{fmt}");
+    }
+}
+
+/// The launch measurement metadata is part of what a GuestOS blessing approves.
+#[test]
+fn guest_launch_measurement_metadata_is_displayed() {
+    let fmt = super::nns_governance::display_get_proposal(&proposal(
+        Action::BlessAlternativeGuestOsVersion(BlessAlternativeGuestOsVersion {
+            chip_ids: None,
+            rootfs_hash: Some("abcd".into()),
+            base_guest_launch_measurements: Some(GuestLaunchMeasurements {
+                guest_launch_measurements: Some(vec![GuestLaunchMeasurement {
+                    measurement: Some(vec![0x12, 0x34]),
+                    metadata: Some(GuestLaunchMeasurementMetadata {
+                        kernel_cmdline: Some("console=ttyS0 dfinity.system=A".into()),
+                        vcpu_type: Some("EPYC-v4".into()),
+                    }),
+                }]),
+            }),
+        }),
+        1,
+    ))
+    .unwrap();
+    for line in [
+        "Launch measurement: 1234",
+        "Kernel command line: \"console=ttyS0 dfinity.system=A\"",
+        "vCPU type: EPYC-v4",
+    ] {
+        assert!(fmt.lines().any(|l| l.trim() == line), "{line}\n{fmt}");
+    }
 }
