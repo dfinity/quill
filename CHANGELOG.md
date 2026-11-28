@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Fixed `neuron-manage --disburse-maturity-to` ignoring the subaccount of the destination account.
+
 ## [0.5.7] - 2026-11-25
 
 - Proposal display (`get-proposal-info`, `list-proposals`) now prints a prominent warning when a proposal's action is of a type this version of quill does not recognize. Previously the action was silently omitted.

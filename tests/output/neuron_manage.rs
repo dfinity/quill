@@ -136,4 +136,11 @@ fn disburse_maturity() {
         .diff("neuron_manage/disburse_maturity.txt");
     quill_send(&format!("neuron-manage {NEURON_ID} --disburse-maturity --disburse-maturity-percentage 50 --disburse-maturity-to {ALICE}"))
         .diff("neuron_manage/disburse_maturity_percentage_to.txt");
+    // The subaccount must survive encoding (it was once silently dropped).
+    let alice_subaccount =
+        format!("{ALICE}-moa4ndi.707070707070707070707070707070707070707070707070707070707070707");
+    quill_send(&format!(
+        "neuron-manage {NEURON_ID} --disburse-maturity --disburse-maturity-to {alice_subaccount}"
+    ))
+    .diff("neuron_manage/disburse_maturity_to_subaccount.txt");
 }
