@@ -9,20 +9,22 @@ use candid::{Encode, Principal};
 use clap::{Parser, ValueEnum};
 use ic_base_types::PrincipalId;
 use ic_nns_common::pb::v1::{NeuronId, ProposalId};
-use ic_nns_governance::pb::v1::manage_neuron::{DisburseMaturity, RefreshVotingPower};
-use ic_nns_governance::pb::v1::{
+// Use the public API types (which match governance.did), not the internal
+// `ic_nns_governance::pb` types: some `pb` types have a different Candid shape,
+// which governance would silently decode as `null` (e.g. `Account.subaccount`).
+use ic_nns_governance_api::{
     manage_neuron::{
-        configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Command,
-        Configure, Disburse, Follow, IncreaseDissolveDelay, JoinCommunityFund, LeaveCommunityFund,
-        Merge, NeuronIdOrSubaccount, RegisterVote, RemoveHotKey, SetVisibility, Split,
-        StakeMaturity, StartDissolving, StopDissolving,
+        configure::Operation, disburse::Amount, AddHotKey, ChangeAutoStakeMaturity, Configure,
+        Disburse, DisburseMaturity, Follow, IncreaseDissolveDelay, JoinCommunityFund,
+        LeaveCommunityFund, Merge, NeuronIdOrSubaccount, RefreshVotingPower, RegisterVote,
+        RemoveHotKey, SetVisibility, Split, StakeMaturity, StartDissolving, StopDissolving,
     },
-    ManageNeuron,
+    Account, ManageNeuronCommandRequest as Command, ManageNeuronRequest as ManageNeuron,
 };
 use icp_ledger::Tokens;
 
 mod pb {
-    pub use ic_nns_governance::pb::v1::Visibility;
+    pub use ic_nns_governance_api::Visibility;
 }
 
 // These constants are copied from src/governance.rs
@@ -169,6 +171,23 @@ Cannot use --ledger with these flags. This version of quill does not support the
 or --disburse-maturity-percentage flags with a Ledger device"
         );
     }
+    let msgs = build_args(opts)?;
+
+    let mut generated = Vec::new();
+    for args in msgs {
+        generated.push(sign_ingress_with_request_status_query(
+            auth,
+            governance_canister_id(),
+            ROLE_NNS_GOVERNANCE,
+            "manage_neuron",
+            args,
+        )?);
+    }
+    Ok(generated)
+}
+
+/// Builds the Candid-encoded `manage_neuron` arguments, one per message.
+fn build_args(opts: ManageOpts) -> AnyhowResult<Vec<Vec<u8>>> {
     let mut msgs = Vec::new();
 
     let id = NeuronId {
@@ -416,8 +435,8 @@ or --disburse-maturity-percentage flags with a Ledger device"
     if let Some(native_visibility) = opts.set_visibility {
         let visibility = Some(native_visibility as i32);
         let set_visibility = SetVisibility { visibility };
-        let operation = Some(Operation::from(set_visibility));
-        let command = Some(Command::from(Configure { operation }));
+        let operation = Some(Operation::SetVisibility(set_visibility));
+        let command = Some(Command::Configure(Configure { operation }));
 
         let args = Encode!(&ManageNeuron {
             command,
@@ -450,7 +469,10 @@ or --disburse-maturity-percentage flags with a Ledger device"
             }
             Some(ParsedNnsAccount::Icrc1(account)) => DisburseMaturity {
                 percentage_to_disburse,
-                to_account: Some(account.into()),
+                to_account: Some(Account {
+                    owner: Some(PrincipalId(account.owner)),
+                    subaccount: account.subaccount.map(|s| s.to_vec()),
+                }),
                 to_account_identifier: None,
             },
             None => DisburseMaturity {
@@ -470,22 +492,65 @@ or --disburse-maturity-percentage flags with a Ledger device"
     if msgs.is_empty() {
         return Err(anyhow!("No instructions provided"));
     }
-
-    let mut generated = Vec::new();
-    for args in msgs {
-        generated.push(sign_ingress_with_request_status_query(
-            auth,
-            governance_canister_id(),
-            ROLE_NNS_GOVERNANCE,
-            "manage_neuron",
-            args,
-        )?);
-    }
-    Ok(generated)
+    Ok(msgs)
 }
 
 fn parse_neuron_id(id: String) -> AnyhowResult<u64> {
     id.replace('_', "")
         .parse()
         .context("Failed to parse the neuron id")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use candid::Decode;
+
+    /// Regression test: the subaccount of an ICRC-1 `--disburse-maturity-to`
+    /// destination must survive decoding by NNS Governance, which decodes
+    /// `manage_neuron` as `ManageNeuronRequest`. It used to be silently
+    /// decoded as `null`, sending maturity to the owner's default subaccount.
+    #[test]
+    fn disburse_maturity_to_keeps_subaccount() {
+        let owner = "pnf55-r7gzn-s3oqn-ah2v7-r6b63-a2ma2-wyzhb-dzbwb-sghid-lzcxh-4ae";
+        let to = format!(
+            "{owner}-moa4ndi.707070707070707070707070707070707070707070707070707070707070707"
+        );
+        // `ledger` is a global flag, so parse as a subcommand, like the real CLI.
+        #[derive(Parser)]
+        struct Cli {
+            #[arg(long, global = true)]
+            ledger: bool,
+            #[command(subcommand)]
+            command: Sub,
+        }
+        #[derive(clap::Subcommand)]
+        enum Sub {
+            NeuronManage(ManageOpts),
+        }
+        let Sub::NeuronManage(opts) = Cli::try_parse_from([
+            "quill",
+            "neuron-manage",
+            "123",
+            "--disburse-maturity",
+            "--disburse-maturity-to",
+            &to,
+        ])
+        .unwrap()
+        .command;
+
+        let msgs = build_args(opts).unwrap();
+        assert_eq!(msgs.len(), 1);
+        let request = Decode!(&msgs[0], ic_nns_governance_api::ManageNeuronRequest).unwrap();
+
+        let Some(Command::DisburseMaturity(disburse)) = request.command else {
+            panic!("expected DisburseMaturity, got {:?}", request.command);
+        };
+        let account = disburse.to_account.expect("to_account should be set");
+        assert_eq!(
+            account.owner,
+            Some(PrincipalId(Principal::from_text(owner).unwrap()))
+        );
+        assert_eq!(account.subaccount, Some(vec![7; 32]));
+    }
 }
